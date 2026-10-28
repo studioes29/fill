@@ -34,9 +34,9 @@
     let fini = false;
     const termine = () => { if (fini) return; fini = true; ov.classList.add('sort'); h.classList.remove('intro'); h.classList.add('intro-fin'); setTimeout(() => { ov.remove(); h.classList.remove('intro-fin'); }, 1000); };
     requestAnimationFrame(() => ov.classList.add('go'));
-    const t = setTimeout(termine, 2300);
+    const t = setTimeout(termine, 1650);
     ov.addEventListener('click', () => { clearTimeout(t); termine(); });
-    addEventListener('keydown', () => { clearTimeout(t); termine(); }, { once: true });
+    ['keydown', 'wheel', 'touchstart'].forEach(ev => addEventListener(ev, () => { clearTimeout(t); termine(); }, { once: true, passive: true }));
   }
 
   /* ---------- état conservé pendant le parcours ---------- */
@@ -147,7 +147,11 @@
   };
   const fdate = d => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   const fdateL = d => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const ajouteJoursOuvres = (d, n) => { const r = new Date(d); let k = 0; while (k < n) { r.setDate(r.getDate() + 1); const j = r.getDay(); if (j !== 0 && j !== 6) k++; } return r; };
+  // jours fériés français (fixes et mobiles, à partir de Pâques)
+  const paques = a => { const b = a % 19, c = Math.floor(a / 100), d = a % 100, e = Math.floor(c / 4), f = c % 4, g = Math.floor((c + 8) / 25), h = Math.floor((c - g + 1) / 3), i = (19 * b + c - e - h + 15) % 30, k = Math.floor(d / 4), l = d % 4, m = (32 + 2 * f + 2 * k - i - l) % 7, n = Math.floor((b + 11 * i + 22 * m) / 451), mo = Math.floor((i + m - 7 * n + 114) / 31), j = ((i + m - 7 * n + 114) % 31) + 1; return new Date(a, mo - 1, j, 12); };
+  const ferie = d => { const md = (d.getMonth() + 1) + '-' + d.getDate(); if (['1-1', '5-1', '5-8', '7-14', '8-15', '11-1', '11-11', '12-25'].includes(md)) return true; const p = paques(d.getFullYear()); return [1, 39, 50].some(x => { const q = new Date(p); q.setDate(q.getDate() + x); return q.getMonth() === d.getMonth() && q.getDate() === d.getDate(); }); };
+  const ouvre = d => { const j = d.getDay(); return j !== 0 && j !== 6 && !ferie(d); };
+  const ajouteJoursOuvres = (d, n) => { const r = new Date(d); let k = 0; while (k < n) { r.setDate(r.getDate() + 1); if (ouvre(r)) k++; } return r; };
   const isoJour = d => { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 10); };
 
   const segIndAncien = grp => {
@@ -199,8 +203,10 @@
   /* ---------- prise de rendez-vous : le calendrier Cal.com s'ouvre dans une fenêtre du site ---------- */
   const rdv = $('#rdv');
   const noteRdv = () => { const s = etat.selection; if (!s) return ''; return `${SITE.nom} · ${s.titre}${s.prix ? ' · ' + s.prix : ''}`; };
-  let rdvRetour = null;
-  const fermeRdv = () => { if (!rdv) return; rdv.classList.remove('on'); rdv.setAttribute('aria-hidden', 'true'); rdv.setAttribute('inert', ''); document.documentElement.classList.remove('rdv-ouvert'); if (rdvRetour) rdvRetour.focus({ preventScroll: true }); };
+  let rdvRetour = null, clavier = false;
+  addEventListener('keydown', e => { if (e.key === 'Tab') clavier = true; }, true);
+  addEventListener('pointerdown', () => { clavier = false; }, true);
+  const fermeRdv = () => { if (!rdv) return; rdv.classList.remove('on'); rdv.setAttribute('aria-hidden', 'true'); rdv.setAttribute('inert', ''); document.documentElement.classList.remove('rdv-ouvert'); if (rdvRetour && clavier) rdvRetour.focus({ preventScroll: true }); else if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
   const ouvreRdv = (dep) => {
     compte('rdv-ouverture');
     if (!rdv) { window.open(SITE.cal_url, '_blank', 'noopener'); return; }
@@ -472,17 +478,26 @@
     $$('[data-cible-bt]').forEach(g => { $$('button', g).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v))); indTg(g); });
     if (!init) surCible.forEach(f => f(v));
   };
-  const bascule = v => {
+  const voile = (v, depuis) => {
+    if (RM) return;
+    const r = depuis ? depuis.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+    const x = r.left + r.width / 2, y = r.top + r.height / 2, R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const d = document.createElement('div'); d.className = 'voile-c'; d.style.background = v === 'e' ? '#FFE0D5' : '#E9E1FF';
+    document.body.appendChild(d);
+    d.animate([{ clipPath: `circle(0px at ${x}px ${y}px)`, opacity: .9 }, { clipPath: `circle(${R}px at ${x}px ${y}px)`, opacity: .9, offset: .6 }, { clipPath: `circle(${R}px at ${x}px ${y}px)`, opacity: 0 }], { duration: 760, easing: 'cubic-bezier(.65,0,.35,1)' }).onfinish = () => d.remove();
+  };
+  const bascule = (v, depuis) => {
     if (v === cible) return; compte('cible-' + v);
+    voile(v, depuis);
     if (!RM) $$('[data-cible-bt]:not(.sw) .ind').forEach(ind => ind.animate([{ scale: '1 1' }, { scale: '1.12 .86', offset: .35 }, { scale: '1 1' }], { duration: 520, easing: 'cubic-bezier(.3,0,.2,1)' }));
     if (!RM) $$('[data-cible-bt].sw').forEach(g => { g.classList.remove('bouge'); void g.offsetWidth; g.classList.add('bouge'); });
     // l'en-tête reprend la couleur de la rubrique une fois la teinte installée
     [120, 380, 700].forEach(t => setTimeout(() => { fondHd = ''; themeHd(); }, t));
     appliqueCible(v, true);
   };
-  $$('[data-cible-bt]').forEach(g => $$('button', g).forEach(b => b.addEventListener('click', () => bascule(b.dataset.v))));
+  $$('[data-cible-bt]').forEach(g => $$('button', g).forEach(b => b.addEventListener('click', () => bascule(b.dataset.v, $('.ind', g) || b))));
   // l'interrupteur : un appui sur la glissière bascule d'une cible à l'autre
-  $$('[data-cible-bt].sw .ind').forEach(ind => { ind.setAttribute('aria-hidden', 'true'); ind.addEventListener('click', () => bascule(cible === 'c' ? 'e' : 'c')); });
+  $$('[data-cible-bt].sw .ind').forEach(ind => { ind.setAttribute('aria-hidden', 'true'); ind.addEventListener('click', () => bascule(cible === 'c' ? 'e' : 'c', ind)); });
   const recale = () => $$('[data-cible-bt],.tg').forEach(indTg);
   addEventListener('resize', recale); if (document.fonts) document.fonts.ready.then(recale);
 
@@ -568,8 +583,9 @@
         if (getComputedStyle(el).display === 'none' || !b.width) return;
         if (!visAvant.get(el) || !a.width) { el.animate([{ opacity: 0, transform: 'translateY(.5em)' }, { opacity: 1, transform: 'none' }], { duration: 480, delay: 320, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' }); return; }
         const dx = a.left - b.left, dy = a.top - b.top, s = a.width / b.width, sy = a.height / b.height;
-        const sc = !['vis', 'de'].includes(el.dataset.k) ? `scale(${s.toFixed(3)})` : `scale(${s.toFixed(3)},${sy.toFixed(3)})`;
-        el.animate([{ transform: `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) ${sc}` }, { transform: 'none' }], { duration: 760, easing: 'cubic-bezier(.65,0,.35,1)' });
+        // l'image et l'en-tête se transforment ; le texte se retire puis se repose à sa nouvelle place
+        if (['vis', 'de'].includes(el.dataset.k)) { el.animate([{ transform: `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${s.toFixed(3)},${sy.toFixed(3)})` }, { transform: 'none' }], { duration: 760, easing: 'cubic-bezier(.65,0,.35,1)' }); return; }
+        el.animate([{ opacity: 0, transform: `translate(${(dx * .25).toFixed(1)}px,${(dy * .25).toFixed(1)}px)` }, { opacity: 0, offset: .35 }, { opacity: 1, transform: 'none' }], { duration: 760, easing: 'cubic-bezier(.16,1,.3,1)' });
       });
     };
     // canaux souhaités : facultatif, repris dans la demande
@@ -703,10 +719,8 @@
     const carte = f => `<article class="fo" data-f="${f.id}">
       <div class="fo-a"><h3>${esc(f.nom)}</h3><p class="fo-c">${esc(f.court)}</p></div>
       <p class="fo-p"><b>${eur(f.prix)}<small>&nbsp;€</small></b><span>HT par mois</span></p>
-      <div class="fo-g" aria-hidden="true" style="--n:${Math.max(...FORM.map(x => x.unites))}">${Array.from({ length: Math.max(...FORM.map(x => x.unites)) }, (_, k) => `<i${k < f.unites ? ` class="u" style="--j:${k}"` : ''}></i>`).join('')}</div>
-      <p class="fo-u"><b>${f.unites} unités par mois</b><span>Demandes courantes en ${esc(f.delai)}</span></p>
-      ${complet ? `<ul class="p3">${f.points.map(p => `<li><svg class="i"><use href="#ok"/></svg>${esc(p)}</li>`).join('')}</ul>` : ''}
-      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € HT, offerte avec ${O.engagement_long} mois</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
+      <ul class="fo-at">${(f.atouts || []).map((t, k) => `<li style="--k:${k}"><svg class="i" aria-hidden="true"><use href="#ok"/></svg><span>${t}</span></li>`).join('')}</ul>
+      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € HT avec 6 mois · offerte avec ${O.engagement_long} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
       <div class="fo-act"><a class="bt" href="${U('demande/')}" data-choisit="${f.id}">Choisir ${esc(f.nom)} <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a><button type="button" class="fo-plus" aria-expanded="false" aria-controls="det-${f.id}"><i aria-hidden="true">+</i>Détails</button></div>
     </article>`;
     fos.innerHTML = FORM.map(carte).join('');
@@ -755,7 +769,7 @@
       g.innerHTML = MOIS3.map((m, mi) => {
         const ev = D[cible][m.getMonth() + 1] || [];
         const aj = choix.ajouts.map((e, i) => [e, i]).filter(([e]) => e.m === mi);
-        return `<section class="mo" aria-labelledby="mo-${mi}"><h3 id="mo-${mi}">${esc(mNom(m))}</h3><p class="mo-u"><b data-mu="${mi}">0</b> <span>unité</span></p><div class="mo-g" aria-hidden="true"><svg viewBox="0 0 300 12" preserveAspectRatio="none"><path class="fond" d="M6 6H294"/><path class="val" pathLength="1" data-mg="${mi}" d="M6 6H294"/></svg></div>
+        return `<section class="mo" aria-labelledby="mo-${mi}"><p class="mo-i">Mois ${mi + 1} sur 3</p><h3 id="mo-${mi}">${esc(mNom(m))}</h3><p class="mo-u"><b data-mu="${mi}">0</b> <span>unité</span><em data-md="${mi}"></em></p><div class="mo-g" aria-hidden="true"><svg viewBox="0 0 300 12" preserveAspectRatio="none"><path class="fond" d="M6 6H294"/><path class="val" pathLength="1" data-mg="${mi}" d="M6 6H294"/></svg></div><p class="mo-st" data-ms="${mi}">Rien de coché pour l’instant</p>
           <p class="cap">Exemple saisonnier, à cocher</p>
           ${ev.map((e, j) => { const id = `${cible}${m.getMonth() + 1}-${j}`; return `<label class="ev3"><input type="checkbox" data-id="${id}"${choix.coche[id] ? ' checked' : ''}><span class="k" aria-hidden="true"></span><span><b>${esc(e[1])}</b><small>${e[0]} ${esc(mNom(m))} · ${esc(PACKS[e[2]].l)}</small></span><span class="u">${uPack(e[2])} u.</span></label>`; }).join('')}
           ${aj.length ? '<p class="cap" style="margin-top:6px">Vos temps forts</p>' : ''}
@@ -775,6 +789,9 @@
         const i = +pth.dataset.mg, x = selC && selC.sim ? selC.sim[i] : null, dispo = x ? x.inclus + x.report : 1;
         const v = x ? Math.min(1, x.besoin / Math.max(1, dispo)) : 0;
         pth.style.setProperty('--v', v.toFixed(3)); pth.classList.toggle('hors', !!(x && x.hors));
+        const st = $(`[data-ms="${i}"]`, g), dd = $(`[data-md="${i}"]`, g);
+        if (dd) dd.textContent = x ? `sur ${dispo} disponibles` : '';
+        if (st) { st.classList.toggle('x', !!(x && x.hors)); st.textContent = !x ? (selC && selC.horsCadre ? 'Volume à étudier' : 'Rien de coché pour l’instant') : !x.besoin ? `Mois calme : ${x.reporte} unité${x.reporte > 1 ? 's' : ''} reportée${x.reporte > 1 ? 's' : ''}` : x.hors ? `Pic du trimestre : ${x.hors} unité${x.hors > 1 ? 's' : ''} hors forfait` : `Dans le forfait, ${dispo - x.besoin} unité${dispo - x.besoin > 1 ? 's' : ''} de marge`; }
       });
       const perso2 = choix.ajouts.length > 0;
       const titre = `<p class="cap">${l.length ? `Votre calendrier : ${l.length} temps fort${l.length > 1 ? 's' : ''}${perso2 ? ', dont ' + choix.ajouts.length + ' ajouté' + (choix.ajouts.length > 1 ? 's' : '') + ' par vous' : ''}` : 'Votre calendrier est vide'}</p>`;
@@ -784,10 +801,11 @@
         if (selC.horsCadre) som.innerHTML = titre + `<p><b>Étude personnalisée nécessaire.</b> Même avec la formule la plus complète et le report, un mois dépasserait de plus de 6 unités : ce trimestre se chiffre après un échange.</p>`;
         else {
           const t = selC.sim; const hors = t.reduce((s, x) => s + x.hors, 0);
-          som.innerHTML = titre + `<p><b>${esc(selC.titre.replace(/^Formule /, ''))}</b>, ${eur(selC.mensuel)} € HT par mois, est la formule la moins chère pour ce trimestre${hors ? `, avec ${hors} unité${hors > 1 ? 's' : ''} hors forfait (${eur(hors * O.unite_sup)} € HT, facturées seulement sur accord écrit)` : ''}.</p>
-            <div class="cal-wrap"><table class="cal-t"><thead><tr><th scope="col">Mois</th><th scope="col">Besoin</th><th scope="col">Inclus</th><th scope="col">Report reçu</th><th scope="col">Utilisées</th><th scope="col">Hors forfait</th><th scope="col">Reportées</th></tr></thead><tbody>
+          som.innerHTML = titre + `<div class="cal-r"><div><p class="cap">Chaque mois</p><b>${esc(selC.titre.replace(/^Formule /, ''))}</b><span>${eur(selC.mensuel)} € HT par mois</span><small>Le forfait, fixe : la formule la moins chère pour ce trimestre.</small></div>
+            <div class="${hors ? 'x' : 'ok'}"><p class="cap">Sur le trimestre</p><b>${hors ? `+ ${hors} unité${hors > 1 ? 's' : ''}` : 'Aucun dépassement'}</b><span>${hors ? `${eur(hors * O.unite_sup)} € HT, une fois` : 'Le forfait et le report couvrent chaque mois'}</span><small>${hors ? 'Hors forfait, facturé seulement sur accord écrit.' : 'Rien à payer en plus du forfait.'}</small></div></div>
+            <details class="cal-d"><summary>Le calcul mois par mois</summary><div class="cal-wrap"><table class="cal-t"><thead><tr><th scope="col">Mois</th><th scope="col">Besoin</th><th scope="col">Inclus</th><th scope="col">Report reçu</th><th scope="col">Utilisées</th><th scope="col">Hors forfait</th><th scope="col">Reportées</th></tr></thead><tbody>
             ${t.map((x, i) => `<tr><td>${esc(mNom(MOIS3[i]))}</td><td>${x.besoin}</td><td>${x.inclus}</td><td>${x.report}</td><td>${x.utilise}</td><td class="${x.hors ? 'x' : ''}">${x.hors}</td><td>${i < 2 ? x.reporte : `${x.reporte}*`}</td></tr>`).join('')}
-            </tbody></table></div><p class="note" style="margin-top:8px">Le report reçu est consommé en premier ; les unités non utilisées d’un mois sont reportées une seule fois. * Reportées sur le mois suivant le trimestre.</p>`;
+            </tbody></table></div><p class="note" style="margin-top:8px">Le report reçu est consommé en premier ; les unités non utilisées d’un mois sont reportées une seule fois. * Reportées sur le mois suivant le trimestre.</p></details>`;
         }
       }
       maj('cal', choix);
@@ -824,6 +842,21 @@
     rail.addEventListener('scroll', () => { if (!raf2) raf2 = requestAnimationFrame(majD); }, { passive: true });
     addEventListener('resize', majD); setTimeout(majD, 60);
     surCible.push(() => { dots.innerHTML = ''; rail.scrollLeft = 0; setTimeout(majD, 30); });
+  });
+
+  /* la galerie se distribue : les cartes partent d'une pile, au centre, et prennent leur place */
+  if (!RM && matchMedia('(min-width:900px)').matches) $$('.gal').forEach(g => {
+    const ob = new IntersectionObserver(es => {
+      if (!es[0].isIntersecting) return; ob.disconnect();
+      const cs = $$('.gal-c', g).filter(c => !c.hidden && c.offsetWidth); const gr = g.getBoundingClientRect();
+      const cx = gr.left + gr.width / 2, cy = gr.top + Math.min(gr.height, innerHeight) * .4;
+      cs.forEach((c, i) => {
+        const r = c.getBoundingClientRect(), dx = cx - (r.left + r.width / 2), dy = cy - (r.top + r.height / 2), rot = ((i * 37) % 11) - 5;
+        const sc = Math.min(1, 260 / r.width);
+        c.animate([{ transform: `translate(${dx.toFixed(0)}px,${dy.toFixed(0)}px) rotate(${rot}deg) scale(${sc.toFixed(2)})`, opacity: 0 }, { opacity: 1, offset: .25 }, { transform: 'none', opacity: 1 }], { duration: 1100, delay: i * 70, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' });
+      });
+    }, { threshold: .18 });
+    ob.observe(g);
   });
 
   /* les filets de paragraphe s'étendent au défilement, de la gauche vers la droite */
@@ -915,10 +948,13 @@
       cB = couleurDe(getComputedStyle(passage).getPropertyValue('--vers') || 'currentColor', passage);
       maj();
     };
+    // la position est lissée d'une image à l'autre : le fil suit le défilement sans à-coups
+    let lis = null;
     const maj = () => {
-      const r = passage.getBoundingClientRect(), vh = innerHeight, h = passage.offsetHeight, course = Math.max(1, h - vh);
-      const s = clamp01(-r.top / course);                       // avancée dans la partie collée
-      const dessin = clamp01((vh * .55 - r.top) / (vh * .55 + course * .5)); // le fil se trace en entrant
+      const vh = innerHeight, h = passage.offsetHeight, course = Math.max(1, h - vh);
+      const top = lis == null ? passage.getBoundingClientRect().top : lis;
+      const s = clamp01(-top / course);                       // avancée dans la partie collée
+      const dessin = clamp01((vh * .55 - top) / (vh * .55 + course * .5)); // le fil se trace en entrant
       const z = clamp01((s - .5) / .5);                          // la plongée
       let l = lz * doux(dessin);
       if (z > 0) l = lz + (L - lz) * clamp01(z * 2.4);
@@ -933,7 +969,15 @@
     };
     if (RM) passage.classList.add('fixe');
     else {
-      let raf = 0; const reveille = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; maj(); }); };
+      let raf = 0;
+      const boucle = () => {
+        const t = passage.getBoundingClientRect().top;
+        if (lis == null || Math.abs(t - lis) > innerHeight * 1.5) lis = t; else lis += (t - lis) * .2;
+        if (Math.abs(t - lis) < .4) lis = t;
+        maj();
+        raf = lis !== t ? requestAnimationFrame(boucle) : 0;
+      };
+      const reveille = () => { if (!raf) raf = requestAnimationFrame(boucle); };
       addEventListener('scroll', reveille, { passive: true });
       addEventListener('resize', () => setTimeout(trace, 130));
       surCible.push(() => setTimeout(trace, 650));
@@ -1149,10 +1193,13 @@
         const d = r.suivant.prix - r.prix;
         if (d <= 220 && d >= 0) alt = `<p class="alt">${esc(r.suivant.f.nom)} coûterait ${eur(d)} € de plus par mois, pour ${r.suivant.f.unites - r.u} unités de marge${r.suivant.f.urgences_incluses ? ' et 2 urgences incluses' : ''}.</p>`;
       }
+      if (r.mini) expl += ' Le reportage photo demande au moins la formule Régulier.';
       prixAnim($('[data-pxg]', sim), r.prix);
       reco.innerHTML = `<div class="nm"><b>${esc(r.f.nom)}${r.sup ? ` <small style="font-size:.5em;font-weight:600">+${r.sup} u.</small>` : ''}</b><span>formule adaptée</span></div><p>${esc(expl)}</p>${alt}`;
-      if (r.mini) expl += ' Le reportage photo demande au moins la formule Régulier.';
-      lig.innerHTML = `<div><span>Délai de traitement</span><span>${esc(r.f.delai)}</span></div><div><span>Mise en place, une fois</span><span>${eur(c.mep)} € HT</span></div><div><span>Engagement ${O.engagement_mois} mois</span><span>${eur(c.six)} € HT</span></div><div class="fort"><span>Première année</span><span>${eur(c.an)} € HT</span></div><p class="note">Avec un engagement de ${O.engagement_long} mois, la mise en place est offerte : ${eur(c.an12)} € HT la première année.</p>`;
+      lig.innerHTML = `<div><span>Demandes courantes</span><span>${esc(r.f.delai)}</span></div>
+        <p class="eng-t">Deux engagements possibles</p>
+        <div class="eng2"><p><b>${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} € HT</span><small>mise en place, une fois</small></p><p class="on"><b>${O.engagement_long} mois</b><span>Offerte</span><small>mise en place</small></p></div>
+        <p class="note">Première année : ${eur(c.an)} € HT avec ${O.engagement_mois} mois, ${eur(c.an12)} € HT avec ${O.engagement_long} mois.</p>`;
       if (mob) { mobT.textContent = `${r.f.nom}${r.sup ? ' +' + r.sup + ' u.' : ''} · ${eur(r.prix)} € HT/mois`; mobS.textContent = `${r.u} unité${r.u > 1 ? 's' : ''} sur ${r.f.unites}`; }
       maj('panier', panier); maj('urg', urg);
       if (!premiere) { compte('simulateur-interaction', true); compte('simulateur-formule-' + r.f.id, true); }
@@ -1229,7 +1276,7 @@
     const titrePan = n => $('h2, legend, [data-titre]', pans[n]);
     const montre = (n, sens = 1, pousse = true) => {
       if (n === e) return;
-      const avant = e; e = n; st.e = n; if (!st.vus.includes(n)) st.vus.push(n); garde2();
+      const avant = e; e = n; st.e = n; document.documentElement.classList.toggle('est-compose', n === 3); if (!st.vus.includes(n)) st.vus.push(n); garde2();
       pans.forEach((p, i) => { p.hidden = i !== n; if (i === n) { p.classList.remove('entre', 'entre-g'); void p.offsetWidth; p.classList.add(sens >= 0 ? 'entre' : 'entre-g'); } });
       est.querySelector('.est-p').style.setProperty('--p', Math.max(0, (n - 1) / 3).toFixed(3));
       pas.forEach((b, i) => { const k = i + 1; b.classList.toggle('fait', k < n || (st.vus.includes(k) && k < n)); if (k === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); b.disabled = !st.vus.includes(k) && k !== n; });
@@ -1345,7 +1392,8 @@
         <div class="carte"><p class="cap">Votre estimation</p><h2 class="nmf" data-titre>${esc(s.titre)}</h2>
           <div class="lig2">${s.mensuel ? `<div><span>Abonnement</span><span>${esc(s.prix)}</span></div>` : `<div><span>Prix</span><span>${esc(s.prix || 'Sur étude')}</span></div>`}
           ${f ? `<div><span>Demandes courantes</span><span>${esc(f.delai)}</span></div>` : ''}
-          ${c ? `<div><span>Mise en place</span><span>${eur(c.mep)} € HT, offerte avec ${O.engagement_long} mois</span></div><div class="fort"><span>Première année, ${O.engagement_long} mois</span><span>${eur(c.an12)} € HT</span></div>` : ''}</div>
+          </div>
+          ${c ? `<div class="eng2"><p><b>Engagement ${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} € HT</span><small>mise en place, une fois · ${eur(c.an)} € la 1<sup>re</sup> année</small></p><p class="on"><b>Engagement ${O.engagement_long} mois</b><span>Offerte</span><small>mise en place · ${eur(c.an12)} € la 1<sup>re</sup> année</small></p></div>` : ''}
           ${(s.lignes || []).length ? `<ul class="panier2" aria-label="Contenu">${s.lignes.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
           <p class="note">Estimation indicative, pas un devis. La proposition écrite suit sous 48 h ouvrées.</p></div>
         <div class="suite"><a class="bt lg2" href="${U('demande/')}">Recevoir ma proposition <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>
@@ -1377,11 +1425,11 @@
     const p = $('path', sv), it = $$('.jalon', box); if (!it.length || !box.offsetWidth) return;
     const br = box.getBoundingClientRect();
     const etroit = innerWidth < 561;
-    const P = it.map(x => { const r = $('span', x).getBoundingClientRect(); return [etroit ? 9 : r.left - br.left + 16, r.top - br.top + r.height / 2]; });
+    const P = it.map(x => { const r = $('span', x).getBoundingClientRect(); return [etroit ? 9 : r.left - br.left + r.width / 2, r.top - br.top + r.height / 2]; });
     sv.setAttribute('viewBox', `0 0 ${f1(br.width)} ${f1(br.height)}`); sv.setAttribute('width', f1(br.width)); sv.setAttribute('height', f1(br.height));
     let d = `M${f1(P[0][0])} ${f1(P[0][1] - 26)}L${f1(P[0][0])} ${f1(P[0][1])}`; const lp = [];
     mp0.setAttribute('d', d); lp.push(mp0.getTotalLength());
-    for (let i = 1; i < P.length; i++) { const [x1, y1] = P[i - 1], [x2, y2] = P[i], k = etroit ? 0 : (i % 2 ? 1 : -1) * 20; d += `C${f1(x1 + k)} ${f1(y1 + (y2 - y1) * .4)} ${f1(x2 - k)} ${f1(y1 + (y2 - y1) * .6)} ${f1(x2)} ${f1(y2)}`; mp0.setAttribute('d', d); lp.push(mp0.getTotalLength()); }
+    for (let i = 1; i < P.length; i++) { const [x1, y1] = P[i - 1], [x2, y2] = P[i], k = 0; d += `C${f1(x1 + k)} ${f1(y1 + (y2 - y1) * .4)} ${f1(x2 - k)} ${f1(y1 + (y2 - y1) * .6)} ${f1(x2)} ${f1(y2)}`; mp0.setAttribute('d', d); lp.push(mp0.getTotalLength()); }
     p.setAttribute('d', d); const L = p.getTotalLength(); p.style.strokeDasharray = `${f1(L)} ${f1(L + 40)}`;
     const montre = v => { p.style.strokeDashoffset = f1(L - v); it.forEach((x, i) => x.classList.toggle('on', v >= lp[i] - 2)); };
     if (jalAnim) cancelAnimationFrame(jalAnim);
@@ -1402,14 +1450,14 @@
     const rend = () => {
       const d = DUREES[+dur.value]; const p = prixRelais(d); const s = (sit.find(x => x.checked) || sit[0]).value;
       dur.style.setProperty('--p', (+dur.value / (DUREES.length - 1) * 100) + '%'); durO.textContent = d.l;
-      let d0 = new Date(deb.value + 'T12:00:00'); if (isNaN(d0)) d0 = min; if (d0 < min) { d0 = min; deb.value = isoJour(min); }
+      let d0 = new Date(deb.value + 'T12:00:00'); if (isNaN(d0)) d0 = new Date(min); if (d0 < min) d0 = new Date(min); while (!ouvre(d0)) d0.setDate(d0.getDate() + 1); if (deb.value !== isoJour(d0)) deb.value = isoJour(d0);
       const fin = new Date(d0); fin.setDate(fin.getDate() + p.jours);
       const appui = app.checked && s !== 'ete', appJ = appui ? 91 : 0;
       const prep = 14, total = prep + p.jours + appJ + 7;
       const x = j => (j / total * 100);
       const lab = (t, w) => w > 9 ? t : '';
       const ess = O.formules[0];
-      tween(tot, p.total + (appui ? ess.prix * 3 : 0));
+      const tt = p.total + (appui ? ess.prix * 3 : 0); if (!tot.dataset.v) tot.dataset.v = tt; tween(tot, tt);
       det.innerHTML = `${esc(p.txt)}${appui ? `, puis ${eur(ess.prix)} € par mois pendant 3 mois d’appui` : ''}. Mise en place incluse. Environ ${p.unites} unités de production${appui ? ` pendant l’absence` : ''}.`;
       const fin2 = new Date(fin); if (appui) fin2.setDate(fin2.getDate() + appJ);
       // trois repères lisibles, le détail reste dans le calendrier plus bas
