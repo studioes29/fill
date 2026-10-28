@@ -207,19 +207,33 @@
   addEventListener('keydown', e => { if (e.key === 'Tab') clavier = true; }, true);
   addEventListener('pointerdown', () => { clavier = false; }, true);
   const fermeRdv = () => { if (!rdv) return; rdv.classList.remove('on'); rdv.setAttribute('aria-hidden', 'true'); rdv.setAttribute('inert', ''); document.documentElement.classList.remove('rdv-ouvert'); if (rdvRetour && clavier) rdvRetour.focus({ preventScroll: true }); else if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
+  let calEtat = 0; const calAttente = [];
+  const calCharge = (ok, ko) => {
+    if (calEtat === 2) { ok(); return; } calAttente.push([ok, ko]); if (calEtat === 1) return; calEtat = 1;
+    (function (C, A, L) { const p = function (a, ar) { a.q.push(ar); }; const d = C.document; C.Cal = C.Cal || function () { const cal = C.Cal; const ar = arguments; if (!cal.loaded) { cal.ns = {}; cal.q = cal.q || []; const sc = d.createElement('script'); sc.src = A; sc.onload = () => { calEtat = 2; calAttente.splice(0).forEach(([f]) => f()); }; sc.onerror = () => { calEtat = 0; calAttente.splice(0).forEach(([, g]) => g && g()); }; d.head.appendChild(sc); cal.loaded = true; } if (ar[0] === L) { const api = function () { p(api, arguments); }; const ns = ar[1]; api.q = api.q || []; if (typeof ns === 'string') { cal.ns[ns] = cal.ns[ns] || api; p(cal.ns[ns], ar); p(cal, ['initNamespace', ns]); } else p(cal, ar); return; } p(cal, ar); }; })(window, 'https://app.cal.eu/embed/embed.js', 'init');
+    Cal('init', 'fill', { origin: 'https://app.cal.eu' });
+    Cal.ns.fill('on', { action: 'linkReady', callback: () => { clearTimeout(ouvreRdv.t); const cz = rdv && $('.rdv-c', rdv); if (cz) cz.hidden = true; } });
+    Cal.ns.fill('on', { action: 'linkFailed', callback: () => { const cz = rdv && $('.rdv-c', rdv); if (cz) { cz.hidden = false; cz.classList.add('lent'); cz.innerHTML = `<span>Le calendrier ne s’affiche pas.</span><a class="bt sm" href="${esc(SITE.cal_url)}" target="_blank" rel="noopener">L’ouvrir dans un nouvel onglet</a>`; } } });
+    Cal.ns.fill('on', { action: 'bookingSuccessful', callback: () => { compte('rdv-confirme'); toast('Rendez-vous confirmé : l’invitation arrive par courriel.'); } });
+  };
   const ouvreRdv = (dep) => {
     compte('rdv-ouverture');
     if (!rdv) { window.open(SITE.cal_url, '_blank', 'noopener'); return; }
-    const ifr = $('iframe', rdv);
-    // ce qui est déjà renseigné sur le site (nom, courriel, sélection) préremplit la réservation
+    // le calendrier officiel de Cal.com (intégration embed.js) s'affiche dans la fenêtre du site ;
+    // ce qui est déjà renseigné (nom, courriel, sélection) préremplit la réservation
     const n = noteRdv(), ct = etat.contact || {};
-    const q = new URLSearchParams({ layout: 'month_view' }); if (n) q.set('notes', n); if (ct.nom) q.set('name', ct.nom); if (ct.email) q.set('email', ct.email);
-    const src = SITE.cal_url + (SITE.cal_url.includes('?') ? '&' : '?') + q.toString();
-    const cz = $('.rdv-c', rdv);
-    if (ifr.dataset.src !== src) {
-      ifr.dataset.src = src; ifr.src = src; cz.hidden = false; cz.classList.remove('lent'); cz.innerHTML = 'Chargement du calendrier…';
-      clearTimeout(ouvreRdv.t); ouvreRdv.t = setTimeout(() => { if (!cz.hidden) { cz.classList.add('lent'); cz.innerHTML = `<span>Le calendrier tarde à s’afficher.</span><a class="bt sm" href="${esc(SITE.cal_url)}" target="_blank" rel="noopener">L’ouvrir dans un nouvel onglet <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>`; } }, 9000);
-      ifr.onload = () => { clearTimeout(ouvreRdv.t); cz.hidden = true; };
+    const cfg = { layout: 'month_view', theme: 'light' }; if (n) cfg.notes = n; if (ct.nom) cfg.name = ct.nom; if (ct.email) cfg.email = ct.email;
+    const cle = JSON.stringify(cfg), cz = $('.rdv-c', rdv), zone = $('.rdv-z', rdv);
+    const secours = () => { cz.hidden = false; cz.classList.add('lent'); cz.innerHTML = `<span>Le calendrier tarde à s’afficher.</span><a class="bt sm" href="${esc(SITE.cal_url)}" target="_blank" rel="noopener">L’ouvrir dans un nouvel onglet <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>`; };
+    if (zone && zone.dataset.cle !== cle) {
+      zone.dataset.cle = cle; zone.innerHTML = ''; cz.hidden = false; cz.classList.remove('lent'); cz.innerHTML = 'Chargement du calendrier…';
+      clearTimeout(ouvreRdv.t); ouvreRdv.t = setTimeout(() => { if (!cz.hidden) secours(); }, 10000);
+      calCharge(() => {
+        try {
+          Cal.ns.fill('inline', { elementOrSelector: zone, calLink: SITE.cal_lien, config: cfg });
+          Cal.ns.fill('ui', { theme: 'light', layout: 'month_view', cssVarsPerTheme: { light: { 'cal-brand': varC('--cible') || '#7052B3', 'cal-brand-emphasis': '#1A1A1A', 'cal-brand-text': '#ffffff' } } });
+        } catch (e) { secours(); }
+      }, secours);
     }
     rdvRetour = dep || document.activeElement;
     rdv.removeAttribute('inert'); rdv.setAttribute('aria-hidden', 'false'); rdv.classList.add('on'); document.documentElement.classList.add('rdv-ouvert');
@@ -230,6 +244,8 @@
     addEventListener('keydown', e => { if (e.key === 'Escape' && rdv.classList.contains('on')) fermeRdv(); });
   }
   document.addEventListener('click', e => { const a = e.target.closest('[data-cal]'); if (!a) return; e.preventDefault(); ouvreRdv(a); });
+  // le script de réservation se charge dès qu'un bouton de rendez-vous est survolé ou touché
+  ['pointerenter', 'touchstart', 'focusin'].forEach(ev => document.addEventListener(ev, e => { if (e.target.closest && e.target.closest('[data-cal]') && calEtat === 0) calCharge(() => {}, () => {}); }, { passive: true, capture: true }));
 
   /* ---------- liens de partage (état encodé dans l'adresse) ---------- */
   const encode = o => { try { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/=+$/, ''); } catch (e) { return ''; } };
