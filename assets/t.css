@@ -2054,3 +2054,6 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
 
 .rdv-z{width:100%;height:100%;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--creme)}
 .rdv-z iframe{width:100%!important;min-height:100%}
+.rdv-z{background:#fff}
+.eng .eng-o.on{background:var(--cible2)!important}
+.fos-fin .eng{border-top:0;padding-top:0;margin-top:0}
