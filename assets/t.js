@@ -1508,7 +1508,12 @@
   };
   const lignesForm = form => { const fd = Object.fromEntries(new FormData(form).entries()); delete fd._honey; return Object.entries(fd).filter(([, v]) => String(v).trim()).map(([k, v]) => `${LIB[k] || k} : ${v}`); };
   const envoie = async (champs) => {
-    const r = await fetch(SITE.formsubmit, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(Object.assign({ _template: 'table', _captcha: 'false' }, champs)) });
+    // le service répond parfois après l'envoi effectif du courriel : au-delà de 25 s sans réponse, la demande est considérée comme partie
+    const ac = new AbortController(), to = setTimeout(() => ac.abort(), 25000);
+    let r;
+    try { r = await fetch(SITE.formsubmit, { method: 'POST', keepalive: true, signal: ac.signal, headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(Object.assign({ _template: 'table', _captcha: 'false' }, champs)) }); }
+    catch (e) { clearTimeout(to); if (e && e.name === 'AbortError' && navigator.onLine !== false) return { lent: true }; throw e; }
+    clearTimeout(to);
     if (!r.ok) throw new Error('envoi');
     const j = await r.json().catch(() => ({}));
     if (j && (j.success === false || j.success === 'false')) throw new Error(j.message || 'envoi');
@@ -1596,14 +1601,15 @@
         : Object.assign({ _subject: `${SITE.nom} · Message · ${fd.structure || fd.nom}`, _replyto: fd.email }, fd);
       if (T.preview) { apercuEnvoi(form, [`Sélection : ${s ? s.titre + (s.prix ? ' · ' + s.prix : '') : 'aucune'}`].concat(lignesForm(form))); return; }
       if (piege(form)) { err.hidden = false; return; }
-      bSv.disabled = true; const lab = bSv.innerHTML; bSv.innerHTML = '<span class="charge" aria-hidden="true"></span> Envoi en cours';
+      bSv.disabled = true; const lab = bSv.innerHTML; bSv.innerHTML = '<span class="charge" aria-hidden="true"></span> Envoi en cours…'; const lent = setTimeout(() => { bSv.innerHTML = '<span class="charge" aria-hidden="true"></span> Encore quelques secondes…'; }, 6000);
       try {
-        await envoie(champs);
+        const rep = await envoie(champs);
         compte(mode === 'demande' ? 'demande-envoyee' : 'message-envoye');
+        if (rep && rep.lent) { const m = $('.mu', ok); if (m) m.textContent = `Le service d’envoi tarde à confirmer, mais votre ${mode === 'demande' ? 'demande' : 'message'} est parti : inutile de le renvoyer. Sans réponse sous 48 h ouvrées, écrivez à ${SITE.email}.`; }
         form.hidden = true; $$('.pf-p, [data-ctx]', pf).forEach(x => { x.hidden = true; }); ok.hidden = false; $('h2', ok).focus();
         delete etat.contact; delete etat.contactT; maj('envoye', { quand: Date.now(), titre: s ? s.titre : '' });
       } catch (er) {
-        bSv.disabled = false; bSv.innerHTML = lab; err.hidden = false;
+        clearTimeout(lent); bSv.disabled = false; bSv.innerHTML = lab; err.hidden = false;
         const corps = encodeURIComponent(`${fd.message || ''}\n\n${s ? 'Sélection : ' + s.titre + ' · ' + (s.prix || '') + '\n' : ''}${fd.nom || ''}, ${fd.structure || ''}\n${fd.email || ''} ${fd.tel || ''}`);
         $('a', err).href = `mailto:${SITE.email}?subject=${encodeURIComponent(SITE.nom + (mode === 'demande' ? ' · Demande de proposition' : ' · Message'))}&body=${corps}`;
       }
