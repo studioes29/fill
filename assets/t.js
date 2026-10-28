@@ -211,8 +211,16 @@
     compte('rdv-ouverture');
     if (!rdv) { window.open(SITE.cal_url, '_blank', 'noopener'); return; }
     const ifr = $('iframe', rdv);
-    const n = noteRdv(); const src = SITE.cal_url + (SITE.cal_url.includes('?') ? '&' : '?') + 'layout=month_view' + (n ? '&notes=' + encodeURIComponent(n) : '');
-    if (ifr.dataset.src !== src) { ifr.dataset.src = src; ifr.src = src; $('.rdv-c', rdv).hidden = false; ifr.onload = () => { $('.rdv-c', rdv).hidden = true; }; }
+    // ce qui est déjà renseigné sur le site (nom, courriel, sélection) préremplit la réservation
+    const n = noteRdv(), ct = etat.contact || {};
+    const q = new URLSearchParams({ layout: 'month_view' }); if (n) q.set('notes', n); if (ct.nom) q.set('name', ct.nom); if (ct.email) q.set('email', ct.email);
+    const src = SITE.cal_url + (SITE.cal_url.includes('?') ? '&' : '?') + q.toString();
+    const cz = $('.rdv-c', rdv);
+    if (ifr.dataset.src !== src) {
+      ifr.dataset.src = src; ifr.src = src; cz.hidden = false; cz.classList.remove('lent'); cz.innerHTML = 'Chargement du calendrier…';
+      clearTimeout(ouvreRdv.t); ouvreRdv.t = setTimeout(() => { if (!cz.hidden) { cz.classList.add('lent'); cz.innerHTML = `<span>Le calendrier tarde à s’afficher.</span><a class="bt sm" href="${esc(SITE.cal_url)}" target="_blank" rel="noopener">L’ouvrir dans un nouvel onglet <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>`; } }, 9000);
+      ifr.onload = () => { clearTimeout(ouvreRdv.t); cz.hidden = true; };
+    }
     rdvRetour = dep || document.activeElement;
     rdv.removeAttribute('inert'); rdv.setAttribute('aria-hidden', 'false'); rdv.classList.add('on'); document.documentElement.classList.add('rdv-ouvert');
     setTimeout(() => { const b = $('button[data-ferme]', rdv); if (b) b.focus({ preventScroll: true }); }, 60);
@@ -774,7 +782,7 @@
           ${ev.map((e, j) => { const id = `${cible}${m.getMonth() + 1}-${j}`; return `<label class="ev3"><input type="checkbox" data-id="${id}"${choix.coche[id] ? ' checked' : ''}><span class="k" aria-hidden="true"></span><span><b>${esc(e[1])}</b><small>${e[0]} ${esc(mNom(m))} · ${esc(PACKS[e[2]].l)}</small></span><span class="u">${uPack(e[2])} u.</span></label>`; }).join('')}
           ${aj.length ? '<p class="cap" style="margin-top:6px">Vos temps forts</p>' : ''}
           ${aj.map(([e, i]) => `<div class="ev3 aj"><span class="k on" aria-hidden="true"></span><span><b>${esc(e.t)}</b><small>${esc(PACKS[e.k].l)}</small></span><button type="button" class="u x" data-retire="${i}" aria-label="Retirer : ${esc(e.t)}"><svg class="i"><use href="#x"/></svg></button></div>`).join('')}
-          <form class="ajout" data-m="${mi}"><label class="sr" for="aj-t-${mi}">Votre temps fort en ${esc(mNom(m))}</label><input id="aj-t-${mi}" maxlength="60" placeholder="Ajouter votre temps fort" required><label class="sr" for="aj-k-${mi}">Ce qu’il demande</label><select id="aj-k-${mi}">${opts}</select><button type="submit" class="ic" aria-label="Ajouter"><svg class="i"><use href="#pl"/></svg></button></form>
+          <form class="ajout" data-m="${mi}"><p class="aj-h">Ajouter un temps fort en ${esc(mNom(m))}</p><label class="sr" for="aj-t-${mi}">Nom du temps fort</label><input id="aj-t-${mi}" maxlength="60" placeholder="${cible === 'e' ? 'Ex. : salon, lancement' : 'Ex. : fête du port, travaux'}" required><label class="sr" for="aj-k-${mi}">Ce qu’il demande</label><select id="aj-k-${mi}">${opts}</select><button type="submit" class="bt sm"><svg class="i" aria-hidden="true"><use href="#pl"/></svg>Ajouter</button></form>
         </section>`;
       }).join('');
       somme();
@@ -801,9 +809,15 @@
         if (selC.horsCadre) som.innerHTML = titre + `<p><b>Étude personnalisée nécessaire.</b> Même avec la formule la plus complète et le report, un mois dépasserait de plus de 6 unités : ce trimestre se chiffre après un échange.</p>`;
         else {
           const t = selC.sim; const hors = t.reduce((s, x) => s + x.hors, 0);
-          som.innerHTML = titre + `<div class="cal-r"><div><p class="cap">Chaque mois</p><b>${esc(selC.titre.replace(/^Formule /, ''))}</b><span>${eur(selC.mensuel)} € HT par mois</span><small>Le forfait, fixe : la formule la moins chère pour ce trimestre.</small></div>
-            <div class="${hors ? 'x' : 'ok'}"><p class="cap">Sur le trimestre</p><b>${hors ? `+ ${hors} unité${hors > 1 ? 's' : ''}` : 'Aucun dépassement'}</b><span>${hors ? `${eur(hors * O.unite_sup)} € HT, une fois` : 'Le forfait et le report couvrent chaque mois'}</span><small>${hors ? 'Hors forfait, facturé seulement sur accord écrit.' : 'Rien à payer en plus du forfait.'}</small></div></div>
-            <details class="cal-d"><summary>Le calcul mois par mois</summary><div class="cal-wrap"><table class="cal-t"><thead><tr><th scope="col">Mois</th><th scope="col">Besoin</th><th scope="col">Inclus</th><th scope="col">Report reçu</th><th scope="col">Utilisées</th><th scope="col">Hors forfait</th><th scope="col">Reportées</th></tr></thead><tbody>
+          const cout3 = selC.mensuel * 3 + hors * O.unite_sup, bes = t.map(x => x.besoin), rep = t.map(x => x.reporte);
+          som.innerHTML = titre + `<dl class="cal-r4">
+            <div><dt>Vos besoins</dt><dd><b>${bes.join(' · ')}</b><span>unités, de ${esc(mNom(MOIS3[0]))} à ${esc(mNom(MOIS3[2]))}</span></dd></div>
+            <div class="fc"><dt>Formule conseillée</dt><dd><b>${esc(selC.titre.replace(/^Formule /, ''))}</b><span>${eur(selC.mensuel)} € HT par mois, ${selC.capacite} unités</span></dd></div>
+            <div><dt>Reports</dt><dd><b>${rep[0]} · ${rep[1]}</b><span>unités reportées sur le mois suivant</span></dd></div>
+            <div class="${hors ? 'x' : ''}"><dt>Dépassement</dt><dd><b>${hors ? `${hors} unité${hors > 1 ? 's' : ''}` : 'Aucun'}</b><span>${hors ? `${eur(hors * O.unite_sup)} € HT, sur accord écrit` : 'le forfait et le report suffisent'}</span></dd></div>
+            <div class="tt"><dt>Coût du trimestre</dt><dd><b>${eur(cout3)} € HT</b><span>3 × ${eur(selC.mensuel)} €${hors ? ` + ${eur(hors * O.unite_sup)} € de dépassement` : ''}</span></dd></div>
+          </dl>
+            <details class="cal-d"><summary>Le détail mois par mois</summary><div class="cal-wrap"><table class="cal-t"><thead><tr><th scope="col">Mois</th><th scope="col">Besoin</th><th scope="col">Inclus</th><th scope="col">Report reçu</th><th scope="col">Utilisées</th><th scope="col">Hors forfait</th><th scope="col">Reportées</th></tr></thead><tbody>
             ${t.map((x, i) => `<tr><td>${esc(mNom(MOIS3[i]))}</td><td>${x.besoin}</td><td>${x.inclus}</td><td>${x.report}</td><td>${x.utilise}</td><td class="${x.hors ? 'x' : ''}">${x.hors}</td><td>${i < 2 ? x.reporte : `${x.reporte}*`}</td></tr>`).join('')}
             </tbody></table></div><p class="note" style="margin-top:8px">Le report reçu est consommé en premier ; les unités non utilisées d’un mois sont reportées une seule fois. * Reportées sur le mois suivant le trimestre.</p></details>`;
         }
@@ -1323,7 +1337,8 @@
       $('[data-sv]', zq).addEventListener('click', suivante);
       if (iq === 0) compte('diagnostic-debut', true);
     };
-    const suivante = () => { sensQ = 1; if (iq < Q.length - 1) { iq++; questions(); } else { compte('diagnostic-fin', true); montre(2); } };
+    let seule = false;
+    const suivante = () => { sensQ = 1; if (seule && Q[iq].id !== 'type') { seule = false; montre(2); return; } if (iq < Q.length - 1) { iq++; questions(); } else { compte('diagnostic-fin', true); montre(2); } };
 
     /* étape 2 : la recommandation, affinée en direct */
     const estime = () => {
@@ -1357,7 +1372,9 @@
       if (r && !r.horsCadre) {
         const c = couts(r.prix, r.f);
         nom = r.f.nom + (r.sup ? ` + ${r.sup} unité${r.sup > 1 ? 's' : ''}` : ''); px = `${eur(r.prix)} € HT par mois`;
-        expl = `Environ ${need} unités par mois : ${r.f.nom} en inclut ${r.f.unites}, avec des demandes courantes traitées en ${r.f.delai}.`;
+        const ug = urgDe() && !r.f.urgences_incluses ? ` (dont ${urgDe()} pour les urgences)` : '';
+        expl = r.sup ? `Environ ${r.u} unités par mois${ug} : ${r.f.nom} en inclut ${r.f.unites}, et ${r.sup} unité${r.sup > 1 ? 's' : ''} en plus à ${O.unite_sup} € reviennent moins cher que ${r.suivant ? r.suivant.f.nom : 'la formule suivante'}. Demandes courantes traitées en ${r.f.delai}.`
+          : `Environ ${r.u} unités par mois${ug} : ${r.f.nom} en inclut ${r.f.unites}, avec des demandes courantes traitées en ${r.f.delai}.`;
         if (bud && c.an12 > bud) expl += ` C’est au-dessus de l’enveloppe indiquée : en ciblant vos canaux prioritaires, Essentiel (${eur(FORM[0].prix * 12)} € HT par an avec ${O.engagement_long} mois d’engagement) reste une base solide.`;
       }
       const sel = r ? selDepuisPanier(p, urgDe(), 'diagnostic') : null;
@@ -1372,7 +1389,9 @@
           <div class="affine"><p class="cap">Pour affiner : ce qui coince le plus (trois au plus)</p><div class="choix">${DIFF.map(([k, l]) => `<label><input type="checkbox" value="${k}" ${st.diff.includes(k) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div>
           <label class="cap" for="est-bud" style="margin-top:6px">Enveloppe annuelle, si elle est fixée</label><select class="in" id="est-bud">${BUD.map(([k, l]) => `<option value="${k}"${st.budget === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
       </div>
-      <div class="est-n"><button type="button" class="est-retour" data-aller="1"><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>Modifier mes réponses</button></div>`;
+      <div class="reps" aria-label="Vos réponses"><span class="cap">Vos réponses</span>${Q.map((q, k) => { const os = opts(q), val = v[q.id]; const l = Array.isArray(val) ? (val.length ? val.map(x => (os.find(o => o[0] === x) || [, x])[1]).join(', ') : 'aucun') : ((os.find(o => o[0] === val) || [, '…'])[1]); return `<button type="button" class="rep" data-q="${k}"><small>${esc(q.t.replace(/ ?[?…]$/, ''))}</small>${esc(l)}</button>`; }).join('')}</div>
+      <div class="est-n"><button type="button" class="est-retour" data-aller="1"><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>Reprendre les questions</button></div>`;
+      $$('.rep', z).forEach(b => b.addEventListener('click', () => { iq = +b.dataset.q; sensQ = -1; seule = true; montre(1, -1); }));
       $$('.affine input', z).forEach(inp => inp.addEventListener('change', () => {
         let a = $$('.affine input:checked', z).map(x => x.value);
         if (a.length > 3) { inp.checked = false; a = a.filter(x => x !== inp.value); toast('Trois réponses au maximum.'); }
@@ -1451,15 +1470,17 @@
       const d = DUREES[+dur.value]; const p = prixRelais(d); const s = (sit.find(x => x.checked) || sit[0]).value;
       dur.style.setProperty('--p', (+dur.value / (DUREES.length - 1) * 100) + '%'); durO.textContent = d.l;
       let d0 = new Date(deb.value + 'T12:00:00'); if (isNaN(d0)) d0 = new Date(min); if (d0 < min) d0 = new Date(min); while (!ouvre(d0)) d0.setDate(d0.getDate() + 1); if (deb.value !== isoJour(d0)) deb.value = isoJour(d0);
-      const fin = new Date(d0); fin.setDate(fin.getDate() + p.jours);
+      // fin du relais : la veille du même jour, n semaines ou n mois plus tard ; la passation a lieu le dernier jour ouvré
+      const fin = new Date(d0); if (d.sem) fin.setDate(fin.getDate() + d.sem * 7 - 1); else { fin.setMonth(fin.getMonth() + d.mois); fin.setDate(fin.getDate() - 1); }
+      while (!ouvre(fin)) fin.setDate(fin.getDate() - 1);
       const appui = app.checked && s !== 'ete', appJ = appui ? 91 : 0;
       const prep = 14, total = prep + p.jours + appJ + 7;
       const x = j => (j / total * 100);
       const lab = (t, w) => w > 9 ? t : '';
       const ess = O.formules[0];
       const tt = p.total + (appui ? ess.prix * 3 : 0); if (!tot.dataset.v) tot.dataset.v = tt; tween(tot, tt);
-      det.innerHTML = `${esc(p.txt)}${appui ? `, puis ${eur(ess.prix)} € par mois pendant 3 mois d’appui` : ''}. Mise en place incluse. Environ ${p.unites} unités de production${appui ? ` pendant l’absence` : ''}.`;
-      const fin2 = new Date(fin); if (appui) fin2.setDate(fin2.getDate() + appJ);
+      det.innerHTML = `Relais : ${esc(p.txt)}, soit ${eur(p.total)} € HT, mise en place incluse, environ ${p.unites} unités de production.${appui ? `<br>Appui : 3 × ${eur(ess.prix)} € par mois, soit ${eur(ess.prix * 3)} € HT après le relais.` : ''}`;
+      const fin2 = new Date(fin); if (appui) { fin2.setMonth(fin2.getMonth() + 3); while (!ouvre(fin2)) fin2.setDate(fin2.getDate() - 1); }
       // trois repères lisibles, le détail reste dans le calendrier plus bas
       if (ech) ech.innerHTML = [['Démarrage', fdate(d0)], [appui ? 'Fin du relais' : 'Fin et passation', fdate(fin)]].concat(appui ? [['Fin de l’appui', fdate(fin2)]] : []).map(([l, d]) => `<li><span>${esc(l)}</span><b>${esc(d)}</b></li>`).join('');
       const acc = new Date(d0); acc.setDate(acc.getDate() - 14);
@@ -1658,7 +1679,7 @@
   }
 
   /* mentions légales : tout effacer d'un geste */
-  $$('[data-efface]').forEach(b => b.addEventListener('click', () => { try { localStorage.removeItem(CLE); } catch (e) {} etat = {}; perso.nom = ''; $$('.perso-n').forEach(i => { i.value = ''; }); toast('Les informations gardées sur cet appareil sont effacées.'); }));
+  $$('[data-efface]').forEach(b => b.addEventListener('click', () => { try { localStorage.removeItem(CLE); ['fil.intro', 'fil.nav', 'fil.hist'].forEach(k => sessionStorage.removeItem(k)); } catch (e) {} etat = {}; perso.nom = ''; $$('.perso-n').forEach(i => { i.value = ''; }); toast('Les informations gardées sur cet appareil sont effacées.'); }));
 
   /* aperçu (artefact) : ni envoi réel, ni impression, rendez-vous dans un nouvel onglet */
   if (T.preview) {
