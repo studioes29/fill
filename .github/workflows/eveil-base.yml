@@ -1,0 +1,15 @@
+name: Garder la base de l'espace éveillée
+# Le plan gratuit de Supabase met en pause un projet resté sept jours sans activité.
+# Une lecture publique par jour (la version de l'offre) suffit à l'éviter. Aucune clé secrète :
+# la clé publiable est déjà dans le code de l'espace.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+jobs:
+  eveil:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS "https://nfnbseonwgmtouxsaajd.supabase.co/rest/v1/offre_version?select=id&active=eq.true" \
+            -H "apikey: sb_publishable_MxiZLadQLogoTmBYHi0ZJw_mNmcW38Q"

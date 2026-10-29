@@ -545,7 +545,7 @@
      VOTRE NOM SUR LES SUPPORTS
      ================================================================ */
   const perso = { nom: (etat.perso && etat.perso.nom) || '' };
-  const nomDefaut = () => cible === 'e' ? 'Atelier Kerlan' : 'Commune de Kerlan';
+  const nomDefaut = () => cible === 'e' ? 'Atelier du Port' : 'Commune de Saint-Ivenec';
   const nomP = () => (perso.nom || '').trim() || nomDefaut();
   const nomCourt = () => nomP().replace(/^(commune|ville|mairie)\s+(de\s+|d[’']|du\s+)/i, '');
   const initiales = () => { const m = nomCourt().replace(/^(atelier|société|entreprise|groupe)\s+/i, '').split(/[\s'’-]+/).filter(Boolean); return ((m[0] || 'K')[0] + (m[1] ? m[1][0] : ((m[0] || 'KE')[1] || ''))).toUpperCase(); };
