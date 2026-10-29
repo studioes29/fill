@@ -2057,3 +2057,11 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
 .rdv-z{background:#fff}
 .eng .eng-o.on{background:var(--cible2)!important}
 .fos-fin .eng{border-top:0;padding-top:0;margin-top:0}
+/* accès à l'espace client : lien discret dans l'en-tête, rond à icône sur téléphone */
+.hd-ec{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-radius:999px;font-size:15px;font-weight:550;color:inherit;transition:background .3s,transform .4s var(--sp)}
+.hd-ec .i{width:20px;height:20px}
+.hd-ec:hover{background:var(--hd-ln,rgba(26,26,26,.08))}
+.hd-ec:active{transform:scale(.94)}
+@media (max-width:700px){.hd-ec{width:44px;padding:0;justify-content:center;box-shadow:inset 0 0 0 1.5px currentColor}.hd-ec span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
+.hd.menu-ouvert .hd-ec{opacity:0;pointer-events:none}
+.ec-ess{margin-top:12px}
