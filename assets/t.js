@@ -1703,3 +1703,6 @@
   }
 
 })();
+
+/* formulaire du simulateur de relais : le calcul se fait sur place, la page ne se recharge pas */
+document.querySelectorAll('form.rl-c').forEach(f => f.addEventListener('submit', e => e.preventDefault()));
