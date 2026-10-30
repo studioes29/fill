@@ -1548,7 +1548,7 @@
   }
 
   /* ================================================================
-     ENVOI DES FORMULAIRES (FormSubmit, comme studioes.fr)
+     ENVOI DES FORMULAIRES (service « formulaire » hébergé chez Supabase)
      ================================================================ */
   /* aperçu : aucune demande ne part, et la page le dit clairement */
   const LIB = { nom: 'Nom', fonction: 'Fonction', structure: 'Structure', type: 'Type', email: 'Courriel', tel: 'Téléphone', demarrage: 'Démarrage souhaité', contact: 'Préférence', message: 'Message' };
