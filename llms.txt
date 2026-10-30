@@ -1,0 +1,27 @@
+# Fill
+
+> Fill est un service de communication externalisé pour les communes, les collectivités et les PME, partout en France. Il tient la communication courante d'une structure qui n'a pas de service communication, dont le service manque de temps, ou dont la personne chargée de la communication est absente. Fill est un service de Studio ES (studioes.fr), créé par Ewen Soupault, qui pratique la communication territoriale depuis 2020, en Bretagne.
+
+Ce que Fill réalise : actualités et agenda du site, publications sur les réseaux sociaux, newsletters, affiches et visuels, pages du bulletin municipal, communiqués de presse, reportages photo (formules Régulier et Soutenu). Pas de vidéo. Le travail se fait à distance ; chaque demande est déposée, suivie et validée dans un espace client en ligne, sans rien publier sans accord écrit.
+
+## Formules et prix publics
+
+- Essentiel : 490 € par mois, 10 unités. Petite commune ou PME qui veut une présence tenue à jour.
+- Régulier : 990 € par mois, 22 unités. Commune de 2 000 à 8 000 habitants, PME active, office de tourisme ; reportage photo possible.
+- Soutenu : 1 890 € par mois, 45 unités. Commune de plus de 8 000 habitants sans service, intercommunalité.
+- Relais : 690 € par semaine (deux semaines au moins) ou 2 490 € par mois, sans abonnement. Remplacement temporaire quand le poste de chargé de communication est vide : vacance pendant un recrutement, départ ou mutation, congé maternité, paternité ou parental, arrêt maladie. Démarrage en 10 jours ouvrés, passation préparée au retour ou à l'arrivée.
+- Engagement de 6 mois (mise en place facturée : 490 € avec Essentiel, 990 € avec Régulier ou Soutenu) ou de 12 mois (mise en place offerte), puis résiliable chaque mois avec un mois de préavis.
+- TVA non applicable (art. 293 B du CGI). Collectivités : facture à terme échu sur Chorus Pro. Entreprises : paiement mensuel par carte.
+
+## Pages
+
+- [Accueil](https://fill.studioes.fr/): présentation du service
+- [Formules et tarifs](https://fill.studioes.fr/formules/): les trois abonnements, les unités, ce qui est compris
+- [Collectivités](https://fill.studioes.fr/collectivites/): communes et intercommunalités, avec ou sans service communication
+- [Entreprises](https://fill.studioes.fr/entreprises/): PME sans personne dédiée à la communication
+- [Relais](https://fill.studioes.fr/relais/): remplacement pendant une absence ou une vacance de poste
+- [Fonctionnement](https://fill.studioes.fr/fonctionnement/): demandes, délais, validations, espace client
+- [Estimer son besoin](https://fill.studioes.fr/diagnostic/): cinq questions pour une formule recommandée
+- [Questions fréquentes](https://fill.studioes.fr/questions/)
+- [Conditions générales](https://fill.studioes.fr/conditions/)
+- [Contact et rendez-vous](https://fill.studioes.fr/contact/): contact@studioes.fr, 06 51 22 21 07
