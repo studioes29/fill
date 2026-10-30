@@ -32,21 +32,18 @@ const SIGNATURE: Record<string, string> = {
   studio: "Ewen Soupault\nPhotographie de reportage, sites et applications\n06 51 22 21 07 · studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
   fill: "Ewen Soupault\nFill, service de communication externalisé\n06 51 22 21 07 · fill.studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
 };
-// signature HTML : logo, nom, métier, contacts (images hébergées sur les sites)
+// signature HTML : carte aux couleurs de la marque (nom et métier en image pour garder les polices des sites,
+// filigrane du logo à droite), contacts en vrai texte cliquable
 const signatureHtml = (marque: string) => {
   const fill = marque === "fill";
-  const logo = fill
-    ? `<img src="https://fill.studioes.fr/assets/mail/signature.png" width="62" height="32" alt="Fill" style="display:block;width:62px;height:32px;border:0">`
-    : `<img src="https://studioes.fr/images/signature.png" width="20" height="48" alt="Studio ES" style="display:block;width:20px;height:48px;border:0">`;
-  const role = fill ? "Service de communication externalisé" : "Photographie de reportage, sites et applications";
+  const bg = fill ? "#EFE9FF" : "#F0EEE9";
+  const base = fill ? "https://fill.studioes.fr/assets/mail/signature" : "https://studioes.fr/images/signature";
+  const alt = fill ? "Ewen Soupault, Fill, service de communication externalisé" : "Ewen Soupault, Studio ES, photographie, sites et applications";
   const site = fill ? ["fill.studioes.fr", "https://fill.studioes.fr/"] : ["studioes.fr", "https://studioes.fr/"];
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-collapse:collapse">
-<tr><td style="padding:2px 18px 2px 0;border-right:1px solid #E2DED5;vertical-align:middle">${logo}</td>
-<td style="padding:0 0 0 18px;vertical-align:middle;font-family:Arial,Helvetica,sans-serif">
-<div style="font:700 15px/1.3 Arial,Helvetica,sans-serif;color:#141414">Ewen Soupault</div>
-<div style="font:italic 14px/1.4 Georgia,'Times New Roman',serif;color:#6A6A66;margin-top:2px">${role}</div>
-<div style="font:13px/1.5 Arial,Helvetica,sans-serif;color:#141414;margin-top:8px"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${site[1]}" style="color:#141414;text-decoration:underline">${site[0]}</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://cal.com/studioes/30min" style="color:#141414;text-decoration:underline">Prendre rendez-vous</a></div>
-</td></tr></table>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-collapse:separate;border-spacing:0">
+<tr><td bgcolor="${bg}" style="background:${bg};border-radius:18px 0 0 0;padding:0;vertical-align:top;line-height:0"><img src="${base}-nom.png" width="370" height="84" alt="${alt}" style="display:block;width:370px;height:84px;border:0"></td>
+<td rowspan="2" width="130" style="padding:0;vertical-align:top;line-height:0"><img src="${base}-filigrane.png" width="130" height="122" alt="" style="display:block;width:130px;height:122px;border:0"></td></tr>
+<tr><td bgcolor="${bg}" style="background:${bg};border-radius:0 0 0 18px;padding:0 0 0 22px;height:38px;vertical-align:top;font:13px/1.4 Arial,Helvetica,sans-serif;color:#141414"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${site[1]}" style="color:#141414;text-decoration:underline">${site[0]}</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://cal.com/studioes/30min" style="color:#141414;text-decoration:underline">Prendre rendez-vous</a></td></tr></table>`;
 };
 
 const MAUVAIS = new Set(["hardBounces", "hard_bounce", "blocked", "spam", "invalid", "unsubscribed", "unsubscribe", "error"]);
