@@ -2,7 +2,7 @@
 (() => {
 const host = document.querySelector('[data-banniere]');
 if (!host) return;
-const DUR = 38.6;
+let DUR = 40;
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const NOTIFS = [
@@ -139,8 +139,11 @@ let SZ = {};
 function measure() {
   qa('[data-lv],[data-rev],[data-team],.bn-req,[data-fb]').forEach(e => { e.style.visibility = 'visible'; e.style.transform = 'none'; });
   qa('[data-lv]').forEach(e => SZ[e.dataset.lv] = [e.offsetWidth, e.offsetHeight]);
-  const qe = q('.bn-q'), sr = ST.getBoundingClientRect(), k = 1000 / sr.width, r = qe.getBoundingClientRect();
-  QX = (r.left - sr.left + r.width * .62) * k; QY = (r.bottom - sr.top - r.height * .22) * k;
+  // positions en unités de scène, indépendantes des transformations en cours (entrée de page comprise)
+  const off = el => { let x = 0, y = 0, e = el; while (e && e !== ST) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; } return [x, y]; };
+  const ctr = el => { const [x, y] = off(el); return [x + el.offsetWidth / 2, y + el.offsetHeight / 2]; };
+  const qe = q('.bn-q'), [qx, qy] = off(qe); QX = qx + qe.offsetWidth * .62; QY = qy + qe.offsetHeight * .78;
+  SEND = ctr(q('[data-send]')); const v = ctr(q('[data-val]')); VAL = [v[0] + 500, v[1] + 380];
 }
 
 function legacy(t) {
@@ -148,10 +151,10 @@ function legacy(t) {
   // fond : bascule lavande au moment du « Confiez-la à Fill »
 
   // ---------- A. les demandes s'accumulent (0 à 5.9)
-  const nts = qa('.bn-nt'), suck = eio(P(t, 5.45, 5.95));
+  const nts = qa('.bn-nt'), suck = eio(P(t, 5.3, 5.6));
   let arrived = 0;
   nts.forEach((el, i) => {
-    if (t < NT[i] || t >= 5.95) { hide(el); return; }
+    if (t < NT[i] || t >= 5.6) { hide(el); return; }
     arrived++;
     const p = bounce(P(t, NT[i], NT[i] + .62)), land = PILE[i];
     const hit = t >= 3.8 ? Math.sin((t - 3.8) * 70) * 10 * (1 - P(t, 3.8, 4.2)) : 0;
@@ -159,12 +162,12 @@ function legacy(t) {
     S(el, { x: land[0] + hit + (500 - 500) * suck, y: y * (1 - suck) + 520 * suck, r: land[2] * p * (1 - suck) + (1 - p) * land[2] * 4, s: 1 - .85 * suck, o: P(t, NT[i], NT[i] + .06) * (1 - suck) });
   });
   const badge = q('.bn-badge');
-  if (t >= 0.95 && t < 5.95) { const n = Math.round(arrived + 4 * P(t, 3.5, 4.6)); badge.textContent = n;
+  if (t >= 0.95 && t < 5.6) { const n = Math.round(arrived + 4 * P(t, 3.5, 4.6)); badge.textContent = n;
     const pop = back(P(t, .95, 1.3)); S(badge, { x: 880, y: 262, s: pop * (1 + .12 * Math.max(0, Math.sin((t - .95) * 9)) * (1 - P(t, 4.6, 4.8))) * (1 - suck), o: 1 - suck }); } else hide(badge);
   // page Facebook endormie (A) puis réveillée (E)
   const fb = q('[data-fb]');
   const fbOld = fb.querySelector('.bx-old'), fbNew = fb.querySelector('.bx-new'), fbIm = fb.querySelector('.bx-im'), fbLk = fb.querySelector('.bx-lk');
-  if (t >= 3.55 && t < 5.95) {
+  if (t >= 3.55 && t < 5.6) {
     fbOld.hidden = false; fbNew.hidden = true; fbIm.className = 'bx-im'; fbIm.textContent = 'Bonne année !'; fbLk.textContent = '3 J’aime';
     const p = eio(P(t, 3.55, 3.8)), set = back(P(t, 3.78, 4.1));
     S(fb, { x: 300, y: 380 + suck * 120, r: 12 * (1 - p) - 4 * p, s: (1.7 - .7 * p) * (1 + .04 * (1 - set) * (t > 3.78 ? 1 : 0)) * (1 - .8 * suck), o: P(t, 3.55, 3.62) * (1 - suck) });
@@ -245,32 +248,42 @@ function legacy(t) {
 
   // ---------- curseur
   let c = null, click = null;
-  if (t >= 9.0 && t < 10.0) { c = curPath(t, [[9.0, 980, 1060], [9.6, 800, 885]]); click = 9.72; }
-  else if (t >= 13.5 && t < 15.0) { c = curPath(t, [[13.5, 980, 1060], [14.2, 760, 885]]); click = 14.35; }
+  if (t >= 9.0 && t < 10.0) { c = curPath(t, [[9.0, 1010, 1080], [9.6, SEND[0] - 8, SEND[1] - 5]]); click = 9.72; }
+  else if (t >= 13.5 && t < 15.0) { c = curPath(t, [[13.5, 1010, 1080], [14.2, VAL[0] - 8, VAL[1] - 5]]); click = 14.35; }
   const cur = q('.bn-cur'), ring = q('.bn-ring');
-  if (c) { S(cur, { x: c.x, y: c.y }); const rp = P(t, click, click + .4); S(ring, { x: c.x - 40, y: c.y - 40, s: .4 + rp, o: rp > 0 && rp < 1 ? 1 - rp : 0 }); }
+  if (c) { S(cur, { x: c.x, y: c.y, s: t > click - .06 && t < click + .1 ? .9 : 1 }); const rp = P(t, click, click + .4); S(ring, { x: c.x + 8 - 40, y: c.y + 5 - 40, s: .4 + rp, o: rp > 0 && rp < 1 ? 1 - rp : 0 }); }
   else { hide(cur); hide(ring); }
 }
 
 // ---------- régie : temps réel → temps des scènes, intro, fond, conclusion
-const MAP = [[3.4, 0], [10.4, 5.6], [12.9, 7.35], [31.5, 21.35], [34.4, 23.55], [34.8, 23.95]];
+// vitesses par séquence (réel / scène) et temps de pause pour laisser lire avant chaque sortie
+const INTRO = 4.0;
+const SEG = [[0, 5.6, 1.25], [5.6, 7.35, 1.45], [7.35, 10.12, 1.55], [10.12, 21.35, 1.33], [21.35, 23.95, 1.3]];
+const HOLDS = [[4.6, .8], [6.95, .7], [10.62, .35], [11.17, .35], [11.72, .35], [12.72, 1.1], [15.25, .7], [18.05, .9], [21.0, .6], [23.35, .9]];
+const MAP = [[INTRO, 0]];
+(() => { let r = INTRO, L = 0; const stops = [...new Set([...SEG.flatMap(s => [s[0], s[1]]), ...HOLDS.map(h => h[0])])].sort((a, b) => a - b);
+  for (const s of stops) { if (s <= L) { const h = HOLDS.find(h => h[0] === s); if (h && s === L) { r += h[1]; MAP.push([r, L]); } continue; }
+    const sp = SEG.find(g => L >= g[0] && L < g[1])[2]; r += (s - L) * sp; L = s; MAP.push([r, L]);
+    const h = HOLDS.find(h => h[0] === s); if (h) { r += h[1]; MAP.push([r, L]); } } })();
+const OUT = MAP[MAP.length - 1][0] - .2; DUR = OUT + 5.4;
 function toLegacy(t) {
-  if (t < MAP[0][0] || t >= MAP[MAP.length - 1][0]) return 23.99;
+  if (t < MAP[0][0] || t >= OUT) return 23.99;
   for (let i = 1; i < MAP.length; i++) if (t < MAP[i][0]) { const [a, la] = MAP[i - 1], [b, lb] = MAP[i]; return la + (t - a) / (b - a) * (lb - la); }
+  return 23.99;
 }
 // fonds : [début en temps réel, couleur]
-function fromLegacy(L) { for (let i = 1; i < MAP.length; i++) if (L <= MAP[i][1]) { const [a, la] = MAP[i - 1], [b, lb] = MAP[i]; return a + (L - la) / (lb - la) * (b - a); } return MAP[MAP.length - 1][0]; }
-let QX = 640, QY = 600; // point du « ? », mesuré au démarrage
+function fromLegacy(L) { for (let i = 1; i < MAP.length; i++) if (L <= MAP[i][1] && MAP[i][1] > MAP[i - 1][1]) { const [a, la] = MAP[i - 1], [b, lb] = MAP[i]; return a + (L - la) / (lb - la) * (b - a); } return MAP[MAP.length - 1][0]; }
+let QX = 640, QY = 600, SEND = [830, 880], VAL = [720, 715]; // mesurés au démarrage
 const TR = () => [
-  [3.4, 'iris', '#1a1a1a', QX, QY],
+  [INTRO, 'iris', '#1a1a1a', QX, QY],
   [fromLegacy(5.6), 'wipe', '#b8a4ff'],
   [fromLegacy(7.35), 'wipe', '#f8f5f2'],
-  [fromLegacy(10.12), 'iris', '#ffe0d5', 830, 880],
+  [fromLegacy(10.12), 'iris', '#ffe0d5', SEND[0], SEND[1]],
   [fromLegacy(13.07), 'wipe', '#dfeee6'],
   [fromLegacy(15.67), 'iris', '#ece6ff', 270, 640],
   [fromLegacy(18.52), 'wipe', '#f8f5f2'],
   [fromLegacy(21.37), 'iris', '#fff1c9', 500, 500],
-  [34.6, 'wipe', '#1a1a1a'],
+  [OUT, 'wipe', '#1a1a1a'],
   [DUR, 'wipe', '#ff8a6b'],
 ];
 const wp = () => ST.querySelector('[data-wp]'), iris = () => ST.querySelector('.bn-iris');
@@ -289,18 +302,18 @@ function seek(t) {
   t = ((t % DUR) + DUR) % DUR; bg(t); legacy(toLegacy(t));
   // intro : « Pas de service com ? »
   const intro = q('.bn-intro');
-  if (t < 3.4) { S(intro, {}); words(intro.querySelector('.bn-big'), t, .3, .2, .7);
+  if (t < INTRO) { S(intro, {}); words(intro.querySelector('.bn-big'), t, .3, .2, .7);
     intro.querySelectorAll('.bn-l').forEach((l, i) => { const a = .9 + i * .07, p = back(P(t, a, a + .55)), wob = t > 1.8 ? Math.sin(t * 7 + i * 1.3) * 2.5 : 0;
       l.style.transform = `translateY(${(1 - p) * -140}%) rotate(${(1 - p) * (i % 2 ? 24 : -18) + wob}deg)`; l.style.opacity = P(t, a, a + .1); });
     const qq = back(P(t, 1.55, 1.95)); const qe = intro.querySelector('.bn-q'); qe.style.transform = `scale(${qq}) rotate(${(1 - qq) * -30}deg)`; qe.style.opacity = P(t, 1.55, 1.62);
     const e = eo(P(t, .1, .5)); S(intro.querySelector('.bn-eye'), { y: (1 - e) * 16, o: e }); } else hide(intro);
   // conclusion : logo et signature
   const out = q('.bn-out');
-  if (t >= 34.6) { const f = 1 - eio(P(t, 38.25, 38.6)); S(out, { o: f });
-    const lp = back(P(t, 34.75, 35.25)); S(q('.bn-logo'), { y: (1 - lp) * 40, s: .9 + .1 * lp, o: P(t, 34.75, 34.9) });
-    q('[data-l1]').style.strokeDashoffset = 1 - eio(P(t, 34.95, 35.45)); q('[data-l2]').style.strokeDashoffset = 1 - eio(P(t, 35.35, 36.1));
-    words(q('.bn-tag'), t, 35.7, .09, .6);
-    const u = eo(P(t, 36.5, 36.9)); S(q('.bn-url'), { y: (1 - u) * 14, o: u });
+  if (t >= OUT) { const o = t - OUT; S(out, {});
+    const lp = back(P(o, .15, .65)); S(q('.bn-logo'), { y: (1 - lp) * 40, s: .9 + .1 * lp, o: P(o, .15, .3) });
+    q('[data-l1]').style.strokeDashoffset = 1 - eio(P(o, .4, .95)); q('[data-l2]').style.strokeDashoffset = 1 - eio(P(o, .85, 1.7));
+    words(q('.bn-tag'), o, 1.4, .09, .6);
+    const u = eo(P(o, 2.3, 2.7)); S(q('.bn-url'), { y: (1 - u) * 14, o: u });
   } else hide(out);
 }
 
@@ -323,7 +336,7 @@ new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? resum
 document.addEventListener('visibilitychange', () => document.hidden ? stop() : resume());
 window.__banniere = { seek, DUR, setPlaying };
 
-const start = () => { measure(); if (RM) { tPause = 30.2; seek(30.2); setPlaying(false); } else { seek(0); setPlaying(true); } };
+const start = () => { measure(); if (RM) { tPause = fromLegacy(20.6); seek(tPause); setPlaying(false); } else { seek(0); setPlaying(true); } };
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
   const im = new Image(); im.onload = im.onerror = start; im.src = './assets/img/ev-asso-s.webp';
 });
