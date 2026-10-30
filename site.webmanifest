@@ -1,0 +1,17 @@
+{
+  "name": "Fill · Communication externalisée pour collectivités et PME",
+  "short_name": "Fill",
+  "description": "Service de communication externalisé pour les communes, collectivités et PME, à prix fixe.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#F8F5F2",
+  "theme_color": "#F8F5F2",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

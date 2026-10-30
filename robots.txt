@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /espace/
 
 Sitemap: https://fill.studioes.fr/sitemap.xml
