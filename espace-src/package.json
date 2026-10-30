@@ -1,0 +1,13 @@
+{
+  "name": "fill-espace-src",
+  "private": true,
+  "type": "module",
+  "description": "Source maintenable de l'Espace Fill (fill.studioes.fr/espace), reconstituée depuis le bundle en ligne.",
+  "scripts": {
+    "construire": "node construire.mjs",
+    "verifier": "node tests/verifier.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}
