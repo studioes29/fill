@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://nfnbseonwgmtouxsaajd.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F8F5F2">
+<title>Règlements · Espace Fill</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="stylesheet" href="./assets/index-01K12Ra9.css">
+<style>
+  .rv{max-width:1180px;margin:0 auto;padding:clamp(28px,5vw,64px) 16px 80px;display:grid;gap:28px}
+  .rv-h{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px}
+  .rv-h p{margin:10px 0 0;max-width:46em}
+  .rv table{width:100%;border-collapse:collapse;font-size:14.5px}
+  .rv th{text-align:left;font-weight:600;color:var(--mu);padding:0 10px 10px;border-bottom:1px solid var(--ligne2,#e2dbd3);white-space:nowrap}
+  .rv td{padding:12px 10px;border-bottom:1px solid var(--ligne,#efe9e3);vertical-align:top}
+  .rv td small{display:block;color:var(--mu);font-size:13px;margin-top:2px}
+  .rv .defile{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .rv .et{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+  .rv .ok{background:#e3f1e3;color:#2f6b35}
+  .rv .at{background:#ffe0d5;color:#9a4232}
+  .rv .ne{background:#efe9e3;color:#6b6560}
+  .rv .acts{display:flex;flex-wrap:wrap;gap:8px}
+  .rv .lien-p{display:flex;gap:8px;align-items:center;min-width:250px}
+  .rv .lien-p input{flex:1;min-width:0;min-height:38px;padding:6px 10px;font-size:13px;border-radius:10px}
+  .rv .bt.sm{min-height:38px;font-size:14px}
+  .rv .msg{padding:14px 18px;border-radius:14px;background:var(--carte,#fff)}
+  .rv .vide{color:var(--mu);padding:8px 0 0}
+  .rv-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1a1a1a;color:#f8f5f2;padding:12px 20px;border-radius:999px;font-size:14.5px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:calc(100% - 32px)}
+  .rv-toast.v{opacity:1}
+  @media (max-width:720px){.rv th:nth-child(2),.rv td:nth-child(2){display:none}}
+</style>
+</head>
+<body>
+<main class="rv" id="rv">
+  <header class="rv-h">
+    <div>
+      <h1 class="t1">Règlements</h1>
+      <p class="mu">Mensualités des entreprises et commandes d’unités. Les unités du mois sont créditées une seule fois, dès que la période est marquée réglée (le 1er pour un mois réglé à l’avance). La facture officielle se fait dans Indy : copiez-y le lien de paiement personnel de chaque client.</p>
+    </div>
+    <a class="bt sm cl" href="./#pilotage">Retour à l’Espace</a>
+  </header>
+  <p class="msg" id="rv-etat">Chargement…</p>
+  <section class="carte pad bloc" id="rv-m" hidden aria-labelledby="t-m">
+    <h2 class="t2" id="t-m">Mensualités des entreprises</h2>
+    <div class="defile"><table><thead><tr><th>Structure</th><th>Formule</th><th>Période en cours</th><th>Période suivante</th><th>Lien de paiement personnel</th></tr></thead><tbody id="rv-mt"></tbody></table></div>
+    <p class="mu petit">Les collectivités ne sont pas listées : facture à terme échu sur Chorus Pro, unités créditées le 1er sans condition. Les comptes d’essai sont crédités sans paiement.</p>
+  </section>
+  <section class="carte pad bloc" id="rv-c" hidden aria-labelledby="t-c">
+    <h2 class="t2" id="t-c">Commandes d’unités en attente de paiement</h2>
+    <div class="defile"><table><thead><tr><th>Structure</th><th>Commande</th><th>Total</th><th></th></tr></thead><tbody id="rv-ct"></tbody></table></div>
+  </section>
+  <section class="carte pad bloc" id="rv-h" hidden aria-labelledby="t-h">
+    <h2 class="t2" id="t-h">Derniers règlements</h2>
+    <div class="defile"><table><thead><tr><th>Structure</th><th>Période</th><th>Montant</th><th>Mode</th><th>Enregistré le</th></tr></thead><tbody id="rv-ht"></tbody></table></div>
+  </section>
+</main>
+<div class="rv-toast" id="rv-toast" role="status" aria-live="polite"></div>
+<script src="./admin-virements.js?v=1"></script>
+</body>
+</html>
