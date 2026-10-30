@@ -284,12 +284,12 @@
     if (r.horsCadre) return { src, titre: 'Étude personnalisée', formule: null, unites: r.u, capacite: null, mensuel: null, prix: 'Sur étude, après échange', lignes, panier, urg, horsCadre: true };
     return {
       src, titre: `Formule ${r.f.nom}${r.sup ? ` + ${r.sup} unité${r.sup > 1 ? 's' : ''}` : ''}`, formule: r.f.id,
-      unites: r.u, capacite: r.f.unites, mensuel: r.prix, prix: `${eur(r.prix)} € HT par mois`, lignes, panier, urg
+      unites: r.u, capacite: r.f.unites, mensuel: r.prix, prix: `${eur(r.prix)} € par mois`, lignes, panier, urg
     };
   };
   const selFormule = id => {
     const f = FORM.find(x => x.id === id); if (!f) return null;
-    return { src: 'formule', titre: `Formule ${f.nom}`, formule: f.id, unites: 0, capacite: f.unites, mensuel: f.prix, prix: `${eur(f.prix)} € HT par mois`, lignes: [`${f.unites} unités par mois, réparties selon vos besoins`, `Délai de traitement : ${f.delai}`], panier: null, urg: 0 };
+    return { src: 'formule', titre: `Formule ${f.nom}`, formule: f.id, unites: 0, capacite: f.unites, mensuel: f.prix, prix: `${eur(f.prix)} € par mois`, lignes: [`${f.unites} unités par mois, réparties selon vos besoins`, `Délai de traitement : ${f.delai}`], panier: null, urg: 0 };
   };
   const selRelais = rl => {
     rl = rl || {};
@@ -297,11 +297,11 @@
     const sit = SIT[rl.sit] ? rl.sit : 'vacant', appui = !!rl.app && sit !== 'ete', ess = FORM[0];
     const deb = /^\d{4}-\d{2}-\d{2}$/.test(rl.debut || '') && !isNaN(new Date(rl.debut + 'T12:00:00')) ? rl.debut : '';
     const total = p.total + (appui ? ess.prix * 3 : 0);
-    return { src: 'relais', titre: `Relais ${d.l}${appui ? ' + 3 mois d’appui' : ''}`, mensuel: d.mois ? R.prix_mois : null, total, prix: `${eur(total)} € HT au total`,
-      lignes: [SIT[sit].a].concat(deb ? [`Démarrage le ${fdate(new Date(deb + 'T12:00:00'))}`] : [], [p.txt], appui ? [`Appui Essentiel 3 mois, ${eur(ess.prix * 3)} € HT`] : []),
+    return { src: 'relais', titre: `Relais ${d.l}${appui ? ' + 3 mois d’appui' : ''}`, mensuel: d.mois ? R.prix_mois : null, total, prix: `${eur(total)} € au total`,
+      lignes: [SIT[sit].a].concat(deb ? [`Démarrage le ${fdate(new Date(deb + 'T12:00:00'))}`] : [], [p.txt], appui ? [`Appui Essentiel 3 mois, ${eur(ess.prix * 3)} €`] : []),
       relais: true, debut: deb, rl: { sit, d: di, app: appui, debut: deb } };
   };
-  const selRelaisSimple = src => ({ src, titre: 'Relais', prix: `${eur(R.prix_semaine)} € HT par semaine, ou ${eur(R.prix_mois)} € HT par mois`, lignes: ['Remplacement pendant une absence ou un recrutement'], relais: true, rl: null });
+  const selRelaisSimple = src => ({ src, titre: 'Relais', prix: `${eur(R.prix_semaine)} € par semaine, ou ${eur(R.prix_mois)} € par mois`, lignes: ['Remplacement pendant une absence ou un recrutement'], relais: true, rl: null });
   const evPropres = l => Array.isArray(l) ? l.slice(0, 30).map(e => ({ m: entier(e && e.m, 0, 2), t: String((e && e.t) || '').slice(0, 60), k: PACKS[e && e.k] ? e.k : 'pub' })).filter(e => e.t.trim()) : [];
   // externe = vient d'un lien : on ne reprend aucun texte libre (synthèse, lignes)
   const reconstruit = (s, externe) => {
@@ -352,8 +352,8 @@
     if (!essais.length) return { src: 'calendrier', titre: 'Étude personnalisée', mensuel: null, prix: 'Sur étude, après échange', lignes: lignes0, cal: evs, horsCadre: true };
     essais.sort((a, b) => a.cout - b.cout || a.f.prix - b.f.prix);
     const r = essais[0];
-    return { src: 'calendrier', titre: `Formule ${r.f.nom}`, formule: r.f.id, unites: Math.max(...besoins), capacite: r.f.unites, mensuel: r.f.prix, prix: `${eur(r.f.prix)} € HT par mois`,
-      lignes: lignes0.concat(r.hors ? [`${r.hors} unité${r.hors > 1 ? 's' : ''} hors forfait sur le trimestre, ${eur(r.hors * O.unite_sup)} € HT sur accord écrit`] : []), cal: evs, sim: r.sim };
+    return { src: 'calendrier', titre: `Formule ${r.f.nom}`, formule: r.f.id, unites: Math.max(...besoins), capacite: r.f.unites, mensuel: r.f.prix, prix: `${eur(r.f.prix)} € par mois`,
+      lignes: lignes0.concat(r.hors ? [`${r.hors} unité${r.hors > 1 ? 's' : ''} hors forfait sur le trimestre, ${eur(r.hors * O.unite_sup)} € sur accord écrit`] : []), cal: evs, sim: r.sim };
   };
 
   const fromHash = hashEtat();
@@ -757,9 +757,9 @@
     const complet = fos.dataset.mode === 'complet';
     const carte = f => `<article class="fo" data-f="${f.id}">
       <div class="fo-a"><h3>${esc(f.nom)}</h3><p class="fo-c">${esc(f.court)}</p></div>
-      <p class="fo-p"><b>${eur(f.prix)}<small>&nbsp;€</small></b><span>HT par mois</span></p>
+      <p class="fo-p"><b>${eur(f.prix)}<small>&nbsp;€</small></b><span>par mois</span></p>
       <ul class="fo-at">${(f.atouts || []).map((t, k) => `<li style="--k:${k}"><svg class="i" aria-hidden="true"><use href="#ok"/></svg><span>${t}</span></li>`).join('')}</ul>
-      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € HT avec 6 mois · offerte avec ${O.engagement_long} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
+      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € avec 6 mois · offerte avec ${O.engagement_long} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
       <div class="fo-act"><a class="bt" href="${U('demande/')}" data-choisit="${f.id}">Choisir ${esc(f.nom)} <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a><button type="button" class="fo-plus" aria-expanded="false" aria-controls="det-${f.id}"><i aria-hidden="true">+</i>Détails</button></div>
     </article>`;
     fos.innerHTML = FORM.map(carte).join('');
@@ -843,10 +843,10 @@
           const cout3 = selC.mensuel * 3 + hors * O.unite_sup, bes = t.map(x => x.besoin), rep = t.map(x => x.reporte);
           som.innerHTML = titre + `<dl class="cal-r4">
             <div><dt>Vos besoins</dt><dd><b>${bes.join(' · ')}</b><span>unités, de ${esc(mNom(MOIS3[0]))} à ${esc(mNom(MOIS3[2]))}</span></dd></div>
-            <div class="fc"><dt>Formule conseillée</dt><dd><b>${esc(selC.titre.replace(/^Formule /, ''))}</b><span>${eur(selC.mensuel)} € HT par mois, ${selC.capacite} unités</span></dd></div>
+            <div class="fc"><dt>Formule conseillée</dt><dd><b>${esc(selC.titre.replace(/^Formule /, ''))}</b><span>${eur(selC.mensuel)} € par mois, ${selC.capacite} unités</span></dd></div>
             <div><dt>Reports</dt><dd><b>${rep[0]} · ${rep[1]}</b><span>unités reportées sur le mois suivant</span></dd></div>
-            <div class="${hors ? 'x' : ''}"><dt>Dépassement</dt><dd><b>${hors ? `${hors} unité${hors > 1 ? 's' : ''}` : 'Aucun'}</b><span>${hors ? `${eur(hors * O.unite_sup)} € HT, sur accord écrit` : 'le forfait et le report suffisent'}</span></dd></div>
-            <div class="tt"><dt>Coût du trimestre</dt><dd><b>${eur(cout3)} € HT</b><span>3 × ${eur(selC.mensuel)} €${hors ? ` + ${eur(hors * O.unite_sup)} € de dépassement` : ''}</span></dd></div>
+            <div class="${hors ? 'x' : ''}"><dt>Dépassement</dt><dd><b>${hors ? `${hors} unité${hors > 1 ? 's' : ''}` : 'Aucun'}</b><span>${hors ? `${eur(hors * O.unite_sup)} €, sur accord écrit` : 'le forfait et le report suffisent'}</span></dd></div>
+            <div class="tt"><dt>Coût du trimestre</dt><dd><b>${eur(cout3)} €</b><span>3 × ${eur(selC.mensuel)} €${hors ? ` + ${eur(hors * O.unite_sup)} € de dépassement` : ''}</span></dd></div>
           </dl>
             <details class="cal-d"><summary>Le détail mois par mois</summary><div class="cal-wrap"><table class="cal-t"><thead><tr><th scope="col">Mois</th><th scope="col">Besoin</th><th scope="col">Inclus</th><th scope="col">Report reçu</th><th scope="col">Utilisées</th><th scope="col">Hors forfait</th><th scope="col">Reportées</th></tr></thead><tbody>
             ${t.map((x, i) => `<tr><td>${esc(mNom(MOIS3[i]))}</td><td>${x.besoin}</td><td>${x.inclus}</td><td>${x.report}</td><td>${x.utilise}</td><td class="${x.hors ? 'x' : ''}">${x.hors}</td><td>${i < 2 ? x.reporte : `${x.reporte}*`}</td></tr>`).join('')}
@@ -1139,12 +1139,12 @@
           : (estA ? `<p class="verdict"><svg class="i"><use href="#ok"/></svg>Adaptée à ce profil${marge ? `, avec ${marge} unité${marge > 1 ? 's' : ''} de marge` : ''}.</p>`
             : `<p class="verdict"><svg class="i"><use href="#ok"/></svg>Couvre ce besoin, avec ${marge} unités non utilisées : utile si votre activité grandit.</p>`);
         return `<article class="cf${estA ? ' adapt' : ''}">
-          <h3>${esc(f.nom)}<span>${eur(f.prix)} € HT/mois</span></h3>
+          <h3>${esc(f.nom)}<span>${eur(f.prix)} €/mois</span></h3>
           <div class="couv"><div class="tr" role="img" aria-label="Couverture du besoin : ${Math.round(couv * 100)} %"><i style="width:${couv * 100}%"></i></div>
           <p>${f.unites} unités par mois${need ? ` pour ${need} nécessaires` : ''}</p></div>
           ${verdict}
-          <dl><div><dt>Délai de traitement</dt><dd>${esc(f.delai)}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Première année</dt><dd>${eur(f.prix * 12 + f.mise_en_place)} € HT, ou ${eur(f.prix * 12)} € HT avec ${O.engagement_long} mois</dd></div></dl>
-          ${prev ? `<p class="ecart">Par rapport à ${esc(prev.nom)} : +${eur(f.prix - prev.prix)} € par mois pour +${f.unites - prev.unites} unités${f.suivi !== prev.suivi ? ', un suivi plus fréquent' : ''}${f.urgences_incluses ? ' et 2 urgences incluses' : ''}.</p>` : `<p class="ecart">Le point d’entrée : ${eur(f.prix * 12)} € HT par an hors mise en place.</p>`}
+          <dl><div><dt>Délai de traitement</dt><dd>${esc(f.delai)}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Première année</dt><dd>${eur(f.prix * 12 + f.mise_en_place)} €, ou ${eur(f.prix * 12)} € avec ${O.engagement_long} mois</dd></div></dl>
+          ${prev ? `<p class="ecart">Par rapport à ${esc(prev.nom)} : +${eur(f.prix - prev.prix)} € par mois pour +${f.unites - prev.unites} unités${f.suivi !== prev.suivi ? ', un suivi plus fréquent' : ''}${f.urgences_incluses ? ' et 2 urgences incluses' : ''}.</p>` : `<p class="ecart">Le point d’entrée : ${eur(f.prix * 12)} € par an hors mise en place.</p>`}
         </article>`;
       }).join('');
       if (!RM) {
@@ -1165,7 +1165,7 @@
   const cout = $('#cout');
   if (cout) {
     const sF = $('#c-f', cout), sC = $('#c-c', cout), sQ = $('#c-q', cout), oQ = $('#c-qo', cout);
-    sF.innerHTML = FORM.map(f => `<option value="${f.id}">${esc(f.nom)} (${eur(f.prix)} € HT/mois)</option>`).join('');
+    sF.innerHTML = FORM.map(f => `<option value="${f.id}">${esc(f.nom)} (${eur(f.prix)} €/mois)</option>`).join('');
     sF.value = 'regulier';
     const b1 = $('[data-b=a]', cout), b2 = $('[data-b=t]', cout), v1 = $('[data-v=a]', cout), v2 = $('[data-v=t]', cout), conc = $('[data-conc]', cout);
     const calc = () => {
@@ -1173,7 +1173,7 @@
       sQ.style.setProperty('--p', ((q - 20) / 80 * 100) + '%'); oQ.textContent = q + ' %';
       const a = c * q / 100 * 12, t = f.prix * 12 + f.mise_en_place, mx = Math.max(a, t, 1);
       b1.style.width = (a / mx * 100) + '%'; b2.style.width = (t / mx * 100) + '%';
-      v1.textContent = eur(a) + ' € par an'; v2.textContent = eur(t) + ' € HT la première année';
+      v1.textContent = eur(a) + ' € par an'; v2.textContent = eur(t) + ' € la première année';
       conc.textContent = a > t ? `Écart : ${eur(a - t)} € la première année, sans procédure de recrutement ni remplacement à organiser pendant les absences.` : `À ce niveau de quotité, un poste interne coûte moins cher : ${esc(SITE.nom)} se justifie alors surtout pour la continuité et les compétences réunies.`;
     };
     [sF, sC, sQ].forEach(el => el.addEventListener('input', () => { calc(); compte('cout-compare', true); }));
@@ -1245,9 +1245,9 @@
       reco.innerHTML = `<div class="nm"><b>${esc(r.f.nom)}${r.sup ? ` <small style="font-size:.5em;font-weight:600">+${r.sup} u.</small>` : ''}</b><span>formule adaptée</span></div><p>${esc(expl)}</p>${alt}`;
       lig.innerHTML = `<div><span>Demandes courantes</span><span>${esc(r.f.delai)}</span></div>
         <p class="eng-t">Deux engagements possibles</p>
-        <div class="eng2"><p><b>${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} € HT</span><small>mise en place, une fois</small></p><p class="on"><b>${O.engagement_long} mois</b><span>Offerte</span><small>mise en place</small></p></div>
-        <p class="note">Première année : ${eur(c.an)} € HT avec ${O.engagement_mois} mois, ${eur(c.an12)} € HT avec ${O.engagement_long} mois.</p>`;
-      if (mob) { mobT.textContent = `${r.f.nom}${r.sup ? ' +' + r.sup + ' u.' : ''} · ${eur(r.prix)} € HT/mois`; mobS.textContent = `${r.u} unité${r.u > 1 ? 's' : ''} sur ${r.f.unites}`; }
+        <div class="eng2"><p><b>${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, une fois</small></p><p class="on"><b>${O.engagement_long} mois</b><span>Offerte</span><small>mise en place</small></p></div>
+        <p class="note">Première année : ${eur(c.an)} € avec ${O.engagement_mois} mois, ${eur(c.an12)} € avec ${O.engagement_long} mois.</p>`;
+      if (mob) { mobT.textContent = `${r.f.nom}${r.sup ? ' +' + r.sup + ' u.' : ''} · ${eur(r.prix)} €/mois`; mobS.textContent = `${r.u} unité${r.u > 1 ? 's' : ''} sur ${r.f.unites}`; }
       maj('panier', panier); maj('urg', urg);
       if (!premiere) { compte('simulateur-interaction', true); compte('simulateur-formule-' + r.f.id, true); }
     };
@@ -1404,11 +1404,11 @@
       let nom = 'Étude personnalisée', px = 'Sur étude, après échange', expl = `Votre besoin représente environ ${need} unités par mois, au-delà de la formule la plus complète : il se chiffre après un échange.`;
       if (r && !r.horsCadre) {
         const c = couts(r.prix, r.f);
-        nom = r.f.nom + (r.sup ? ` + ${r.sup} unité${r.sup > 1 ? 's' : ''}` : ''); px = `${eur(r.prix)} € HT par mois`;
+        nom = r.f.nom + (r.sup ? ` + ${r.sup} unité${r.sup > 1 ? 's' : ''}` : ''); px = `${eur(r.prix)} € par mois`;
         const ug = urgDe() && !r.f.urgences_incluses ? ` (dont ${urgDe()} pour les urgences)` : '';
         expl = r.sup ? `Environ ${r.u} unités par mois${ug} : ${r.f.nom} en inclut ${r.f.unites}, et ${r.sup} unité${r.sup > 1 ? 's' : ''} en plus à ${O.unite_sup} € reviennent moins cher que ${r.suivant ? r.suivant.f.nom : 'la formule suivante'}. Demandes courantes traitées en ${r.f.delai}.`
           : `Environ ${r.u} unités par mois${ug} : ${r.f.nom} en inclut ${r.f.unites}, avec des demandes courantes traitées en ${r.f.delai}.`;
-        if (bud && c.an12 > bud) expl += ` C’est au-dessus de l’enveloppe indiquée : en ciblant vos canaux prioritaires, Essentiel (${eur(FORM[0].prix * 12)} € HT par an avec ${O.engagement_long} mois d’engagement) reste une base solide.`;
+        if (bud && c.an12 > bud) expl += ` C’est au-dessus de l’enveloppe indiquée : en ciblant vos canaux prioritaires, Essentiel (${eur(FORM[0].prix * 12)} € par an avec ${O.engagement_long} mois d’engagement) reste une base solide.`;
       }
       const sel = r ? selDepuisPanier(p, urgDe(), 'diagnostic') : null;
       const typeL = { commune: 'commune', interco: 'intercommunalité', public: 'structure publique', pme: 'entreprise', asso: 'association' }[v.type] || 'structure';
@@ -1445,7 +1445,7 @@
           <div class="lig2">${s.mensuel ? `<div><span>Abonnement</span><span>${esc(s.prix)}</span></div>` : `<div><span>Prix</span><span>${esc(s.prix || 'Sur étude')}</span></div>`}
           ${f ? `<div><span>Demandes courantes</span><span>${esc(f.delai)}</span></div>` : ''}
           </div>
-          ${c ? `<div class="eng2"><p><b>Engagement ${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} € HT</span><small>mise en place, une fois · ${eur(c.an)} € la 1<sup>re</sup> année</small></p><p class="on"><b>Engagement ${O.engagement_long} mois</b><span>Offerte</span><small>mise en place · ${eur(c.an12)} € la 1<sup>re</sup> année</small></p></div>` : ''}
+          ${c ? `<div class="eng2"><p><b>Engagement ${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, une fois · ${eur(c.an)} € la 1<sup>re</sup> année</small></p><p class="on"><b>Engagement ${O.engagement_long} mois</b><span>Offerte</span><small>mise en place · ${eur(c.an12)} € la 1<sup>re</sup> année</small></p></div>` : ''}
           ${(s.lignes || []).length ? `<ul class="panier2" aria-label="Contenu">${s.lignes.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
           <p class="note">Estimation indicative, pas un devis. La proposition écrite suit sous 48 h ouvrées.</p></div>
         <div class="suite"><a class="bt lg2" href="${U('demande/')}">Recevoir ma proposition <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>
@@ -1512,7 +1512,7 @@
       const lab = (t, w) => w > 9 ? t : '';
       const ess = O.formules[0];
       const tt = p.total + (appui ? ess.prix * 3 : 0); if (!tot.dataset.v) tot.dataset.v = tt; tween(tot, tt);
-      det.innerHTML = `Relais : ${esc(p.txt)}, soit ${eur(p.total)} € HT, mise en place incluse, environ ${p.unites} unités de production.${appui ? `<br>Appui : 3 × ${eur(ess.prix)} € par mois, soit ${eur(ess.prix * 3)} € HT après le relais.` : ''}`;
+      det.innerHTML = `Relais : ${esc(p.txt)}, soit ${eur(p.total)} €, mise en place incluse, environ ${p.unites} unités de production.${appui ? `<br>Appui : 3 × ${eur(ess.prix)} € par mois, soit ${eur(ess.prix * 3)} € après le relais.` : ''}`;
       const fin2 = new Date(fin); if (appui) { fin2.setMonth(fin2.getMonth() + 3); while (!ouvre(fin2)) fin2.setDate(fin2.getDate() - 1); }
       // trois repères lisibles, le détail reste dans le calendrier plus bas
       if (ech) ech.innerHTML = [['Démarrage', fdate(d0)], [appui ? 'Fin du relais' : 'Fin et passation', fdate(fin)]].concat(appui ? [['Fin de l’appui', fdate(fin2)]] : []).map(([l, d]) => `<li><span>${esc(l)}</span><b>${esc(d)}</b></li>`).join('');
@@ -1684,7 +1684,7 @@
       const auj = new Date();
       const f = s.formule ? FORM.find(x => x.id === s.formule) : null;
       const lignesCout = s.relais ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix)}</td></tr><tr><td>Mise en place</td><td class="r">incluse</td></tr>`
-        : (!s.mensuel ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix || 'Sur étude')}</td></tr>` : (() => { const c = couts(s.mensuel, f); return `<tr><td>Abonnement mensuel (${esc(s.titre)})</td><td class="r">${eur(s.mensuel)} € HT</td></tr><tr><td>Mise en place, une fois (offerte avec ${O.engagement_long} mois d’engagement)</td><td class="r">${eur(c.mep)} € HT</td></tr><tr><td>Engagement minimum de ${O.engagement_mois} mois</td><td class="r">${eur(c.six)} € HT</td></tr><tr><th>Première année, engagement de ${O.engagement_mois} mois</th><th class="r">${eur(c.an)} € HT</th></tr><tr><th>Première année, engagement de ${O.engagement_long} mois</th><th class="r">${eur(c.an12)} € HT</th></tr>`; })());
+        : (!s.mensuel ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix || 'Sur étude')}</td></tr>` : (() => { const c = couts(s.mensuel, f); return `<tr><td>Abonnement mensuel (${esc(s.titre)})</td><td class="r">${eur(s.mensuel)} €</td></tr><tr><td>Mise en place, une fois (offerte avec ${O.engagement_long} mois d’engagement)</td><td class="r">${eur(c.mep)} €</td></tr><tr><td>Engagement minimum de ${O.engagement_mois} mois</td><td class="r">${eur(c.six)} €</td></tr><tr><th>Première année, engagement de ${O.engagement_mois} mois</th><th class="r">${eur(c.an)} €</th></tr><tr><th>Première année, engagement de ${O.engagement_long} mois</th><th class="r">${eur(c.an12)} €</th></tr>`; })());
       doc.innerHTML = `
         <div class="ent"><div><p class="n">Note de présentation</p><h1>Externaliser la communication courante</h1></div><div style="text-align:right;font-size:13px;color:var(--fa)">${esc(fdate(auj))} ${auj.getFullYear()}<br><span contenteditable="true" spellcheck="false" style="border-bottom:1px dashed var(--ln2)">${esc(ct.structure || 'Nom de la structure')}</span></div></div>
         <section><h2>1. Le besoin</h2><p>${s.synthese ? 'Situation décrite lors du diagnostic en ligne. ' : ''}${esc(s.synthese || 'La structure doit assurer une communication régulière (site, réseaux sociaux, supports) sans disposer du temps ou de la personne dédiée pour la tenir dans la durée.')}</p>
