@@ -179,11 +179,11 @@
     const tr = n => {
       Array.from(n.childNodes).forEach(c => {
         if (c.nodeType === 3) {
-          const parts = c.textContent.split(/(\s+)/);
+          const parts = c.textContent.split(/([ \t\n\r]+)/);
           const f = document.createDocumentFragment();
           parts.forEach(p => {
             if (!p) return;
-            if (/^\s+$/.test(p)) { f.appendChild(document.createTextNode(p)); return; }
+            if (/^[ \t\n\r]+$/.test(p)) { f.appendChild(document.createTextNode(p)); return; }
             const m = document.createElement('span'); m.className = 'mot';
             const s = document.createElement('span'); s.textContent = p; s.style.setProperty('--i', i++);
             m.appendChild(s); f.appendChild(m);
@@ -194,6 +194,21 @@
     };
     tr(el);
   };
+  /* mots composés (rendez-vous, devez-vous, week-ends) : jamais coupés au trait d'union dans les titres */
+  const lieTirets = racine => {
+    const rx = /[^\s\u00a0]+-[^\s\u00a0]+/g;
+    const tw = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+    const noeuds = []; let n; while ((n = tw.nextNode())) if (rx.test(n.textContent) && !n.parentElement.closest('.lie')) noeuds.push(n); rx.lastIndex = 0;
+    noeuds.forEach(n => {
+      const f = document.createDocumentFragment(); let i = 0; const t = n.textContent; rx.lastIndex = 0; let m;
+      while ((m = rx.exec(t))) { if (m.index > i) f.appendChild(document.createTextNode(t.slice(i, m.index))); const s = document.createElement('span'); s.className = 'lie'; s.textContent = m[0]; f.appendChild(s); i = m.index + m[0].length; }
+      if (i < t.length) f.appendChild(document.createTextNode(t.slice(i)));
+      n.replaceWith(f);
+    });
+  };
+  $$('h1,h2,h3,.ca b,.bt').forEach(lieTirets);
+  /* liens au fil d'un paragraphe : soulignés sans agrandir l'interligne */
+  $$('.lien').forEach(a => { const p = a.parentElement; if (p && !a.querySelector('svg') && Array.from(p.childNodes).some(n => n.nodeType === 3 && n.textContent.trim())) a.classList.add('dans'); });
   if (!RM) $$('.titre').forEach(decoupe);
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add(e.target.classList.contains('titre') ? 'titre-on' : 'on'); io.unobserve(e.target); }
@@ -254,7 +269,7 @@
   const lienPartage = (page, sel) => new URL(U(page) + '#s=' + encode(structure(sel)), location.href).href;
   const copie = async (txt) => {
     try { await navigator.clipboard.writeText(txt); toast('Lien copié.'); compte('lien-copie'); }
-    catch (e) { prompt('Copiez ce lien :', txt); }
+    catch (e) { prompt('Copiez ce lien :', txt); }
   };
   /* sélection commune à tous les modules : ce que la demande et la note reprennent.
      Elle est toujours recalculée à partir du catalogue officiel (offre.json) :
@@ -571,8 +586,8 @@
   const etats = $('#etats'), demo = $('#demo');
   if (etats && demo) {
     const INFO = {
-      c: { titre: 'Marché de Noël', date: 'Samedi 13 décembre', heure: '10 h à 18 h', lieu: 'Place de la mairie', texte: 'Trente exposants, le vin chaud des associations et l’arrivée du père Noël à 16 h.', img: 'ev-benevoles-s', pin: 'L’heure du père Noël, c’est bien 16 h ?' },
-      e: { titre: 'Portes ouvertes', date: 'Samedi 14 mars', heure: '9 h à 17 h', lieu: 'À l’atelier', texte: 'Visites guidées, démonstrations et rencontres avec l’équipe. Deux postes sont à pourvoir.', img: 'en-garage-s', pin: 'On ajoute le lien des offres d’emploi ?' }
+      c: { titre: 'Marché de Noël', date: 'Samedi 13 décembre', heure: '10 h à 18 h', lieu: 'Place de la mairie', texte: 'Trente exposants, le vin chaud des associations et l’arrivée du père Noël à 16 h.', img: 'ev-benevoles-s', pin: 'L’heure du père Noël, c’est bien 16 h ?' },
+      e: { titre: 'Portes ouvertes', date: 'Samedi 14 mars', heure: '9 h à 17 h', lieu: 'À l’atelier', texte: 'Visites guidées, démonstrations et rencontres avec l’équipe. Deux postes sont à pourvoir.', img: 'en-garage-s', pin: 'On ajoute le lien des offres d’emploi ?' }
     };
     const CANAUX = [['site', 'Site'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['linkedin', 'LinkedIn'], ['news', 'Newsletter'], ['presse', 'Presse']];
     const piece = $('.piece', demo), pw = $('.piece-w', demo), ep = $('.epreuve', demo), cz = $('.canaux', demo), ct = $('.canaux-t', demo), dz = $('.dests', demo);
@@ -744,7 +759,7 @@
       <div class="fo-a"><h3>${esc(f.nom)}</h3><p class="fo-c">${esc(f.court)}</p></div>
       <p class="fo-p"><b>${eur(f.prix)}<small>&nbsp;€</small></b><span>HT par mois</span></p>
       <ul class="fo-at">${(f.atouts || []).map((t, k) => `<li style="--k:${k}"><svg class="i" aria-hidden="true"><use href="#ok"/></svg><span>${t}</span></li>`).join('')}</ul>
-      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € HT avec 6 mois · offerte avec ${O.engagement_long} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
+      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Mise en place</dt><dd>${eur(f.mise_en_place)} € HT avec 6 mois · offerte avec ${O.engagement_long} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
       <div class="fo-act"><a class="bt" href="${U('demande/')}" data-choisit="${f.id}">Choisir ${esc(f.nom)} <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a><button type="button" class="fo-plus" aria-expanded="false" aria-controls="det-${f.id}"><i aria-hidden="true">+</i>Détails</button></div>
     </article>`;
     fos.innerHTML = FORM.map(carte).join('');
@@ -1281,10 +1296,10 @@
   if (est) {
     const Q = [
       { id: 'type', t: 'Vous représentez…', type: 'un', gros: true, o: [['commune', 'Une commune'], ['interco', 'Une intercommunalité ou un syndicat'], ['public', 'Une autre structure publique', 'Office de tourisme, CCAS, établissement'], ['pme', 'Une entreprise'], ['asso', 'Une association employeuse']] },
-      { id: 'taille', t: 'De quelle taille ?', type: 'un', gros: true, o: v => (v.type === 'pme' || v.type === 'asso') ? [['t1', 'Moins de 10 salariés'], ['t2', '10 à 49 salariés'], ['t3', '50 salariés et plus']] : [['t1', 'Moins de 2 000 habitants', 'ou d’usagers'], ['t2', '2 000 à 8 000 habitants'], ['t3', 'Plus de 8 000 habitants']] },
-      { id: 'qui', t: 'Qui s’occupe de la communication aujourd’hui ?', type: 'un', gros: true, o: v => [['personne', 'Personne en particulier', 'chacun fait au mieux'], ['cumul', 'Une personne, en plus de son travail'], ['absent', 'Le poste est vide pour un temps', (v.type === 'pme' || v.type === 'asso') ? 'départ, congé, arrêt' : 'poste vacant, congé, arrêt'], ['service', 'Une équipe qui manque de bras']] },
-      { id: 'canaux', t: 'Quels canaux devez-vous tenir ?', s: 'Plusieurs réponses possibles', type: 'plu', o: [['site', 'Site internet'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['linkedin', 'LinkedIn'], ['news', 'Newsletter'], ['bulletin', 'Bulletin ou magazine'], ['presse', 'Presse locale'], ['appli', 'Application ou panneau numérique'], ['print', 'Affiches et flyers']] },
-      { id: 'rythme', t: 'À quel rythme voudriez-vous publier ?', type: 'un', gros: true, o: [['occ', 'Quand il y a quelque chose', 'quelques fois par mois'], ['hebdo', 'Chaque semaine'], ['plus', 'Plusieurs fois par semaine']] }
+      { id: 'taille', t: 'De quelle taille ?', type: 'un', gros: true, o: v => (v.type === 'pme' || v.type === 'asso') ? [['t1', 'Moins de 10 salariés'], ['t2', '10 à 49 salariés'], ['t3', '50 salariés et plus']] : [['t1', 'Moins de 2 000 habitants', 'ou d’usagers'], ['t2', '2 000 à 8 000 habitants'], ['t3', 'Plus de 8 000 habitants']] },
+      { id: 'qui', t: 'Qui s’occupe de la communication aujourd’hui ?', type: 'un', gros: true, o: v => [['personne', 'Personne en particulier', 'chacun fait au mieux'], ['cumul', 'Une personne, en plus de son travail'], ['absent', 'Le poste est vide pour un temps', (v.type === 'pme' || v.type === 'asso') ? 'départ, congé, arrêt' : 'poste vacant, congé, arrêt'], ['service', 'Une équipe qui manque de bras']] },
+      { id: 'canaux', t: 'Quels canaux devez-vous tenir ?', s: 'Plusieurs réponses possibles', type: 'plu', o: [['site', 'Site internet'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['linkedin', 'LinkedIn'], ['news', 'Newsletter'], ['bulletin', 'Bulletin ou magazine'], ['presse', 'Presse locale'], ['appli', 'Application ou panneau numérique'], ['print', 'Affiches et flyers']] },
+      { id: 'rythme', t: 'À quel rythme voudriez-vous publier ?', type: 'un', gros: true, o: [['occ', 'Quand il y a quelque chose', 'quelques fois par mois'], ['hebdo', 'Chaque semaine'], ['plus', 'Plusieurs fois par semaine']] }
     ];
     const DIFF = [['temps', 'Personne n’a le temps'], ['site', 'Le site n’est pas à jour'], ['irreg', 'Les publications sont irrégulières'], ['visuels', 'Les visuels manquent de soin'], ['bulletin', 'Le bulletin prend trop de temps'], ['urg', 'Tout arrive en urgence'], ['photos', 'Pas de photos récentes'], ['presse', 'La presse ne relaie pas']];
     const PRIO = {
@@ -1340,7 +1355,7 @@
       if (iq >= Q.length) iq = Q.length - 1;
       const q = Q[iq], os = opts(q), plu = q.type === 'plu', v = st.rep;
       zq.innerHTML = `<div class="dg-q ${sensQ > 0 ? 'entre' : 'entre-g'}">
-        <fieldset style="border:0;padding:0;margin:0;display:grid;gap:22px"><legend class="sr">${esc(q.t)}</legend><h2 aria-hidden="true">${esc(q.t)}${q.s ? `<small>${esc(q.s)}</small>` : ''}</h2>
+        <fieldset style="border:0;padding:0;margin:0;display:grid;gap:22px"><legend class="sr">${esc(q.t)}</legend><h2 aria-hidden="true">${esc(q.t).replace(/[^\s\u00a0]+-[^\s\u00a0]+/g, '<span class="lie">$&</span>')}${q.s ? `<small>${esc(q.s)}</small>` : ''}</h2>
         <div class="choix${q.gros ? ' gros' : ''}">${os.map(([k, l, s]) => `<label><input type="${plu ? 'checkbox' : 'radio'}" name="${q.id}" value="${k}" ${plu ? ((v[q.id] || []).includes(k) ? 'checked' : '') : (v[q.id] === k ? 'checked' : '')}><span>${esc(l)}${s ? `<small>${esc(s)}</small>` : ''}</span></label>`).join('')}</div></fieldset>
         <div class="est-n"><button type="button" class="est-retour" data-pr><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>${iq === 0 ? 'Retour' : 'Question précédente'}</button><span class="cap">Question ${iq + 1} sur ${Q.length}</span><button type="button" class="bt sm" data-sv ${plu || v[q.id] ? '' : 'hidden'}>Continuer <span class="ar"><svg class="i"><use href="#ar"/></svg></span></button></div></div>`;
       $$('input', zq).forEach(inp => inp.addEventListener('change', () => {
