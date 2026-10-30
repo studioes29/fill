@@ -55,11 +55,42 @@
     var n = 1 + Math.round(((t - p) / 864e5 - 3 + ((p.getUTCDay() + 6) % 7)) / 7);
     return an + '-S' + deux(n);
   };
-  var libelle = function (p) {
+  // Périodes à la date anniversaire de chaque organisation (jour du premier paiement) : du jour J au jour J - 1
+  // du mois suivant, ramené au dernier jour des mois courts ; Relais : 7 jours à partir du jour du paiement.
+  // Libellés techniques inchangés : « AAAA-MM » (mois où la période commence), « IIII-Sss » (semaine ISO de son début).
+  var iso = function (d) { return d.getUTCFullYear() + '-' + deux(d.getUTCMonth() + 1) + '-' + deux(d.getUTCDate()); };
+  var jourUTC = function (s) { return new Date(s + 'T12:00:00Z'); };
+  var plus = function (s, n) { var d = jourUTC(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  var dernier = function (an, mo) { return new Date(Date.UTC(an, mo, 0)).getUTCDate(); };
+  var ancre = function (o) { return o && o.anniversaire ? +o.anniversaire.slice(8, 10) : 1; };
+  var echeance = function (o, an, mo) { return an + '-' + deux(mo) + '-' + deux(Math.min(ancre(o), dernier(an, mo))); };
+  var aujourdhui = function () { return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }); };
+  var periodeOrg = function (o, j) {
+    var an = +j.slice(0, 4), mo = +j.slice(5, 7);
+    if (j >= echeance(o, an, mo)) return j.slice(0, 7);
+    mo--; if (mo < 1) { mo = 12; an--; }
+    return an + '-' + deux(mo);
+  };
+  var suivante = function (p) { var an = +p.slice(0, 4), mo = +p.slice(5, 7) + 1; if (mo > 12) { mo = 1; an++; } return an + '-' + deux(mo); };
+  var semaineOrg = function (o, j) {
+    var d = jourUTC(j), dec = o && o.anniversaire ? ((d.getUTCDay() - jourUTC(o.anniversaire).getUTCDay()) + 7) % 7 : (d.getUTCDay() + 6) % 7;
+    return semaineIso(jourUTC(plus(j, -dec)));
+  };
+  var bornes = function (o, p) {
     var s = /^(\d{4})-S(\d{2})$/.exec(p);
-    if (s) return 'semaine ' + (+s[2]) + ' (' + s[1] + ')';
-    var m = /^(\d{4})-(\d{2})$/.exec(p);
-    return m ? MOIS[+m[2] - 1] + ' ' + m[1] : p;
+    if (s) {
+      var j4 = new Date(Date.UTC(+s[1], 0, 4)); j4.setUTCDate(j4.getUTCDate() - ((j4.getUTCDay() + 6) % 7) + (+s[2] - 1) * 7);
+      var debut = plus(iso(j4), o && o.anniversaire ? (jourUTC(o.anniversaire).getUTCDay() + 6) % 7 : 0);
+      return { debut: debut, fin: plus(debut, 6) };
+    }
+    var an = +p.slice(0, 4), mo = +p.slice(5, 7), n = suivante(p);
+    return { debut: echeance(o, an, mo), fin: plus(echeance(o, +n.slice(0, 4), +n.slice(5, 7)), -1) };
+  };
+  var court = function (s) { var d = jourUTC(s); return (d.getUTCDate() === 1 ? '1er' : d.getUTCDate()) + ' ' + MOIS[d.getUTCMonth()]; };
+  var libelle = function (p, o) {
+    if (!/^\d{4}-(\d{2}|S\d{2})$/.test(p)) return p;
+    var b = bornes(o, p);
+    return (/S/.test(p) ? 'semaine du ' : 'du ') + court(b.debut) + (b.debut.slice(0, 4) !== b.fin.slice(0, 4) ? ' ' + b.debut.slice(0, 4) : '') + ' au ' + court(b.fin) + ' ' + b.fin.slice(0, 4);
   };
   var euros = function (n) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(Number(n) || 0) + ' €'; };
   var jour = function (iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; };
@@ -76,7 +107,7 @@
       if (!p || !p[0] || p[0].role !== 'admin' || p[0].actif === false) throw new Error('admin');
       return Promise.all([
         api('/rest/v1/offre_version?select=id&active=is.true'),
-        api('/rest/v1/organisation?select=id,nom,type,formule,statut,essai,relais_semaine,jeton_paiement,debut,fin&order=nom'),
+        api('/rest/v1/organisation?select=id,nom,type,formule,statut,essai,relais_semaine,jeton_paiement,debut,fin,anniversaire&order=nom'),
         api('/rest/v1/mensualite?select=*&order=regle_le.desc&limit=200'),
         api('/rest/v1/commande?select=*&statut=eq.a_payer&order=creee'),
         api('/rest/v1/registre?select=organisation_id,periode,date&type=eq.credit&motif=eq.Premier%20quota')
@@ -97,32 +128,32 @@
   var reglee = function (o, per) {
     var m = donnees.mens.find(function (x) { return x.organisation_id === o.id && x.periode === per; });
     if (m) return { m: m };
-    var ouv = donnees.ouv.find(function (x) { return x.organisation_id === o.id && (x.periode === per || (/S/.test(per) && semaineIso(new Date(x.date)) === per)); });
+    var ouv = donnees.ouv.find(function (x) { return x.organisation_id === o.id && (x.periode === per || (/S/.test(per) && semaineOrg(o, new Date(x.date).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })) === per)); });
     return ouv ? { ouverture: true } : null;
   };
 
   var cellule = function (o, per, prix) {
     var td = el('td');
     var r = reglee(o, per);
-    td.append(el('b', null, libelle(per)));
+    td.append(el('b', null, libelle(per, o)));
     if (r && r.m) {
       td.append(' ', el('span', 'et ok', r.m.mode === 'carte' ? 'Réglé par carte' : 'Virement reçu'));
-      td.append(el('small', null, euros(r.m.montant) + ', le ' + jour(r.m.regle_le) + (r.m.credite_le ? ' · unités créditées' : ' · crédit le 1er')));
+      td.append(el('small', null, euros(r.m.montant) + ', le ' + jour(r.m.regle_le) + (r.m.credite_le ? ' · unités créditées' : ' · crédit le ' + court(bornes(o, per).debut))));
     } else if (r && r.ouverture) {
       td.append(' ', el('span', 'et ok', 'Ouverture'));
-      td.append(el('small', null, 'Premier mois réglé dans l’Espace'));
-    } else if (o.fin && per.indexOf('S') < 0 && per + '-01' > o.fin) {
+      td.append(el('small', null, 'Première période réglée dans l’Espace'));
+    } else if (o.fin && per.indexOf('S') < 0 && bornes(o, per).debut > o.fin) {
       td.append(' ', el('span', 'et ne', 'Après la fin'));
     } else {
       td.append(' ', el('span', 'et at', 'À régler'));
       var b = el('button', 'bt sm cl', 'Virement reçu');
       b.type = 'button';
-      b.setAttribute('aria-label', 'Virement reçu de ' + o.nom + ' pour ' + libelle(per));
+      b.setAttribute('aria-label', 'Virement reçu de ' + o.nom + ' pour la période ' + libelle(per, o));
       b.addEventListener('click', function () {
-        if (!confirm('Marquer ' + libelle(per) + ' de ' + o.nom + ' comme réglé par virement (' + euros(prix) + ') ?')) return;
+        if (!confirm('Marquer la période ' + libelle(per, o) + ' de ' + o.nom + ' comme réglée par virement (' + euros(prix) + ') ?')) return;
         b.disabled = true;
         rpc('mensualite_virement', { p_organisation: o.id, p_periode: per }).then(function (res) {
-          toast(res && res.credite > 0 ? res.credite + ' unités créditées pour ' + o.nom : 'Virement enregistré pour ' + o.nom + (res && res.credit_au_1er ? ', unités créditées le 1er' : ''));
+          toast(res && res.credite > 0 ? res.credite + ' unités créditées pour ' + o.nom : 'Virement enregistré pour ' + o.nom + (res && res.credit_le ? ', unités créditées le ' + court(res.credit_le) : ''));
           return charger();
         }).catch(function (e) { b.disabled = false; toast(e.message); });
       });
@@ -133,9 +164,7 @@
 
   var afficher = function () {
     etat('');
-    var maintenant = new Date();
-    var cur = mois(maintenant), sui = mois(new Date(maintenant.getFullYear(), maintenant.getMonth() + 1, 1));
-    var curS = semaineIso(maintenant), suiS = semaineIso(new Date(maintenant.getTime() + 7 * 864e5));
+    var j = aujourdhui();
     var ent = donnees.orgs.filter(function (o) { return o.type === 'entreprise' && o.statut === 'active' && !o.essai; });
     var tb = $('rv-mt'); tb.textContent = '';
     ent.forEach(function (o) {
@@ -143,7 +172,8 @@
       var prix = o.relais_semaine ? f.prix_semaine : f.prix;
       var tr = el('tr');
       var t1 = el('td'); t1.append(el('b', null, o.nom)); tr.append(t1);
-      var t2 = el('td', null, (f.nom || o.formule) + (o.relais_semaine ? ' à la semaine' : '')); t2.append(el('small', 'num', euros(prix) + (o.relais_semaine ? ' par semaine' : ' par mois'))); tr.append(t2);
+      var t2 = el('td', null, (f.nom || o.formule) + (o.relais_semaine ? ' à la semaine' : '')); t2.append(el('small', 'num', euros(prix) + (o.relais_semaine ? ' par semaine' : ' par mois') + (o.anniversaire ? (o.relais_semaine ? ', échéance chaque ' + ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][jourUTC(o.anniversaire).getUTCDay()] : ', échéance le ' + (+o.anniversaire.slice(8, 10) === 1 ? '1er' : +o.anniversaire.slice(8, 10)) + ' du mois') : ''))); tr.append(t2);
+      var cur = periodeOrg(o, j), sui = suivante(cur), curS = semaineOrg(o, j), suiS = semaineOrg(o, plus(j, 7));
       tr.append(cellule(o, o.relais_semaine ? curS : cur, prix));
       tr.append(cellule(o, o.relais_semaine ? suiS : sui, prix));
       var t5 = el('td'); var lp = el('div', 'lien-p');
@@ -186,7 +216,7 @@
     donnees.mens.slice(0, 30).forEach(function (m) {
       var o = donnees.orgs.find(function (x) { return x.id === m.organisation_id; }) || { nom: '?' };
       var tr = el('tr');
-      tr.append(el('td', null, o.nom), el('td', null, libelle(m.periode)), el('td', 'num', euros(m.montant)), el('td', null, m.mode === 'carte' ? 'Carte' : 'Virement'), el('td', null, jour(m.regle_le)));
+      tr.append(el('td', null, o.nom), el('td', null, libelle(m.periode, o)), el('td', 'num', euros(m.montant)), el('td', null, m.mode === 'carte' ? 'Carte' : 'Virement'), el('td', null, jour(m.regle_le)));
       ht.append(tr);
     });
     if (!donnees.mens.length) { var v3 = el('tr'); var c3 = el('td', 'vide', 'Aucun règlement enregistré.'); c3.colSpan = 5; v3.append(c3); ht.append(v3); }

@@ -39,7 +39,7 @@
   <header class="rv-h">
     <div>
       <h1 class="t1">Règlements</h1>
-      <p class="mu">Mensualités des entreprises et commandes d’unités. Les unités du mois sont créditées une seule fois, dès que la période est marquée réglée (le 1er pour un mois réglé à l’avance). La facture officielle se fait dans Indy : copiez-y le lien de paiement personnel de chaque client.</p>
+      <p class="mu">Mensualités des entreprises et commandes d’unités. Chaque client a sa date anniversaire, le jour de son premier règlement : ses périodes vont de ce jour au jour précédent du mois suivant. Les unités de la période sont créditées une seule fois, dès qu’elle est marquée réglée (le jour de l’échéance pour une période réglée à l’avance). La facture officielle se fait dans Indy : copiez-y le lien de paiement personnel de chaque client.</p>
     </div>
     <a class="bt sm cl" href="./#pilotage">Retour à l’Espace</a>
   </header>
@@ -47,7 +47,7 @@
   <section class="carte pad bloc" id="rv-m" hidden aria-labelledby="t-m">
     <h2 class="t2" id="t-m">Mensualités des entreprises</h2>
     <div class="defile"><table><thead><tr><th>Structure</th><th>Formule</th><th>Période en cours</th><th>Période suivante</th><th>Lien de paiement personnel</th></tr></thead><tbody id="rv-mt"></tbody></table></div>
-    <p class="mu petit">Les collectivités ne sont pas listées : facture à terme échu sur Chorus Pro, unités créditées le 1er sans condition. Les comptes d’essai sont crédités sans paiement.</p>
+    <p class="mu petit">Les collectivités ne sont pas listées : facture à terme échu sur Chorus Pro, unités créditées à chaque date anniversaire sans condition. Les comptes d’essai sont crédités sans paiement.</p>
   </section>
   <section class="carte pad bloc" id="rv-c" hidden aria-labelledby="t-c">
     <h2 class="t2" id="t-c">Commandes d’unités en attente de paiement</h2>
@@ -59,6 +59,6 @@
   </section>
 </main>
 <div class="rv-toast" id="rv-toast" role="status" aria-live="polite"></div>
-<script src="./admin-virements.js?v=1"></script>
+<script src="./admin-virements.js?v=2"></script>
 </body>
 </html>
