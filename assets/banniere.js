@@ -31,7 +31,7 @@ host.innerHTML = `
   <div class="bx-a bn-badge">0</div>
   <div class="bx-a bn-fb" data-fb>
     <div class="bx-hd"><div class="bx-lg">SI</div><div class="bx-nm">Saint-Ivenec<small>Page Facebook</small></div></div>
-    <div class="bx-old">Dernière publication : il y a 10 mois</div><div class="bx-new" hidden>Publié à l’instant</div>
+    <div class="bx-old">Dernière publication : il y a 10 mois</div><div class="bx-new" style="display:none">Publié à l’instant</div>
     <div class="bx-im">Bonne année !</div>
     <div class="bx-ft"><span class="bx-lk">3 J’aime</span><span>0 partage</span></div>
   </div>
@@ -168,11 +168,11 @@ function legacy(t) {
   const fb = q('[data-fb]');
   const fbOld = fb.querySelector('.bx-old'), fbNew = fb.querySelector('.bx-new'), fbIm = fb.querySelector('.bx-im'), fbLk = fb.querySelector('.bx-lk');
   if (t >= 3.55 && t < 5.6) {
-    fbOld.hidden = false; fbNew.hidden = true; fbIm.className = 'bx-im'; fbIm.textContent = 'Bonne année !'; fbLk.textContent = '3 J’aime';
+    fbOld.style.display = ''; fbNew.style.display = 'none'; fbIm.className = 'bx-im'; fbIm.textContent = 'Bonne année !'; fbLk.textContent = '3 J’aime';
     const p = eio(P(t, 3.55, 3.8)), set = back(P(t, 3.78, 4.1));
     S(fb, { x: 300, y: 380 + suck * 120, r: 12 * (1 - p) - 4 * p, s: (1.7 - .7 * p) * (1 + .04 * (1 - set) * (t > 3.78 ? 1 : 0)) * (1 - .8 * suck), o: P(t, 3.55, 3.62) * (1 - suck) });
   } else if (t >= 18.55 && t < 23.95) {
-    fbOld.hidden = true; fbNew.hidden = false; fbIm.className = 'bx-im bx-ph'; fbIm.innerHTML = 'Portes ouvertes<br>samedi 14 décembre';
+    fbOld.style.display = 'none'; fbNew.style.display = ''; fbIm.className = 'bx-im bx-ph'; fbIm.innerHTML = 'Portes ouvertes<br>samedi 14 décembre';
     fbLk.textContent = Math.round(126 * eo(P(t, 19.0, 21.5))) + ' J’aime';
     qa('.bn-heart').forEach((h, i) => { const a = 19.1 + i * .38, k = P(t, a, a + 1.5); if (k <= 0 || k >= 1) { hide(h); return; }
       S(h, { x: 110 + i * 62 + Math.sin(k * 6 + i) * 22, y: 760 - 330 * eo(k), s: .6 + .7 * back(cl(k * 3)), r: (i % 2 ? 12 : -12) * k, o: 1 - P(k, .65, 1) }); });
@@ -189,7 +189,7 @@ function legacy(t) {
     const f1 = q('[data-f1]'), f2 = q('[data-f2]');
     f1.innerHTML = typed(t, 7.75, 30, L1) + (t > 7.7 && t < 8.95 && Math.floor(t * 4) % 2 === 0 ? '<span class="bx-car"></span>' : '');
     f1.classList.toggle('bx-on', t > 7.7 && t < 8.95);
-    f2.textContent = typed(t, 8.9, 60, L2); f2.classList.toggle('bx-on', t > 8.85 && t < 9.95);
+    f2.textContent = typed(t, 8.85, 88, L2); f2.classList.toggle('bx-on', t > 8.85 && t < 9.95);
     const pp = back(P(t, 9.0, 9.3)); S(q('[data-ph]'), { s: .4 + .6 * pp, o: P(t, 9.0, 9.08) });
     const W = [1, 4, 1, 3]; let u = 0;
     qa('[data-c]').forEach((c, i) => { const ta = 9.1 + i * .12, on = t >= ta; c.classList.toggle('bx-on', on); c.style.transform = `scale(${1 + .08 * Math.sin(P(t, ta, ta + .18) * Math.PI)})`; if (on) u += W[i]; });
