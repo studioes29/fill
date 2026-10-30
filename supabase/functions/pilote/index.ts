@@ -17,14 +17,30 @@ Deno.serve(async (req) => {
   if (!autorise) return new Response("R\xE9serv\xE9 au serveur", { status: 401 });
   const notifier = (corps) => fetch(`${url}/functions/v1/notifier`, { method: "POST", headers: { Authorization: `Bearer ${cle}`, "Content-Type": "application/json" }, body: JSON.stringify(corps) }).catch(() => null);
   const auj = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
-  const per = periodeDe(auj);
+  const per = periodeDe(auj); // mois civil : facturation
+  // Période d'abonnement de chaque organisation : elle court d'une date anniversaire du premier paiement
+  // à la suivante (fonctions SQL periode_org, debut_periode_org, fin_periode_org). Sans date anniversaire,
+  // la base renvoie le mois civil. En cas d'erreur, on garde le mois civil, comme avant.
+  const periodes = new Map();
+  const periodeOrg = async (id) => {
+    if (!periodes.has(id)) {
+      const { data: p, error } = await sb.rpc("periode_org", { org: id, j: auj });
+      const periode = !error && p ? p : per;
+      const [{ data: debut }, { data: fin }] = await Promise.all([
+        sb.rpc("debut_periode_org", { org: id, per: periode }),
+        sb.rpc("fin_periode_org", { org: id, per: periode })
+      ]);
+      periodes.set(id, { periode, debut: debut ?? `${periode}-01`, fin: fin ?? ajouterJours(`${periodeDe(ajouterJours(`${periode}-01`, 32))}-01`, -1) });
+    }
+    return periodes.get(id);
+  };
   const [{ data: param }, { data: orgs }, { data: ds }, { data: lignes }, { data: hist }, { data: reg }, { data: profils }, { data: fer }] = await Promise.all([
     sb.from("parametre").select("*").single(),
     sb.from("organisation").select("*"),
     sb.from("demande").select("*").not("statut", "in", "(livree,annulee)"),
     sb.from("demande_ligne").select("demande_id, prestation, quantite"),
     sb.from("historique").select("demande_id, statut, type, date, par"),
-    sb.from("registre").select("*").eq("periode", per),
+    sb.from("registre").select("*").in("periode", [periodeDe(ajouterJours(`${per}-01`, -1)), per]),
     sb.from("profil").select("id, role, plafond_mensuel"),
     sb.from("fermeture").select("debut, fin")
   ]);
@@ -57,9 +73,10 @@ Deno.serve(async (req) => {
     for (const d of demandes.filter((x) => x.statut === "deposee")) {
       const o = organisations.find((x) => x.id === d.organisationId);
       const auteur = (profils ?? []).find((p) => p.id === d.auteurId);
-      const urgencesUtilisees = demandes.filter((x) => x.id !== d.id && x.organisationId === o.id && x.urgente && periodeDe(x.creee.slice(0, 10)) === per).length;
-      const est = estimer({ lignes: d.lignes, urgente: d.urgente, parution: d.parution }, { formule: o.formule, depot: auj, urgencesUtilisees, disponibles: etatPeriode(registre, o.id, per).disponible, fermetures });
-      const engageAuteur = registre.filter((l) => l.type === "debit" && l.etat !== "restitue" && demandes.find((x) => x.id === l.demandeId)?.auteurId === d.auteurId).reduce((s, l) => s + l.unites, 0);
+      const po = await periodeOrg(o.id);
+      const urgencesUtilisees = demandes.filter((x) => x.id !== d.id && x.organisationId === o.id && x.urgente && x.creee.slice(0, 10) >= po.debut && x.creee.slice(0, 10) <= po.fin).length;
+      const est = estimer({ lignes: d.lignes, urgente: d.urgente, parution: d.parution }, { formule: o.formule, depot: auj, urgencesUtilisees, disponibles: etatPeriode(registre, o.id, po.periode).disponible, fermetures });
+      const engageAuteur = registre.filter((l) => l.periode === po.periode && l.type === "debit" && l.etat !== "restitue" && demandes.find((x) => x.id === l.demandeId)?.auteurId === d.auteurId).reduce((s, l) => s + l.unites, 0);
       const dec = decider(d, { auj, organisation: o, estimation: est, demandes, capacite: param.capacite_semaine, fermetures, auteur: { role: auteur?.role ?? "referent", plafondMensuel: auteur?.plafond_mensuel }, engageAuteur });
       if (!dec.auto) {
         bilan.a_arbitrer++;
