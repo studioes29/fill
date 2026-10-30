@@ -2093,7 +2093,7 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
 .eq-r li{display:grid;grid-template-columns:128px minmax(0,1fr);gap:14px;align-items:baseline;padding-top:14px;border-top:1px solid var(--ln)}
 .eq-r p{font-size:15.5px;color:var(--mu);line-height:1.5}
 .eq-n{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:15px;color:var(--mu)}
-.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font:600 12.5px/1.2 var(--f);font-style:normal;letter-spacing:.01em;white-space:nowrap}
+em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;font:600 12.5px/1.2 var(--f);font-style:normal;letter-spacing:.01em;white-space:nowrap}
 .rl.rf{background:var(--encre);color:var(--ntx)}
 .rl.ct{background:var(--cible2);color:var(--cible-t)}
 .rl.lc{background:var(--blanc);color:var(--mu);box-shadow:inset 0 0 0 1px var(--ln2)}
@@ -2161,15 +2161,15 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
 
 /* vous demandez : étapes et démonstration côte à côte, l’espace client en bandeau en bas de rubrique */
 .mm-b{grid-column:1/-1}
-@media (min-width:1000px){.mm>.mm-v{grid-column:2;grid-row:1}.mm-b{margin-top:clamp(8px,2vw,24px)}}
-.mm-b .ec-cta{grid-template-columns:minmax(0,1fr) auto;gap:20px 32px;margin:0;padding:clamp(22px,2.6vw,34px) clamp(22px,3vw,40px);border-radius:28px;background:var(--blanc);color:var(--encre);box-shadow:0 1px 0 rgba(26,26,26,.04),0 30px 60px -40px rgba(60,30,120,.45)}
-.mm-b .ec-cta::before{right:clamp(150px,22vw,300px);top:-36%;width:clamp(120px,13vw,190px);background:var(--cible2);opacity:1;transform:rotate(-12deg)}
-.mm-b .ec-cta small{color:var(--cible-t,var(--cible));font-size:15px}
+@media (min-width:1000px){.mm{align-items:center}.mm>.mm-v{grid-column:2;grid-row:1;position:static;align-self:center}.mm-b{margin-top:clamp(8px,2vw,24px)}}
+.mm-b .ec-cta{grid-template-columns:minmax(0,1fr) auto;gap:20px 32px;margin:0;padding:clamp(22px,2.6vw,34px) clamp(22px,3vw,40px);border-radius:28px;background:var(--encre);color:var(--ntx);box-shadow:0 30px 60px -36px rgba(26,26,26,.55)}
+.mm-b .ec-cta::before{right:clamp(150px,22vw,300px);top:-36%;width:clamp(120px,13vw,190px);background:var(--cible);opacity:.55;transform:rotate(-12deg)}
+.mm-b .ec-cta small{color:var(--cible3);font-size:15px}
 .mm-b .ec-cta b{font-size:clamp(24px,2.6vw,36px);letter-spacing:-.03em}
-.mm-b .ec-cta span.t{color:var(--mu);max-width:34em;font-size:15.5px}
-.ec-go{display:inline-flex;align-items:center;gap:14px;padding:8px 8px 8px 24px;border-radius:999px;background:var(--encre);color:var(--ntx);font:600 15.5px var(--f);white-space:nowrap}
+.mm-b .ec-cta span.t{color:rgba(248,245,242,.72);max-width:34em;font-size:15.5px}
+.ec-go{display:inline-flex;align-items:center;gap:14px;padding:8px 8px 8px 24px;border-radius:999px;background:var(--ntx);color:var(--encre);font:600 15.5px var(--f);white-space:nowrap}
 .mm-b .ec-cta .f{width:44px;height:44px;background:var(--cible3);color:var(--encre)}
-@media (hover:hover){.mm-b .ec-cta:hover{box-shadow:0 1px 0 rgba(26,26,26,.04),0 36px 70px -36px rgba(60,30,120,.55)}}
+@media (hover:hover){.mm-b .ec-cta:hover{box-shadow:0 36px 70px -32px rgba(26,26,26,.6)}}
 @media (max-width:999px){
   .mm-b{margin-top:22px}
   .mm-b .ec-cta{grid-template-columns:1fr;padding:22px 20px;border-radius:24px}
@@ -2221,3 +2221,11 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
   #regles .pts::-webkit-scrollbar{display:none}
   #regles .pts .pt{flex:0 0 80%;scroll-snap-align:start}
 }
+/* dates au format français */
+.date-fr{position:relative;display:block}
+.date-fr input[type=text]{width:100%;padding-right:52px;font-variant-numeric:tabular-nums}
+.date-fr input[aria-invalid=true]{box-shadow:inset 0 0 0 1.5px #C2412D}
+.date-cal{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;border-radius:12px;color:var(--mu)}
+.date-cal .i{width:19px;height:19px}
+.date-cal:hover{background:rgba(26,26,26,.06);color:var(--encre)}
+.date-natif{position:absolute!important;right:6px;bottom:0;width:40px!important;height:1px!important;min-height:0!important;opacity:0;pointer-events:none;border:0!important;padding:0!important}

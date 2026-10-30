@@ -1560,7 +1560,7 @@
     $('button', bloc).addEventListener('click', () => { bloc.hidden = true; form.hidden = false; });
     compte('apercu-envoi');
   };
-  const lignesForm = form => { const fd = Object.fromEntries(new FormData(form).entries()); delete fd._honey; return Object.entries(fd).filter(([, v]) => String(v).trim()).map(([k, v]) => `${LIB[k] || k} : ${v}`); };
+  const lignesForm = form => { const fd = Object.fromEntries(new FormData(form).entries()); delete fd._honey; return Object.entries(fd).filter(([, v]) => String(v).trim()).map(([k, v]) => `${LIB[k] || k} : ${/^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v.slice(8, 10)}/${v.slice(5, 7)}/${v.slice(0, 4)}` : v}`); };
   const envoie = async (champs) => {
     // le service répond parfois après l'envoi effectif du courriel : au-delà de 25 s sans réponse, la demande est considérée comme partie
     const ac = new AbortController(), to = setTimeout(() => ac.abort(), 25000);
@@ -1723,3 +1723,32 @@
 
 /* formulaire du simulateur de relais : le calcul se fait sur place, la page ne se recharge pas */
 document.querySelectorAll('form.rl-c').forEach(f => f.addEventListener('submit', e => e.preventDefault()));
+
+/* dates au format français (jj/mm/aaaa), quel que soit le réglage du navigateur : un champ texte affiché,
+   le champ date d'origine reste la valeur lue par les scripts et envoyée par le formulaire */
+(() => {
+  const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  const fr = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
+  const iso = t => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t); if (!m) return ''; const s = `${m[3]}-${m[2]}-${m[1]}`, d = new Date(s + 'T12:00:00'); return !isNaN(d) && d.toISOString().slice(0, 10) === s ? s : ''; };
+  document.querySelectorAll('input[type=date].in').forEach(nat => {
+    const env = document.createElement('span'); env.className = 'date-fr';
+    const txt = document.createElement('input'); txt.type = 'text'; txt.className = nat.className; txt.inputMode = 'numeric'; txt.placeholder = 'jj/mm/aaaa'; txt.maxLength = 10; txt.autocomplete = 'off';
+    if (nat.id) { txt.id = nat.id; nat.id = nat.id + '-natif'; }
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'date-cal'; bt.setAttribute('aria-label', 'Choisir dans le calendrier'); bt.innerHTML = '<svg class="i" aria-hidden="true"><use href="#ca"/></svg>';
+    nat.parentNode.insertBefore(env, nat); env.append(txt, bt, nat);
+    nat.tabIndex = -1; nat.setAttribute('aria-hidden', 'true'); nat.classList.add('date-natif');
+    Object.defineProperty(nat, 'value', { get() { return proto.get.call(this); }, set(v) { proto.set.call(this, v); if (document.activeElement !== txt) txt.value = fr(v); } });
+    txt.value = fr(proto.get.call(nat));
+    const pousse = v => { proto.set.call(nat, v); nat.dispatchEvent(new Event('input', { bubbles: true })); nat.dispatchEvent(new Event('change', { bubbles: true })); };
+    txt.addEventListener('input', () => {
+      const ch = txt.value.replace(/\D/g, '').slice(0, 8);
+      txt.value = ch.length > 4 ? `${ch.slice(0, 2)}/${ch.slice(2, 4)}/${ch.slice(4)}` : ch.length > 2 ? `${ch.slice(0, 2)}/${ch.slice(2)}` : ch;
+      const v = iso(txt.value);
+      txt.setAttribute('aria-invalid', String(ch.length === 8 && !v));
+      if (v || !ch.length) pousse(v);
+    });
+    txt.addEventListener('blur', () => { txt.value = fr(proto.get.call(nat)); txt.removeAttribute('aria-invalid'); });
+    nat.addEventListener('change', () => { if (document.activeElement !== txt) txt.value = fr(proto.get.call(nat)); });
+    bt.addEventListener('click', () => { try { nat.showPicker(); } catch { nat.focus(); } });
+  });
+})();
