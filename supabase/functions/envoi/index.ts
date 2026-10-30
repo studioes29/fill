@@ -29,8 +29,24 @@ const echap = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "
 const lierUrls = (t: string) => t.replace(/https?:\/\/[^\s<)]+[^\s<).,;:!?]/g, (u) => `<a href="${u}" style="color:#141414">${u}</a>`);
 
 const SIGNATURE: Record<string, string> = {
-  studio: "Ewen Soupault\nStudio ES · photographie, sites et applications\n06 51 22 21 07 · studioes.fr",
-  fill: "Ewen Soupault\nFill · service de communication externalisé\n06 51 22 21 07 · fill.studioes.fr",
+  studio: "Ewen Soupault\nPhotographie de reportage, sites et applications\n06 51 22 21 07 · studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
+  fill: "Ewen Soupault\nFill, service de communication externalisé\n06 51 22 21 07 · fill.studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
+};
+// signature HTML : logo, nom, métier, contacts (images hébergées sur les sites)
+const signatureHtml = (marque: string) => {
+  const fill = marque === "fill";
+  const logo = fill
+    ? `<img src="https://fill.studioes.fr/assets/mail/signature.png" width="62" height="32" alt="Fill" style="display:block;width:62px;height:32px;border:0">`
+    : `<img src="https://studioes.fr/images/signature.png" width="20" height="48" alt="Studio ES" style="display:block;width:20px;height:48px;border:0">`;
+  const role = fill ? "Service de communication externalisé" : "Photographie de reportage, sites et applications";
+  const site = fill ? ["fill.studioes.fr", "https://fill.studioes.fr/"] : ["studioes.fr", "https://studioes.fr/"];
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-collapse:collapse">
+<tr><td style="padding:2px 18px 2px 0;border-right:1px solid #E2DED5;vertical-align:middle">${logo}</td>
+<td style="padding:0 0 0 18px;vertical-align:middle;font-family:Arial,Helvetica,sans-serif">
+<div style="font:700 15px/1.3 Arial,Helvetica,sans-serif;color:#141414">Ewen Soupault</div>
+<div style="font:italic 14px/1.4 Georgia,'Times New Roman',serif;color:#6A6A66;margin-top:2px">${role}</div>
+<div style="font:13px/1.5 Arial,Helvetica,sans-serif;color:#141414;margin-top:8px"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${site[1]}" style="color:#141414;text-decoration:underline">${site[0]}</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://cal.com/studioes/30min" style="color:#141414;text-decoration:underline">Prendre rendez-vous</a></div>
+</td></tr></table>`;
 };
 
 const MAUVAIS = new Set(["hardBounces", "hard_bounce", "blocked", "spam", "invalid", "unsubscribed", "unsubscribe", "error"]);
@@ -55,7 +71,7 @@ async function envoyer(d: any) {
   const texte = `${d.corps.trim()}\n\n${sig}${pied}`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
 <div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#141414;max-width:640px">${lierUrls(echap(d.corps.trim())).replace(/\n/g, "<br>")}
-<p style="margin:22px 0 0;color:#141414">${lierUrls(echap(sig)).replace(/\n/g, "<br>")}</p>
+${signatureHtml(d.marque)}
 ${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de ma part ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
 </div></body></html>`;
   const corps: any = {
