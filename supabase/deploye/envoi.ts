@@ -64,7 +64,11 @@ ${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A
     to: [{ email: d.email, ...(d.nom ? { name: String(d.nom).slice(0, 70) } : {}) }],
     subject: d.objet, textContent: texte, htmlContent: html,
     tags: ["horschamp", d.type, d.marque],
-    headers: d.type === "prospection" ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {},
+    headers: {
+      ...(d.type === "prospection" ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
+      // une relance arrive dans la même conversation que le premier message
+      ...(d.precedent ? { "In-Reply-To": d.precedent, "References": d.precedent } : {}),
+    },
   };
   if (d.cc) corps.cc = [{ email: d.cc }];
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
