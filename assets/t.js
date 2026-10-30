@@ -203,7 +203,8 @@
       const f = document.createDocumentFragment(); let i = 0; const t = n.textContent; rx.lastIndex = 0; let m;
       while ((m = rx.exec(t))) { if (m.index > i) f.appendChild(document.createTextNode(t.slice(i, m.index))); const s = document.createElement('span'); s.className = 'lie'; s.textContent = m[0]; f.appendChild(s); i = m.index + m[0].length; }
       if (i < t.length) f.appendChild(document.createTextNode(t.slice(i)));
-      n.replaceWith(f);
+      /* texte posé directement dans un bouton (boîte flexible) : un seul bloc, sinon l'écart du bouton s'ajoute entre les mots */
+      if (n.parentElement.classList.contains('bt')) { const b = document.createElement('span'); b.appendChild(f); n.replaceWith(b); } else n.replaceWith(f);
     });
   };
   $$('h1,h2,h3,.ca b,.bt').forEach(lieTirets);

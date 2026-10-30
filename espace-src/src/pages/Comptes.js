@@ -281,7 +281,7 @@ function Comptes(e, t) {
           S,
           B(o).complet
             ? `Tous vos canaux sont prêts.`
-            : `canal${B(o).utiles > 1 ? `aux` : ``} prêt${B(o).ok + B(o).enVerif > 1 ? `s` : ``} pour la publication`,
+            : `${B(o).utiles > 1 ? `canaux` : `canal`} prêt${B(o).ok + B(o).enVerif > 1 ? `s` : ``} pour la publication`,
         ),
         W(T, ADRESSE_ACCES));
     }),

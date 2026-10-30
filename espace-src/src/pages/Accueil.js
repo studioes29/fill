@@ -386,7 +386,7 @@ function Accueil(e, t) {
                 i,
                 B(g)
                   ? `Un accès à vos comptes est à redonner`
-                  : `${B(h).aDonner} canal${B(h).aDonner > 1 ? `aux` : ``} sans accès pour Fill`,
+                  : `${B(h).aDonner} ${B(h).aDonner > 1 ? `canaux` : `canal`} sans accès pour Fill`,
               ));
           },
           [() => lienRoute(`comptes`)],
