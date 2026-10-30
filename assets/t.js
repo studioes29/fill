@@ -559,7 +559,7 @@
   /* ================================================================
      VOTRE NOM SUR LES SUPPORTS
      ================================================================ */
-  const perso = { nom: (etat.perso && etat.perso.nom) || '' };
+  const perso = { nom: '' }; // personnalisation retirée du site : on n'affiche plus de nom saisi
   const nomDefaut = () => cible === 'e' ? 'Atelier du Port' : 'Commune de Saint-Ivenec';
   const nomP = () => (perso.nom || '').trim() || nomDefaut();
   const nomCourt = () => nomP().replace(/^(commune|ville|mairie)\s+(de\s+|d[’']|du\s+)/i, '');
