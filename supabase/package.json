@@ -1,0 +1,12 @@
+{
+  "name": "fill-fonctions",
+  "private": true,
+  "type": "module",
+  "description": "Fonctions serveur Supabase de Fill et Studio ES : assemblage et vérification.",
+  "scripts": {
+    "verifier": "node assembler.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}

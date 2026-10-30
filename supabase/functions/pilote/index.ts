@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const sb = createClient(url, cle);
   const jeton = (req.headers.get("Authorization") ?? "").replace(/^Bearer /, "");
   const autorise = Boolean(cle) && jeton.length >= 32 && (jeton === cle || (await sb.rpc("verifier_jeton_pilote", { p: jeton })).data === true);
-  if (!autorise) return new Response("R\xE9serv\xE9 au serveur", { status: 401 });
+  if (!autorise) return new Response("Réservé au serveur", { status: 401 });
   const notifier = (corps) => fetch(`${url}/functions/v1/notifier`, { method: "POST", headers: { Authorization: `Bearer ${cle}`, "Content-Type": "application/json" }, body: JSON.stringify(corps) }).catch(() => null);
   const auj = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
   const per = periodeDe(auj); // mois civil : facturation

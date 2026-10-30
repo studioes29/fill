@@ -37,7 +37,7 @@ export const estimer = (e, c) => {
     const p = prestation(l.prestation);
     if (!p) return { ...vide, erreur: "Prestation inconnue." };
     if (p.min && ORDRE_FORMULES.indexOf(c.formule) < ORDRE_FORMULES.indexOf(p.min)) {
-      return { ...vide, erreur: `${p.nom} : disponible \xE0 partir de la formule ${formule(p.min).nom}.` };
+      return { ...vide, erreur: `${p.nom} : disponible à partir de la formule ${formule(p.min).nom}.` };
     }
     const q = Math.min(p.max ?? 99, l.quantite);
     detail.push({ prestation: p.id, nom: p.nom, quantite: q, unites: p.u * q, nature: natureDelai(p.id) });
@@ -78,10 +78,10 @@ export const estimer = (e, c) => {
   };
 };
 export const accordNecessaire = (est, auteur, engageCeMoisParAuteur) => {
-  if (est.horsForfait > 0) return { requis: true, motif: `${est.horsForfait} unit\xE9${est.horsForfait > 1 ? "s" : ""} hors forfait` };
+  if (est.horsForfait > 0) return { requis: true, motif: `${est.horsForfait} unité${est.horsForfait > 1 ? "s" : ""} hors forfait` };
   if (auteur.role === "contributeur") {
     const plafond = auteur.plafondMensuel ?? 0;
-    if (engageCeMoisParAuteur + est.unites > plafond) return { requis: true, motif: "Demande d\xE9pos\xE9e par un contributeur au-del\xE0 de son plafond" };
+    if (engageCeMoisParAuteur + est.unites > plafond) return { requis: true, motif: "Demande déposée par un contributeur au-delà de son plafond" };
   }
   return { requis: false, motif: null };
 };

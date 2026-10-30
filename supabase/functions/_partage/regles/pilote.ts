@@ -4,15 +4,15 @@ import { verifierCapacite } from './charge.ts';
 import { accordNecessaire } from './estimation.ts';
 
 export const decider = (d, c) => {
-  if (d.statut !== "deposee") return { auto: false, raison: "Demande d\xE9j\xE0 trait\xE9e" };
-  if (c.organisation.statut !== "active") return { auto: false, raison: "Premi\xE8res unit\xE9s pas encore cr\xE9dit\xE9es" };
+  if (d.statut !== "deposee") return { auto: false, raison: "Demande déjà traitée" };
+  if (c.organisation.statut !== "active") return { auto: false, raison: "Premières unités pas encore créditées" };
   if (!c.estimation.ok) return { auto: false, raison: c.estimation.erreur ?? "Estimation impossible" };
   if (c.estimation.nature === "planifie" || c.estimation.delaiJ === null) return { auto: false, raison: "Reportage ou bulletin : la date se fixe avec le client" };
   if (d.brief.trim().length < 20) return { auto: false, raison: "Brief trop court pour lancer la production" };
   const livraison = ajouterOuvres(c.auj, c.estimation.delaiJ, c.fermetures ?? []);
-  if (d.parution && livraison > d.parution) return { auto: false, raison: "Parution trop proche pour le d\xE9lai de la formule" };
+  if (d.parution && livraison > d.parution) return { auto: false, raison: "Parution trop proche pour le délai de la formule" };
   const cap = verifierCapacite(c.demandes, d.id, c.estimation.unites, livraison, c.capacite, c.fermetures ?? []);
-  if (!cap.tient) return { auto: false, raison: `Semaine pleine (${cap.apres} unit\xE9s sur ${cap.capacite})`, dateProposee: cap.premiereDate };
+  if (!cap.tient) return { auto: false, raison: `Semaine pleine (${cap.apres} unités sur ${cap.capacite})`, dateProposee: cap.premiereDate };
   const acc = accordNecessaire({ unites: c.estimation.unites, horsForfait: c.estimation.horsForfait }, c.auteur, c.engageAuteur);
   return { auto: true, livraison, accord: acc.motif };
 };
