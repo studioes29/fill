@@ -1,9 +1,9 @@
 /* Scripts du site (nom et domaine configurables dans site.json)
-   Une seule source de vérité pour l'offre : window.TANDEM (généré depuis offre.json).
+   Une seule source de vérité pour l'offre : window.FILL (généré depuis offre.json).
    Chaque module ne s'active que si son conteneur est présent dans la page. */
 (() => {
   'use strict';
-  const T = window.TANDEM || { offre: {}, site: {} };
+  const T = window.FILL || { offre: {}, site: {} };
   const O = T.offre, SITE = T.site;
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
