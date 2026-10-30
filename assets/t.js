@@ -923,6 +923,8 @@
   /* les photographies se posent quand elles arrivent */
   const vu1 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); vu1.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   $$('.ph-r').forEach(el => vu1.observe(el));
+  const vuEq = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vu'); vuEq.unobserve(e.target); } }), { threshold: .3 });
+  $$('.eq-maq').forEach(el => vuEq.observe(el));
   if (rub === 'entreprises' && cible !== 'e') appliqueCible('e', false);
   if (rub === 'collectivites' && cible !== 'c') appliqueCible('c', false);
 
