@@ -324,12 +324,14 @@
   const structure = s => s && ({ src: s.src, formule: s.formule, panier: s.panier, urg: s.urg, relais: s.relais, rl: s.rl, cal: s.cal });
 
   /* calendrier : chaque temps fort choisi correspond à un ensemble de prestations du catalogue */
+  /* @calendrier-type:packs:debut (repère lu par espace-src/construire.mjs : après modification, relancer npm run construire dans espace-src) */
   const PACKS = {
     pub: { l: 'Publication', p: { post: 1 } }, pa: { l: 'Publication et actualité', p: { post: 1, actu: 1 } },
     aff: { l: 'Affiche et deux publications', p: { affiche: 1, post: 2 } }, news: { l: 'Newsletter', p: { news: 1 } },
     cp: { l: 'Communiqué et publication', p: { presse: 1, post: 1 } }, prog: { l: 'Programme recto verso et publication', p: { flyer: 1, post: 1 } },
     bul: { l: 'Bulletin de 8 pages', p: { bulletin: 8 } }, photo: { l: 'Reportage photo', p: { photo: 1 } }, video: { l: 'Vidéo courte', p: { video: 1 } }
   };
+  /* @calendrier-type:packs:fin */
   const panierCal = evs => { const tot = [{}, {}, {}]; evs.forEach(e => Object.entries(PACKS[e.k].p).forEach(([k, n]) => { tot[e.m][k] = (tot[e.m][k] || 0) + n; })); return tot; };
   const auj0 = new Date(); const MOIS3 = [1, 2, 3].map(n => new Date(auj0.getFullYear(), auj0.getMonth() + n, 1));
   const mNom = m => m.toLocaleDateString('fr-FR', { month: 'long' });
@@ -781,6 +783,7 @@
   const cal = $('#cal');
   if (cal) {
     // jour, temps fort, ensemble de prestations (voir PACKS)
+    /* @calendrier-type:mois:debut (repère lu par espace-src/construire.mjs : après modification, relancer npm run construire dans espace-src) */
     const D = {
       c: { 1: [[6, 'Vœux du maire', 'aff'], [20, 'Bulletin d’hiver', 'bul'], [27, 'Recensement', 'pa']], 2: [[3, 'Débat d’orientation budgétaire', 'pa'], [10, 'Vacances d’hiver', 'prog'], [24, 'Travaux de printemps', 'pa']],
         3: [[8, 'Journée des droits des femmes', 'pub'], [14, 'Budget voté', 'pa'], [21, 'Nettoyage de printemps', 'aff']], 4: [[1, 'Inscriptions scolaires', 'pa'], [12, 'Vacances de printemps', 'prog'], [25, 'Chasse aux œufs', 'aff']],
@@ -795,6 +798,7 @@
         9: [[8, 'Rentrée commerciale', 'pa'], [16, 'Salon de rentrée', 'aff'], [29, 'Lettre clients', 'news']], 10: [[7, 'Nouvelle réalisation', 'photo'], [14, 'Semaine de l’industrie', 'pub'], [28, 'Recrutement', 'pa']],
         11: [[4, 'Retour d’expérience client', 'pa'], [18, 'Vœux de fin d’année', 'aff'], [25, 'Lettre clients', 'news']], 12: [[5, 'Bilan de l’année', 'pa'], [12, 'Vœux aux clients', 'news'], [19, 'Fermeture des fêtes', 'pub']] }
     };
+    /* @calendrier-type:mois:fin */
     const uPack = k => unitesPanier(PACKS[k].p);
     const g = $('.cal-g', cal), som = $('.cal-s', cal), go = $('[data-cal-go]', cal), lienB = $('[data-cal-lien]', cal);
     let choix = (etat.cal && etat.cal.v === 1) ? etat.cal : { v: 1, coche: {}, ajouts: [] };
