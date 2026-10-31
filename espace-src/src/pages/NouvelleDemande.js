@@ -197,22 +197,24 @@ function NouvelleDemande(e, t) {
     a = M(() => organisation(B(i)?.organisationId ?? B(r).organisationId)),
     o = M(() => !!n() && (!B(i) || !peutModifier(B(i).statut, B(r).role, B(i).auteurId === B(r).id))),
     s = yr(() => (n() ? (demande(n()) ?? null) : null)),
-    c = yr(() => (n() ? null : lireSaisie(moi().organisationId))),
-    l = N(en(c?.qte ?? Object.fromEntries((s?.lignes ?? []).map((e) => [e.prestation, e.quantite])))),
-    u = N(
+    // valeurs passées par un autre écran (Calendrier : parution ; Accueil, temps forts : titre, prestations, parution),
+    // lues une fois puis vidées. Un pré-remplissage avec titre l'emporte sur le brouillon gardé.
+    pre = yr(() => {
+      let e = etat.prerempli;
+      return ((etat.prerempli = null), e);
+    }),
+    c = yr(() => (n() || (!s && pre?.titre) ? null : lireSaisie(moi().organisationId))),
+    l = N(
       en(
-        c?.parution ??
-          s?.parution ??
-          yr(() => {
-            let e = etat.prerempli?.parution ?? ``;
-            return ((etat.prerempli = null), e);
-          }),
+        c?.qte ??
+          (s ? Object.fromEntries((s.lignes ?? []).map((e) => [e.prestation, e.quantite])) : { ...(pre?.qte ?? {}) }),
       ),
     ),
+    u = N(en(c?.parution ?? s?.parution ?? pre?.parution ?? ``)),
     d = N(en(c?.urgente ?? s?.urgente ?? !1)),
     f = N(en(c?.heure ?? s?.heure ?? ``)),
     p = N(en(!!(c?.heure ?? s?.heure))),
-    m = N(en(c?.titre ?? s?.titre ?? ``)),
+    m = N(en(c?.titre ?? s?.titre ?? (s ? `` : (pre?.titre ?? ``)))),
     h = N(en(c?.brief ?? s?.brief ?? ``)),
     g = N(en(!!c)),
     _ = () => {

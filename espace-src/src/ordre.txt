@@ -16,6 +16,7 @@ regles/format.js
 regles/pilote.js
 regles/registre.js
 regles/atelier.js
+regles/tempsforts.js
 donnees/demo.js
 vendor/supabase-js.js
 donnees/supabase.js

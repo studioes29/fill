@@ -45,8 +45,15 @@ var D_ = H(`<a class="bt lg"><!>Nouvelle demande</a>`),
   ),
   q_ = H(`<ol class="parutions svelte-5ho6zo"></ol>`),
   J_ = H(`<p class="mu petit p-vide svelte-5ho6zo">Aucune date de parution à venir.</p>`),
+  // bloc « À anticiper » : prochains temps forts du calendrier type (regles/tempsforts.js)
+  Tf_ = H(
+    `<li class="svelte-5ho6zo"><span class="jour svelte-5ho6zo"><b class="num svelte-5ho6zo"> </b> </span><a class="tf-a svelte-5ho6zo"><span class="tf-t svelte-5ho6zo"><span class="sr">Préparer une demande : </span><b class="svelte-5ho6zo"> </b><small class="svelte-5ho6zo"> </small></span><span class="tf-go svelte-5ho6zo" aria-hidden="true"><!></span></a></li>`,
+  ),
+  TfB_ = H(
+    `<section class="carte pad" aria-labelledby="t-tf"><h2 class="t3" id="t-tf">À anticiper</h2> <p class="tres-petit mu tf-note svelte-5ho6zo">Suggestions tirées d’un calendrier type de l’année. Les dates sont indicatives : choisir un temps fort ouvre une demande déjà préparée, à compléter.</p> <ol class="parutions tf svelte-5ho6zo"></ol></section>`,
+  ),
   Y_ = H(
-    `<!> <div class="feuille"><div class="w entre"><!> <!> <!> <!> <div class="grille svelte-5ho6zo"><section class="carte pad cours svelte-5ho6zo" aria-labelledby="t-cours"><div class="entete"><h2 class="t2" id="t-cours">En cours</h2> <a class="lien">Toutes les demandes <!></a></div> <!></section> <aside class="cote svelte-5ho6zo"><a class="carte pad unites carte-lien svelte-5ho6zo"><div class="entete"><h2 class="t3"> </h2><span class="fl svelte-5ho6zo" aria-hidden="true"><!></span></div> <div class="u-corps svelte-5ho6zo"><!> <dl class="num svelte-5ho6zo"><div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c1 svelte-5ho6zo"></i>Disponibles</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c2 svelte-5ho6zo"></i>Réservées</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c3 svelte-5ho6zo"></i>Décomptées</dt><dd class="svelte-5ho6zo"> </dd></div></dl></div> <!></a> <section class="carte pad" aria-labelledby="t-par"><h2 class="t3" id="t-par">Prochaines parutions</h2> <!></section></aside></div></div></div>`,
+    `<!> <div class="feuille"><div class="w entre"><!> <!> <!> <!> <div class="grille svelte-5ho6zo"><section class="carte pad cours svelte-5ho6zo" aria-labelledby="t-cours"><div class="entete"><h2 class="t2" id="t-cours">En cours</h2> <a class="lien">Toutes les demandes <!></a></div> <!></section> <aside class="cote svelte-5ho6zo"><a class="carte pad unites carte-lien svelte-5ho6zo"><div class="entete"><h2 class="t3"> </h2><span class="fl svelte-5ho6zo" aria-hidden="true"><!></span></div> <div class="u-corps svelte-5ho6zo"><!> <dl class="num svelte-5ho6zo"><div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c1 svelte-5ho6zo"></i>Disponibles</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c2 svelte-5ho6zo"></i>Réservées</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c3 svelte-5ho6zo"></i>Décomptées</dt><dd class="svelte-5ho6zo"> </dd></div></dl></div> <!></a> <section class="carte pad" aria-labelledby="t-par"><h2 class="t3" id="t-par">Prochaines parutions</h2> <!></section> <!></aside></div></div></div>`,
     1,
   );
 function Accueil(e, t) {
@@ -83,7 +90,8 @@ function Accueil(e, t) {
     p = M(() => B(o).length === 0),
     m = M(() => membres(B(r).id).length - 1),
     h = M(() => etatAcces(B(r).acces)),
-    g = M(() => (B(r).acces ?? []).some((e) => e.statut === `a_donner` && e.note));
+    g = M(() => (B(r).acces ?? []).some((e) => e.statut === `a_donner` && e.note)),
+    tf = M(() => (B(n).role === `lecteur` ? [] : prochainsTempsForts(B(r), B(o), 4)));
   var _ = Y_(),
     v = I(_);
   {
@@ -669,7 +677,58 @@ function Accueil(e, t) {
   (G(k, (e) => {
     B(u).length ? e(Te) : e(Ee, -1);
   }),
-    A(we),
+    A(we));
+  var tfAncre = R(we, 2),
+    tfBloc = (e) => {
+      var t = TfB_(),
+        n = R(F(t), 4);
+      (K(
+        n,
+        21,
+        () => B(tf),
+        (e) => e.cle,
+        (e, t) => {
+          var n = Tf_(),
+            r = F(n),
+            i = F(r),
+            a = L(i, !0),
+            o = R(i, 1, !0);
+          A(r);
+          var s = R(r),
+            c = F(s),
+            l = R(F(c)),
+            d = L(l, !0),
+            u = L(R(l), !0);
+          A(c);
+          var f = R(c);
+          (Icone(F(f), {
+            n: `ar`,
+            taille: 16,
+          }),
+            A(f),
+            A(s),
+            A(n),
+            z(
+              (e, n, r) => {
+                (W(a, e), W(o, n), J(s, `href`, r), W(d, B(t).titre), W(u, B(t).libelle));
+              },
+              [
+                () => Number(B(t).date.slice(8)),
+                () => jourCourt(B(t).date).split(` `)[1],
+                () => lienRoute(`nouvelle`),
+              ],
+            ),
+            V(`click`, s, (e) => preparerTempsFort(B(t), e)),
+            U(e, n));
+        },
+      ),
+        A(n),
+        A(t),
+        U(e, t));
+    };
+  (G(tfAncre, (e) => {
+    B(tf).length && e(tfBloc);
+  }),
     A(ce),
     A(D),
     A(b),

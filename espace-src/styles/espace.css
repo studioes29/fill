@@ -3465,6 +3465,36 @@ dd.svelte-5ho6zo {
 .p-vide.svelte-5ho6zo {
   margin-top: 8px;
 }
+.tf-note.svelte-5ho6zo {
+  margin-top: 6px;
+  line-height: 1.45;
+}
+.tf.svelte-5ho6zo .tf-a:where(.svelte-5ho6zo) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.tf-t.svelte-5ho6zo {
+  gap: 1px;
+  min-width: 0;
+  display: grid;
+}
+.tf-go.svelte-5ho6zo {
+  background: var(--encre);
+  width: 30px;
+  height: 30px;
+  color: var(--ntx);
+  transition:
+    transform 0.45s var(--sp),
+    background 0.3s;
+  border-radius: 50%;
+  place-items: center;
+  display: grid;
+}
+.tf-a.svelte-5ho6zo:hover .tf-go:where(.svelte-5ho6zo) {
+  background: var(--c-f);
+  transform: rotate(-45deg);
+}
 @media (width<=980px) {
   .grille.svelte-5ho6zo {
     grid-template-columns: minmax(0, 1fr);
