@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /assets/pj/
 Allow: /
 Disallow: /espace/
 
