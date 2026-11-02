@@ -61,6 +61,21 @@ async function bloqueBrevo(email: string) {
   return Boolean((await r.json().catch(() => ({}))).emailBlacklisted);
 }
 
+// pièces jointes (Hors-champ ne les met que sur le premier message) : liens https vers nos sites, PDF ou Word, 2 au plus.
+// Brevo, /v3/smtp/email : attachment = [{ url, name }], url absolue, extension du nom dans sa liste autorisée.
+const PJ_HOTES = new Set(["fill.studioes.fr", "studioes.fr", "www.studioes.fr"]);
+const PJ_EXT = /\.(pdf|docx|doc|odt)$/i;
+const piecesJointes = (pj: unknown) => (Array.isArray(pj) ? pj : []).map((p: any) => {
+  try {
+    const u = new URL(String(p?.url ?? "").trim());
+    const ext = PJ_EXT.exec(u.pathname);
+    if (u.protocol !== "https:" || !PJ_HOTES.has(u.hostname) || !ext) return null;
+    let nom = String(p?.nom ?? "").replace(/[\\/:*?"<>|\r\n]+/g, " ").trim() || decodeURIComponent(u.pathname.split("/").pop() ?? "");
+    if (!nom.toLowerCase().endsWith(ext[0].toLowerCase())) nom += ext[0].toLowerCase();
+    return { url: u.href, name: nom.slice(-120) };
+  } catch { return null; }
+}).filter(Boolean).slice(0, 2) as { url: string; name: string }[];
+
 async function envoyer(d: any) {
   const stop = await lienStop(d.email);
   const sig = SIGNATURE[d.marque] ?? SIGNATURE.studio;
@@ -84,6 +99,8 @@ ${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A
     },
   };
   if (d.cc) corps.cc = [{ email: d.cc }];
+  const pj = piecesJointes(d.pj);
+  if (pj.length) corps.attachment = pj;
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST", headers: { "api-key": BREVO, "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(corps),
   });
