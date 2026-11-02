@@ -4,7 +4,7 @@
 -- 5 unités (Essentiel), 11 (Régulier), 23 (Soutenu).
 -- Les autres dates et Relais ne changent pas. Le bloc devient inerte après le 30 novembre ;
 -- il peut rester en place ou être retiré en remettant la version précédente de _activer.
--- À APPLIQUER SEULEMENT APRÈS VALIDATION D'EWEN.
+-- Validée par Ewen le 3 novembre 2026, appliquée en production.
 
 create or replace function public._activer(p_organisation uuid)
  returns void
