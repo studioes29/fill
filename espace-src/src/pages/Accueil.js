@@ -64,12 +64,10 @@ var D_ = H(`<a class="bt lg"><!>Nouvelle demande</a>`),
   // tableau de bord personnalisable : un module par carte, barre d'outils en mode personnalisation
   Mod_ = H(`<div class="mod svelte-5ho6zo"><!> <div class="mod-corps svelte-5ho6zo"><!></div></div>`),
   Outils_ = H(
-    `<div class="mod-outils svelte-5ho6zo"><button type="button" class="mod-poignee svelte-5ho6zo"><!><b class="svelte-5ho6zo"> </b></button> <span class="mod-bts svelte-5ho6zo"><button type="button" class="mod-bt mod-monter svelte-5ho6zo"><!></button><button type="button" class="mod-bt mod-descendre svelte-5ho6zo"><!></button><!><!></span></div>`,
+    `<div class="mod-outils svelte-5ho6zo"><button type="button" class="mod-poignee svelte-5ho6zo"><!><b class="svelte-5ho6zo"> </b></button> <span class="mod-bts svelte-5ho6zo"><button type="button" class="mod-bt mod-monter svelte-5ho6zo"><!></button><button type="button" class="mod-bt mod-descendre svelte-5ho6zo"><!></button><button type="button" class="mod-bt mod-masq svelte-5ho6zo"><!></button></span></div>`,
   ),
-  Larg_ = H(
-    `<button type="button" class="mod-bt mod-larg svelte-5ho6zo"><span class="ic-larg svelte-5ho6zo" aria-hidden="true"><i class="svelte-5ho6zo"></i><i class="svelte-5ho6zo"></i></span></button>`,
-  ),
-  Masq_ = H(`<button type="button" class="mod-bt mod-masq svelte-5ho6zo"><!></button>`),
+  // carte fixe (« À faire de votre côté ») : pas de poignée ni de boutons, une simple mention
+  Fixe_ = H(`<p class="mod-fixe svelte-5ho6zo">Toujours en tête de l’accueil</p>`),
   Masque_ = H(`<div class="mod-masque svelte-5ho6zo"><span>Carte masquée sur votre accueil</span></div>`),
   Act_ = H(`<!> <!>`, 1),
   Perso_ = H(`<button type="button" class="bt cl lg tdb-perso svelte-5ho6zo" title="Personnaliser l’accueil"><!><span class="tdb-perso-l svelte-5ho6zo">Personnaliser</span></button>`),
@@ -82,8 +80,9 @@ var D_ = H(`<a class="bt lg"><!>Nouvelle demande</a>`),
     1,
   );
 
-// Disposition du tableau de bord (Accueil), par utilisateur, dans le stockage du navigateur.
-// Le profil n'a pas de champ libre en base : l'enregistrer côté serveur demandera une migration.
+// Disposition du tableau de bord (Accueil), par utilisateur, dans le stockage du navigateur (choix assumé :
+// pas d'enregistrement en base). Seuls l'ordre et les cartes masquées sont personnalisables ; les largeurs
+// sont fixées par le code (tdbLargeur) et toute largeur mémorisée par une version précédente est ignorée.
 var TDB_MODULES = [`afaire`, `cours`, `unites`, `parutions`, `anticiper`],
   TDB_NOMS = {
     afaire: `À faire de votre côté`,
@@ -92,23 +91,19 @@ var TDB_MODULES = [`afaire`, `cours`, `unites`, `parutions`, `anticiper`],
     parutions: `Prochaines parutions`,
     anticiper: `À anticiper`,
   },
-  // toujours en pleine largeur et toujours affiché : ce sont les actions attendues du client
+  // en tête, en pleine largeur, ni déplaçable ni masquable : ce sont les actions attendues du client
   TDB_FIXES = [`afaire`],
   cleTableauDeBord = (e) => `fill-tableau-de-bord-${e ?? `anonyme`}`,
   normaliserTableauDeBord = (e) => {
     let t = e && typeof e == `object` ? e : {},
       n = Array.isArray(t.ordre) ? t.ordre.filter((e, t, n) => TDB_MODULES.includes(e) && n.indexOf(e) === t) : [];
     for (let e of TDB_MODULES) n.includes(e) || n.splice(Math.min(TDB_MODULES.indexOf(e), n.length), 0, e);
+    // les cartes fixes passent devant, quel que soit l'ordre mémorisé
     return {
-      ordre: n,
+      ordre: [...TDB_FIXES, ...n.filter((e) => !TDB_FIXES.includes(e))],
       masques: Array.isArray(t.masques)
         ? t.masques.filter((e, t, n) => TDB_MODULES.includes(e) && !TDB_FIXES.includes(e) && n.indexOf(e) === t)
         : [],
-      largeurs: Object.fromEntries(
-        Object.entries(t.largeurs && typeof t.largeurs == `object` ? t.largeurs : {}).filter(
-          ([e, t]) => TDB_MODULES.includes(e) && !TDB_FIXES.includes(e) && (t === `simple` || t === `double`),
-        ),
-      ),
     };
   },
   lireTableauDeBord = (e) => {
@@ -121,7 +116,7 @@ var TDB_MODULES = [`afaire`, `cours`, `unites`, `parutions`, `anticiper`],
   },
   ecrireTableauDeBord = (e, t) => {
     try {
-      localStorage.setItem(cleTableauDeBord(e), JSON.stringify({ v: 1, ...t }));
+      localStorage.setItem(cleTableauDeBord(e), JSON.stringify({ v: 2, ordre: t.ordre, masques: t.masques }));
     } catch {}
   },
   effacerTableauDeBord = (e) => {
@@ -166,13 +161,7 @@ function Accueil(e, t) {
     g = M(() => (B(r).acces ?? []).some((e) => e.statut === `a_donner` && e.note)),
     tf = M(() => (B(n).role === `lecteur` ? [] : prochainsTempsForts(B(r), B(o), 4)));
   // --- Tableau de bord : modules déplaçables (mode « Personnaliser ») ---
-  let tdbLargeursDefaut = {
-      cours: `double`,
-      unites: `simple`,
-      parutions: `simple`,
-      anticiper: `double`,
-    },
-    tdbMoi = () => B(n).id,
+  let tdbMoi = () => B(n).id,
     tdbDisp = N(lireTableauDeBord(tdbMoi()) ?? normaliserTableauDeBord(null)),
     tdbEdition = N(!1),
     tdbGlisse = N(null),
@@ -181,7 +170,24 @@ function Accueil(e, t) {
     tdbVisibles = M(() =>
       B(tdbDisp).ordre.filter((e) => tdbApplicable(e) && (B(tdbEdition) || !B(tdbDisp).masques.includes(e))),
     ),
-    tdbLargeur = (e) => (TDB_FIXES.includes(e) ? `pleine` : (B(tdbDisp).largeurs[e] ?? tdbLargeursDefaut[e])),
+    // cartes que l'utilisateur peut déplacer, dans l'ordre affiché (les cartes fixes restent devant)
+    tdbMobiles = M(() => B(tdbVisibles).filter((e) => !TDB_FIXES.includes(e))),
+    // largeurs fixées par le code : « À faire » en pleine largeur ; les autres en largeur simple, sauf les cartes
+    // « extensibles » qui occupent le reste de leur ligne : « En cours » sur 3 colonnes, « En cours » et « Unités »
+    // sur 2 colonnes. Aucun trou ne se forme avant une carte ; au pire, la dernière ligne est incomplète.
+    TDB_EXTENSIBLES = { 3: [`cours`], 2: [`cours`, `unites`] },
+    // position de départ de chaque carte dans sa ligne, pour 3 et 2 colonnes (la grille CSS choisit le nombre)
+    tdbRangs = M(() => {
+      let e = {};
+      for (let t of [3, 2]) {
+        let n = 0;
+        for (let r of B(tdbMobiles)) {
+          e[`${r}/${t}`] = n;
+          n = (n + (TDB_EXTENSIBLES[t].includes(r) ? t - n : 1)) % t;
+        }
+      }
+      return e;
+    }),
     tdbReduit = () => typeof matchMedia < `u` && matchMedia(`(prefers-reduced-motion: reduce)`).matches,
     tdbGrille = null,
     tdbEnregistrer = (e) => {
@@ -210,7 +216,7 @@ function Accueil(e, t) {
       });
     },
     tdbDeplacer = (e, t, n = !0) => {
-      let r = B(tdbVisibles).slice(),
+      let r = B(tdbMobiles).slice(),
         i = r.indexOf(e);
       if (i < 0) return;
       if (((t = Math.max(0, Math.min(r.length - 1, t))), t === i)) return;
@@ -228,7 +234,7 @@ function Accueil(e, t) {
         (r && !r.disabled ? r : n?.querySelector(`.mod-poignee`))?.focus();
       }),
     tdbClavier = (e, t) => {
-      let n = B(tdbVisibles),
+      let n = B(tdbMobiles),
         r = n.indexOf(t),
         i = {
           ArrowUp: r - 1,
@@ -242,7 +248,7 @@ function Accueil(e, t) {
     },
     // glisser-déposer à la souris, au doigt ou au stylet (Pointer Events), par la poignée de la carte
     tdbPrise = (e, t, n) => {
-      if ((e.button ?? 0) > 0 || !B(tdbEdition) || B(tdbGlisse)) return;
+      if ((e.button ?? 0) > 0 || !B(tdbEdition) || B(tdbGlisse) || TDB_FIXES.includes(t)) return;
       let r = n.closest(`.mod`),
         i = tdbGrille;
       if (!r || !i) return;
@@ -266,7 +272,8 @@ function Accueil(e, t) {
           let e = i.getBoundingClientRect(),
             n = null;
           for (let t of i.children) {
-            if (t === r || !t.dataset.id) continue;
+            // une carte fixe n'est jamais une cible : rien ne passe devant elle
+            if (t === r || !t.dataset.id || TDB_FIXES.includes(t.dataset.id)) continue;
             let i = e.left + t.offsetLeft,
               a = e.top + t.offsetTop;
             if (c >= i && c <= i + t.offsetWidth && l >= a && l <= a + t.offsetHeight) {
@@ -281,7 +288,7 @@ function Accueil(e, t) {
           // court délai après chaque échange : les cartes se replacent avant un nouveau test
           n !== d &&
             performance.now() > w &&
-            ((d = n), (w = performance.now() + 280), tdbDeplacer(t, B(tdbVisibles).indexOf(n), !1));
+            ((d = n), (w = performance.now() + 280), tdbDeplacer(t, B(tdbMobiles).indexOf(n), !1));
         },
         g = () => {
           if (p) return;
@@ -320,7 +327,7 @@ function Accueil(e, t) {
                   easing: `cubic-bezier(0.16, 1, 0.3, 1)`,
                 });
             }));
-          let g = B(tdbVisibles);
+          let g = B(tdbMobiles);
           P(
             tdbAnnonce,
             a ? `Déplacement annulé.` : `${TDB_NOMS[t]} : position ${g.indexOf(t) + 1} sur ${g.length}.`,
@@ -1029,8 +1036,7 @@ function Accueil(e, t) {
       var s = R(r, 2),
         c = F(s),
         l = R(c),
-        u = R(l),
-        d = R(u);
+        u = R(l);
       (Icone(F(c), {
         n: `haut`,
         taille: 16,
@@ -1038,76 +1044,28 @@ function Accueil(e, t) {
         Icone(F(l), {
           n: `bas`,
           taille: 16,
-        }));
-      var f = (e) => {
-          var n = Larg_();
-          (z(() => {
-            let e = tdbLargeur(t()) === `double`;
-            (J(n, `aria-pressed`, `${e}`),
-              J(n, `aria-label`, `Carte large : ${TDB_NOMS[t()]}`),
-              J(n, `title`, e ? `Revenir à une largeur simple` : `Passer en largeur double`));
-          }),
-            V(`click`, n, () => {
-              let e = t();
-              (tdbAnimer(() =>
-                tdbEnregistrer({
-                  ...B(tdbDisp),
-                  largeurs: {
-                    ...B(tdbDisp).largeurs,
-                    [e]: tdbLargeur(e) === `double` ? `simple` : `double`,
-                  },
-                }),
-              ),
-                P(tdbAnnonce, `${TDB_NOMS[e]} : largeur ${tdbLargeur(e) === `double` ? `double` : `simple`}.`));
-            }),
-            U(e, n));
-        },
-        p = (e) => {
-          var n = Masq_(),
-            r = F(n);
-          (Icone(r, {
-            get n() {
-              return B(tdbDisp).masques.includes(t()) ? `oeil` : `oeil-barre`;
-            },
-            taille: 18,
-          }),
-            z(() => {
-              let e = B(tdbDisp).masques.includes(t());
-              (J(n, `aria-label`, `${e ? `Afficher` : `Masquer`} : ${TDB_NOMS[t()]}`),
-                J(n, `title`, e ? `Afficher la carte` : `Masquer la carte`));
-            }),
-            V(`click`, n, () => {
-              let e = t(),
-                n = B(tdbDisp).masques.includes(e);
-              (tdbAnimer(() =>
-                tdbEnregistrer({
-                  ...B(tdbDisp),
-                  masques: n ? B(tdbDisp).masques.filter((t) => t !== e) : [...B(tdbDisp).masques, e],
-                }),
-              ),
-                P(tdbAnnonce, `${TDB_NOMS[e]} : carte ${n ? `affichée` : `masquée`}.`),
-                tdbRefocus(e, `.mod-masq`));
-            }),
-            U(e, n));
-        };
-      (G(u, (e) => {
-        TDB_FIXES.includes(t()) || e(f);
-      }),
-        G(d, (e) => {
-          TDB_FIXES.includes(t()) || e(p);
+        }),
+        Icone(F(u), {
+          get n() {
+            return B(tdbDisp).masques.includes(t()) ? `oeil` : `oeil-barre`;
+          },
+          taille: 18,
         }),
         A(s),
         A(n),
         z(() => {
           let e = TDB_NOMS[t()],
-            n = B(tdbVisibles),
-            i = n.indexOf(t());
+            n = B(tdbMobiles),
+            i = n.indexOf(t()),
+            a = B(tdbDisp).masques.includes(t());
           (W(o, e),
             J(r, `aria-label`, `Déplacer : ${e}, position ${i + 1} sur ${n.length}`),
             (c.disabled = i <= 0),
             (l.disabled = i >= n.length - 1),
             J(c, `aria-label`, `Monter : ${e}`),
-            J(l, `aria-label`, `Descendre : ${e}`));
+            J(l, `aria-label`, `Descendre : ${e}`),
+            J(u, `aria-label`, `${a ? `Afficher` : `Masquer`} : ${e}`),
+            J(u, `title`, a ? `Afficher la carte` : `Masquer la carte`));
         }),
         V(`pointerdown`, r, (e) => {
           (e.stopPropagation(), tdbPrise(e, t(), r));
@@ -1115,11 +1073,23 @@ function Accueil(e, t) {
         V(`keydown`, r, (e) => tdbClavier(e, t())),
         V(`click`, c, () => {
           let e = t();
-          (tdbDeplacer(e, B(tdbVisibles).indexOf(e) - 1), tdbRefocus(e, `.mod-monter`));
+          (tdbDeplacer(e, B(tdbMobiles).indexOf(e) - 1), tdbRefocus(e, `.mod-monter`));
         }),
         V(`click`, l, () => {
           let e = t();
-          (tdbDeplacer(e, B(tdbVisibles).indexOf(e) + 1), tdbRefocus(e, `.mod-descendre`));
+          (tdbDeplacer(e, B(tdbMobiles).indexOf(e) + 1), tdbRefocus(e, `.mod-descendre`));
+        }),
+        V(`click`, u, () => {
+          let e = t(),
+            n = B(tdbDisp).masques.includes(e);
+          (tdbAnimer(() =>
+            tdbEnregistrer({
+              ...B(tdbDisp),
+              masques: n ? B(tdbDisp).masques.filter((t) => t !== e) : [...B(tdbDisp).masques, e],
+            }),
+          ),
+            P(tdbAnnonce, `${TDB_NOMS[e]} : carte ${n ? `affichée` : `masquée`}.`),
+            tdbRefocus(e, `.mod-masq`));
         }),
         U(e, n));
     },
@@ -1133,7 +1103,7 @@ function Accueil(e, t) {
       let c;
       (J(i, `data-id`, n),
         G(a, (e) => {
-          B(tdbEdition) && e((e) => tdbOutils(e, r));
+          B(tdbEdition) && (TDB_FIXES.includes(n) ? e((e) => U(e, Fixe_()), 1) : e((e) => tdbOutils(e, r)));
         }),
         G(s, (e) => {
           B(tdbEdition) && B(tdbDisp).masques.includes(n)
@@ -1151,13 +1121,21 @@ function Accueil(e, t) {
         A(o),
         A(i),
         V(`pointerdown`, i, (e) => {
-          e.pointerType === `mouse` && !e.target.closest(`button`) && tdbPrise(e, n, i);
+          e.pointerType === `mouse` && !TDB_FIXES.includes(n) && !e.target.closest(`button`) && tdbPrise(e, n, i);
         }),
         z(() => {
-          let e = tdbLargeur(n);
+          let e = TDB_FIXES.includes(n),
+            rg = B(tdbRangs),
+            x3 = TDB_EXTENSIBLES[3].includes(n),
+            x2 = TDB_EXTENSIBLES[2].includes(n);
           ((c = q(i, 1, `mod svelte-5ho6zo`, null, c, {
-            double: e === `double`,
-            pleine: e === `pleine`,
+            pleine: e,
+            fixe: e,
+            "ext-3": x3,
+            "ext-2": x2,
+            "r3-1": x3 && rg[`${n}/3`] === 1,
+            "r3-2": x3 && rg[`${n}/3`] === 2,
+            "r2-1": x2 && rg[`${n}/2`] === 1,
             masque: B(tdbDisp).masques.includes(n),
             glisse: B(tdbGlisse) === n,
           })),

@@ -3484,7 +3484,9 @@ dd.svelte-5ho6zo {
   background: var(--c-f);
   transform: rotate(-45deg);
 }
-/* Tableau de bord : grille de modules (largeur simple, double ou pleine) */
+/* Tableau de bord : grille de 1, 2 ou 3 colonnes selon la place. Largeurs fixées par le code :
+   « À faire » en pleine largeur ; les cartes extensibles occupent le reste de leur ligne (« En cours » sur
+   3 colonnes, « En cours » et « Unités » sur 2), les autres sont en largeur simple. */
 .tdb-zone.svelte-5ho6zo {
   container: tdb / inline-size;
   gap: 18px;
@@ -3492,8 +3494,8 @@ dd.svelte-5ho6zo {
   display: grid;
 }
 .tdb.svelte-5ho6zo {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
   gap: 20px;
   min-width: 0;
   display: grid;
@@ -3509,9 +3511,29 @@ dd.svelte-5ho6zo {
 .mod.pleine.svelte-5ho6zo {
   grid-column: 1/-1;
 }
-@container tdb (width>=620px) {
-  .mod.double.svelte-5ho6zo {
+@container tdb (width>=620px) and (width<940px) {
+  .tdb.svelte-5ho6zo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mod.ext-2.svelte-5ho6zo {
+    grid-column: 1/-1;
+  }
+  .mod.ext-2.r2-1.svelte-5ho6zo {
+    grid-column: span 1;
+  }
+}
+@container tdb (width>=940px) {
+  .tdb.svelte-5ho6zo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .mod.ext-3.svelte-5ho6zo {
+    grid-column: 1/-1;
+  }
+  .mod.ext-3.r3-1.svelte-5ho6zo {
     grid-column: span 2;
+  }
+  .mod.ext-3.r3-2.svelte-5ho6zo {
+    grid-column: span 1;
   }
 }
 .mod-corps.svelte-5ho6zo {
@@ -3586,8 +3608,16 @@ dd.svelte-5ho6zo {
   -webkit-user-select: none;
   user-select: none;
 }
-.tdb.edition.svelte-5ho6zo .mod:where(.svelte-5ho6zo) {
+.tdb.edition.svelte-5ho6zo .mod:where(.svelte-5ho6zo):not(.fixe) {
   cursor: grab;
+}
+.mod-fixe.svelte-5ho6zo {
+  color: var(--mu);
+  align-items: center;
+  min-height: 42px;
+  padding: 0 4px;
+  font-size: 13.5px;
+  display: flex;
 }
 .tdb.edition.svelte-5ho6zo .mod-corps:where(.svelte-5ho6zo) {
   border-radius: var(--r);
@@ -3668,24 +3698,6 @@ dd.svelte-5ho6zo {
 .mod-bt.svelte-5ho6zo:disabled {
   opacity: 0.3;
   pointer-events: none;
-}
-.ic-larg.svelte-5ho6zo {
-  gap: 2px;
-  width: 18px;
-  height: 12px;
-  display: flex;
-}
-.ic-larg.svelte-5ho6zo i:where(.svelte-5ho6zo) {
-  border: 1.6px solid;
-  border-radius: 3px;
-  flex: 1;
-}
-.ic-larg.svelte-5ho6zo i:where(.svelte-5ho6zo):last-child {
-  border-style: dashed;
-}
-.mod-larg[aria-pressed="true"].svelte-5ho6zo .ic-larg:where(.svelte-5ho6zo) i:where(.svelte-5ho6zo) {
-  background: currentColor;
-  border-style: solid;
 }
 .mod-masque.svelte-5ho6zo {
   border-radius: var(--r);
