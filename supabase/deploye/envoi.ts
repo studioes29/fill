@@ -127,6 +127,8 @@ async function passage(forcer = false) {
       if (ev) { await sb.rpc("sequence_arreter", { p_email: d.email, p_statut: ev === "unsubscribed" || ev === "spam" ? "desinscrit" : "erreur", p_raison: `Brevo : ${ev}` }); bilan.push({ email: d.email, arrete: ev }); continue; }
     }
     try {
+      // sequence_dus ne renvoie pas (encore) les pièces jointes : on les lit sur le message lui-même
+      if (d.pj === undefined) d.pj = (await sb.from("sequence_message").select("pj").eq("id", d.message_id).maybeSingle()).data?.pj ?? null;
       const id = await envoyer(d);
       await sb.from("sequence_message").update({ statut: "envoye", envoye_le: new Date().toISOString(), brevo_id: id }).eq("id", d.message_id);
       const reste = (await sb.from("sequence_message").select("id").eq("sequence_id", d.sequence_id).eq("statut", "prevu")).data ?? [];
