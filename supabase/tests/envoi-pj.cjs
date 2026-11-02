@@ -1,5 +1,5 @@
 /* Test local de la fonction « envoi » (pièces jointes) : faux Deno, faux client Supabase, faux fetch. Aucun envoi réel.
-   Usage : TS_MODULE=<chemin de typescript> node supabase/tests/envoi-pj.js supabase/functions/envoi/index.ts */
+   Usage : TS_MODULE=<chemin de typescript> node supabase/tests/envoi-pj.cjs supabase/functions/envoi/index.ts */
 const fs = require('fs'), assert = require('assert');
 const ts = require(process.env.TS_MODULE || 'typescript');
 const src = fs.readFileSync(process.argv[2], 'utf8')
