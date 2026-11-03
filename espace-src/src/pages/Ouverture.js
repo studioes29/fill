@@ -37,7 +37,7 @@ var ag = [5, 10, 20],
   ),
   mg = H(`<small class="err svelte-yzl1dj"> </small>`),
   hg = H(
-    `<h2 class="t2">Votre structure</h2> <div class="types svelte-yzl1dj" role="radiogroup" aria-label="Type de structure"><button type="button" role="radio"><!><b class="svelte-yzl1dj">Une collectivité</b><small class="svelte-yzl1dj">Commune, intercommunalité, syndicat, établissement public</small></button> <button type="button" role="radio"><!><b class="svelte-yzl1dj">Une entreprise</b><small class="svelte-yzl1dj">PME, commerce, association employeuse</small></button></div> <label class="champ" for="o-nom"><span> </span> <input id="o-nom" autocomplete="organization"/> <!></label> <label class="champ" for="o-siret"><span>SIRET <small>(facultatif)</small></span> <input id="o-siret" inputmode="numeric" placeholder="212 900 000 00012" maxlength="24" autocomplete="off"/> <small> </small></label>`,
+    `<h2 class="t2">Votre structure</h2> <div class="types svelte-yzl1dj" role="radiogroup" aria-label="Type de structure"><button type="button" role="radio"><!><b class="svelte-yzl1dj">Une collectivité</b><small class="svelte-yzl1dj">Commune, intercommunalité, syndicat, établissement public</small></button> <button type="button" role="radio"><!><b class="svelte-yzl1dj">Une entreprise</b><small class="svelte-yzl1dj">PME, commerce, association employeuse</small></button></div> <label class="champ" for="o-nom"><span> </span> <input id="o-nom" autocomplete="organization"/> <!></label> <label class="champ" for="o-siret"><span>SIRET</span> <input id="o-siret" inputmode="numeric" placeholder="212 900 000 00012" maxlength="24" autocomplete="off"/> <small> </small></label>`,
     1,
   ),
   gg = H(
@@ -120,7 +120,7 @@ function Ouverture(e, t) {
           (B(a).trim().length < 2 &&
             (e.structure =
               B(i) === `collectivite` ? `Indiquez le nom de la collectivité.` : `Indiquez le nom de l’entreprise.`),
-          !ug(B(o)) || dg(B(o)) || (e.siret = `Le SIRET compte 14 chiffres (${ug(B(o)).length} saisis pour l’instant). Vous pouvez aussi laisser le champ vide et le donner plus tard.`)),
+          dg(B(o)) || (e.siret = `Le SIRET compte 14 chiffres (${ug(B(o)).length} saisis pour l’instant).`)),
         B(r) === 0 &&
           (B(l).trim().split(/\s+/).length < 2 && (e.nom = `Indiquez votre prénom et votre nom.`),
           (MODE_REEL && etat.sessionSansProfil) ||
@@ -363,7 +363,7 @@ function Ouverture(e, t) {
                 (S = q(x, 1, `svelte-yzl1dj`, null, S, {
                   err: B(g).siret,
                 })),
-                W(C, B(g).siret ?? `Il figure sur la facture. Vous pouvez le donner plus tard.`));
+                W(C, B(g).siret ?? `Il figure sur la facture et le bon de commande.`));
             }),
             V(`click`, r, () => P(i, `collectivite`)),
             V(`click`, c, () => P(i, `entreprise`)),
@@ -655,7 +655,7 @@ function Ouverture(e, t) {
             z(
               (e) => {
                 (W(s, B(a)),
-                  W(f, e ? `SIRET ${e}` : `SIRET à donner plus tard`),
+                  W(f, `SIRET ${e ?? ``}`),
                   W(_, `${B(x).nom ?? ``}, ${B(x).unites ?? ``} unités par mois`),
                   W(v, `Engagement de ${B(c) ?? ``} mois`),
                   W(S, B(l)));

@@ -700,16 +700,6 @@ var activer = async (e) => {
         await recharger())
       : (activerLocal(e, `par Fill`), sauver());
   };
-var renseignerSiret = async (e) => {
-    let t = organisation(moi().organisationId),
-      n = String(e ?? ``).replace(/\D/g, ``);
-    if (!/^\d{14}$/.test(n)) throw Error(`Le SIRET compte 14 chiffres (${n.length} saisis).`);
-    if (MODE_REEL) {
-      (await api.siret(n), await recharger());
-      return;
-    }
-    ((t.siret = n), sauver());
-  };
 var envoyerBonCommande = async (e) => {
     let t = organisation(moi().organisationId),
       n = e.engagement?.trim() || void 0;
