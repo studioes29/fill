@@ -124,6 +124,27 @@ var TDB_MODULES = [`afaire`, `cours`, `unites`, `parutions`, `anticiper`],
       localStorage.removeItem(cleTableauDeBord(e));
     } catch {}
   };
+// SIRET donné après l'ouverture : petit formulaire dans la carte d'activation, pour le référent seulement
+var ajouterSiret = (conteneur, org) => {
+  if (!org || org.siret || moi()?.role !== `referent`) return;
+  let f = document.createElement(`form`);
+  f.className = `siret-f svelte-5ho6zo`;
+  f.innerHTML = `<label class="champ" for="a-siret"><span>SIRET de ${echapperHtml(org.nom ?? `votre structure`)}</span><span class="siret-l svelte-5ho6zo"><input id="a-siret" class="saisie num" inputmode="numeric" maxlength="24" placeholder="212 900 000 00012" autocomplete="off"><button type="submit" class="bt">Enregistrer</button></span><small>Il figure sur vos factures${org.type === `collectivite` ? ` et sur le bon de commande` : ``}.</small></label>`;
+  f.addEventListener(`submit`, async (ev) => {
+    ev.preventDefault();
+    let b = f.querySelector(`button`);
+    b.disabled = !0;
+    try {
+      await renseignerSiret(f.querySelector(`input`).value);
+      toast(`SIRET enregistré.`);
+      f.remove();
+    } catch (x) {
+      toast(x.message, `erreur`);
+      b.disabled = !1;
+    }
+  });
+  conteneur.appendChild(f);
+};
 function Accueil(e, t) {
   qe(t, !0);
   let n = M(moi),
@@ -444,6 +465,7 @@ function Accueil(e, t) {
               : `Vos premières unités`,
           ),
         ),
+        ajouterSiret(i, B(r)),
         U(e, t));
     };
   G(x, (e) => {

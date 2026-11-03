@@ -556,6 +556,10 @@ var api = {
           })
           .eq(`id`, e),
       ),
+    siret: (e) =>
+      appelRpc(`renseigner_siret`, {
+        p_siret: e,
+      }),
     bonCommande: (e, t, n) =>
       appelRpc(`deposer_bon_commande`, {
         p_chemin: e,

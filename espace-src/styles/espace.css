@@ -64,8 +64,8 @@
   --ligne: #1a1a1a1a;
   --ligne2: #1a1a1a33;
   --tx: var(--encre);
-  --mu: #1a1a1ab8;
-  --fa: #1a1a1a99;
+  --mu: #1a1a1ac7;
+  --fa: #1a1a1aab;
   --ntx: #f8f5f2;
   --c-f: var(--lav-f);
   --c: var(--lav);
@@ -8547,4 +8547,17 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
   background: transparent;
   box-shadow: none;
   color: var(--mu);
+}
+/* SIRET donné après l’ouverture (carte d’activation de l’accueil) */
+.siret-f.svelte-5ho6zo {
+  margin-top: 14px;
+}
+.siret-l.svelte-5ho6zo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.siret-l.svelte-5ho6zo > input {
+  flex: 1 1 200px;
+  min-width: 0;
 }

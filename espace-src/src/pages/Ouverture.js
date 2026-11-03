@@ -37,7 +37,7 @@ var ag = [5, 10, 20],
   ),
   mg = H(`<small class="err svelte-yzl1dj"> </small>`),
   hg = H(
-    `<h2 class="t2">Votre structure</h2> <div class="types svelte-yzl1dj" role="radiogroup" aria-label="Type de structure"><button type="button" role="radio"><!><b class="svelte-yzl1dj">Une collectivité</b><small class="svelte-yzl1dj">Commune, intercommunalité, syndicat, établissement public</small></button> <button type="button" role="radio"><!><b class="svelte-yzl1dj">Une entreprise</b><small class="svelte-yzl1dj">PME, commerce, association employeuse</small></button></div> <label class="champ" for="o-nom"><span> </span> <input id="o-nom" autocomplete="organization"/> <!></label> <label class="champ" for="o-siret"><span>SIRET</span> <input id="o-siret" inputmode="numeric" placeholder="212 900 000 00012" maxlength="24" autocomplete="off"/> <small> </small></label>`,
+    `<h2 class="t2">Votre structure</h2> <div class="types svelte-yzl1dj" role="radiogroup" aria-label="Type de structure"><button type="button" role="radio"><!><b class="svelte-yzl1dj">Une collectivité</b><small class="svelte-yzl1dj">Commune, intercommunalité, syndicat, établissement public</small></button> <button type="button" role="radio"><!><b class="svelte-yzl1dj">Une entreprise</b><small class="svelte-yzl1dj">PME, commerce, association employeuse</small></button></div> <label class="champ" for="o-nom"><span> </span> <input id="o-nom" autocomplete="organization"/> <!></label> <label class="champ" for="o-siret"><span>SIRET <small>(facultatif)</small></span> <input id="o-siret" inputmode="numeric" placeholder="212 900 000 00012" maxlength="24" autocomplete="off"/> <small> </small></label>`,
     1,
   ),
   gg = H(
@@ -80,14 +80,23 @@ var ag = [5, 10, 20],
   Pg = H(
     `<main class="ouverture"><header class="tete svelte-yzl1dj"><span class="motif svelte-yzl1dj" aria-hidden="true"></span> <div class="w svelte-yzl1dj"><div class="barre svelte-yzl1dj"><a aria-label="Retour à la connexion"><!></a><span class="barre-l svelte-yzl1dj"><a class="lien-discret" href="./?demo">Essayer sans compte</a><a class="lien-discret">J’ai déjà un compte</a></span></div> <h1 class="t1">Ouvrir un compte</h1> <ol class="etapes svelte-yzl1dj" aria-label="Étapes"></ol></div></header> <section class="feuille"><div class="w grille svelte-yzl1dj"><div class="col svelte-yzl1dj"><!> <!></div> <aside class="resume svelte-yzl1dj"><span class="motif2 svelte-yzl1dj" aria-hidden="true"></span> <p class="it sur svelte-yzl1dj">Votre abonnement</p> <p class="nomr d svelte-yzl1dj"> </p> <p class="grand num svelte-yzl1dj"> <small class="svelte-yzl1dj">par mois</small></p> <ul class="lignes num svelte-yzl1dj"><li class="svelte-yzl1dj"><span class="svelte-yzl1dj"> </span><span class="svelte-yzl1dj">inclus</span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Mise en place</span><span class="svelte-yzl1dj"> </span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Engagement</span><span class="svelte-yzl1dj"> </span></li> <li class="tot svelte-yzl1dj"><span class="svelte-yzl1dj">Sur la durée d’engagement</span><span class="svelte-yzl1dj"> </span></li></ul> <div class="paie svelte-yzl1dj"><!></div> <p class="tres-petit mu">TVA non applicable, article 293 B du CGI.</p></aside></div></section></main>`,
   );
+// formule et type choisis sur le site (estimation, formules) : /espace/?formule=essentiel&type=entreprise#ouverture
+var depuisUrl = (k, ok, d) => {
+  try {
+    let v = new URLSearchParams(location.search).get(k);
+    return ok.includes(v) ? v : d;
+  } catch {
+    return d;
+  }
+};
 function Ouverture(e, t) {
   qe(t, !0);
   let n = [`Vous`, `Votre structure`, `Votre formule`, `Récapitulatif`],
     r = N(0),
-    i = N(`collectivite`),
+    i = N(depuisUrl(`type`, [`collectivite`, `entreprise`], `collectivite`)),
     a = N(``),
     o = N(``),
-    s = N(`regulier`),
+    s = N(depuisUrl(`formule`, [`essentiel`, `regulier`, `soutenu`], `regulier`)),
     c = N(12),
     l = N(``),
     u = N(``),
@@ -111,7 +120,7 @@ function Ouverture(e, t) {
           (B(a).trim().length < 2 &&
             (e.structure =
               B(i) === `collectivite` ? `Indiquez le nom de la collectivité.` : `Indiquez le nom de l’entreprise.`),
-          dg(B(o)) || (e.siret = `Le SIRET compte 14 chiffres (${ug(B(o)).length} saisis pour l’instant).`)),
+          !ug(B(o)) || dg(B(o)) || (e.siret = `Le SIRET compte 14 chiffres (${ug(B(o)).length} saisis pour l’instant). Vous pouvez aussi laisser le champ vide et le donner plus tard.`)),
         B(r) === 0 &&
           (B(l).trim().split(/\s+/).length < 2 && (e.nom = `Indiquez votre prénom et votre nom.`),
           (MODE_REEL && etat.sessionSansProfil) ||
@@ -354,7 +363,7 @@ function Ouverture(e, t) {
                 (S = q(x, 1, `svelte-yzl1dj`, null, S, {
                   err: B(g).siret,
                 })),
-                W(C, B(g).siret ?? `Il sert à la facturation.`));
+                W(C, B(g).siret ?? `Il figure sur la facture. Vous pouvez le donner plus tard.`));
             }),
             V(`click`, r, () => P(i, `collectivite`)),
             V(`click`, c, () => P(i, `entreprise`)),
@@ -646,7 +655,7 @@ function Ouverture(e, t) {
             z(
               (e) => {
                 (W(s, B(a)),
-                  W(f, `SIRET ${e ?? ``}`),
+                  W(f, e ? `SIRET ${e}` : `SIRET à donner plus tard`),
                   W(_, `${B(x).nom ?? ``}, ${B(x).unites ?? ``} unités par mois`),
                   W(v, `Engagement de ${B(c) ?? ``} mois`),
                   W(S, B(l)));

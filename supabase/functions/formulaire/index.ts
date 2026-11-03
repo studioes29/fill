@@ -21,6 +21,25 @@ const DEST: Record<string, { to: string; nom: string; origines: string[] }> = {
   studio: { to: Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr", nom: "Formulaire Studio ES", origines: ORIGINES.slice(0, 4) },
   pierceval: { to: Deno.env.get("PIERCEVAL_EMAIL") ?? "piercevaltattoo@gmail.com", nom: "Site Pierceval Tattoo", origines: ORIGINES.slice(4) },
 };
+const RDV = "https://cal.com/studioes/30min";
+type Accuse = { marque: string; fond: string; site: string; lignes: string[]; texte: string };
+const accuser = (marque: string, fond: string, site: string, lignes: string[]): Accuse => ({
+  marque, fond, site, lignes,
+  texte: ["Bonjour,", ...lignes, "Bien cordialement,", `Ewen Soupault\n${marque} · ${site}`].join("\n\n"),
+});
+const ACCUSES: Record<string, Accuse> = {};
+ACCUSES["https://studioes.fr"] = ACCUSES["https://www.studioes.fr"] = accuser("Studio ES", "#F4F1E8", "studioes.fr", [
+  "Votre demande est bien arrivée chez Studio ES. Vous recevrez une réponse sous 48 heures, avec un devis détaillé si votre projet s’y prête.",
+  `Pour aller plus vite, vous pouvez réserver un appel de 30 minutes, en visio ou au téléphone : ${RDV}`,
+  "Pour compléter votre demande, il suffit de répondre à ce message.",
+]);
+ACCUSES["https://fill.studioes.fr"] = accuser("Fill", "#EDE7F8", "fill.studioes.fr", [
+  "Votre demande est bien arrivée chez Fill. Vous recevrez une réponse écrite sous 48 heures ouvrées.",
+  "En attendant, vous pouvez parcourir l’espace client sur une commune fictive, sans créer de compte : https://fill.studioes.fr/espace/?demo",
+  `Vous préférez en parler de vive voix ? Réservez un appel de 30 minutes : ${RDV}`,
+]);
+const lien = (t: string) => t.replace(/https:\/\/[^\s]+/g, (u) => `<a href="${u}" style="color:#1A1A1A">${u.replace("https://", "")}</a>`);
+const accuseHtml = (a: Accuse) => `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Votre demande est bien arrivée</title></head><body style="margin:0;padding:24px;background:#FFFFFF"><table role="presentation" style="max-width:560px;width:100%;margin:0 auto;font:16px/1.6 Arial,Helvetica,sans-serif;color:#1A1A1A"><tr><td><p style="margin:0 0 16px">Bonjour,</p>${a.lignes.map((l) => `<p style="margin:0 0 16px">${lien(l)}</p>`).join("")}<p style="margin:0 0 24px">Bien cordialement,</p><table role="presentation" style="width:100%;background:${a.fond};border-radius:14px"><tr><td style="padding:18px 20px;font:15px/1.5 Arial,Helvetica,sans-serif;color:#1A1A1A"><b>Ewen Soupault</b><br>${a.marque} · <a href="https://${a.site}" style="color:#1A1A1A">${a.site}</a></td></tr></table></td></tr></table></body></html>`;
 const MAX_PJ = 8 * 1024 * 1024;
 const MAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -120,6 +139,18 @@ Deno.serve(async (req) => {
       to: [{ email }], replyTo: { email: "contact@studioes.fr", name: "Ewen Soupault, Studio ES" },
       subject: sujet, textContent: ar,
       htmlContent: `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="font:15px/1.6 Arial;color:#3D3A36;white-space:pre-wrap">${esc(ar)}</body></html>`,
+    });
+  }
+  // Accusé de réception au visiteur (studioes.fr et fill.studioes.fr) : texte fixe, sans reprise de la saisie,
+  // pour qu'il garde une trace de sa demande et puisse réserver un appel sans attendre la réponse.
+  const accuse = ACCUSES[origine];
+  if (accuse && cle === "studio" && email && MAIL.test(email)) {
+    await brevo({
+      sender: { name: accuse.marque, email: expediteur },
+      to: [{ email }], replyTo: { email: "contact@studioes.fr", name: `Ewen Soupault, ${accuse.marque}` },
+      subject: "Votre demande est bien arrivée",
+      textContent: accuse.texte,
+      htmlContent: accuseHtml(accuse),
     });
   }
   if (ligne) await sb.from("formulaire_message").update({ envoye: ok }).eq("id", ligne.id);

@@ -2245,3 +2245,16 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 #commencer .fin-l .lien{margin-right:14px}
 .fo-cc{margin:-4px 0 14px;font-size:15px;line-height:1.45;color:var(--encre)}
 .fo-cc b{font-weight:650}
+/* contrastes relevés par l’audit d’accessibilité (nov. 2026) */
+#passage .passage-t .lead{color:rgba(255,255,255,.9)}
+.eq-x .etapes .et p{color:rgba(255,255,255,.92)}
+.eng-l:focus-visible,.pts:focus-visible{outline:2px solid currentColor;outline-offset:4px;border-radius:12px}
+/* estimation : les deux actions du résultat, lisibles sur la carte sombre */
+.reco2 .carte .bt{background:#fff;color:#1A1A1A;box-shadow:none}
+.reco2 .carte .bt .ar{background:rgba(26,26,26,.08);color:#1A1A1A}
+.reco2 .carte .bt.cl{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55)}
+.reco2 .carte .bts{display:flex;flex-wrap:wrap;gap:10px}
+.prop-ouv{margin:4px 0 0;font-size:15px;color:var(--mu)}
+@media (min-width:900px){.fin:has(>.ca:nth-child(4)){grid-template-columns:repeat(2,minmax(0,1fr))}}
+.eq-f li p{color:rgba(255,255,255,.9)}
+.eq-x .etapes .et .qd{color:#24163F}

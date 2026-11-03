@@ -1424,7 +1424,7 @@
         <div class="carte"><p class="cap" style="color:var(--nmu)">Formule recommandée</p><h2 class="nmf" data-titre>${esc(nom)}</h2><p class="px">${esc(px)}</p><p>${esc(expl)}</p>
           <ul aria-label="Contenu d’un mois type">${resumePanier(p).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
           ${relais ? `<p style="color:var(--ntx)">Le poste est vide pour un temps ? <a class="lien" href="${U('relais/')}">Relais couvre l’absence <svg class="i"><use href="#ar"/></svg></a></p>` : ''}
-          <div class="bts" style="margin-top:6px"><button type="button" class="bt" data-aller="3" data-reco="1">Ajuster ces prestations <span class="ar"><svg class="i"><use href="#ar"/></svg></span></button><button type="button" class="bt cl" data-aller="4" data-direct="1">Voir ma proposition</button></div></div>
+          <div class="bts" style="margin-top:6px"><button type="button" class="bt" data-aller="4" data-direct="1">Voir ma proposition <span class="ar"><svg class="i"><use href="#ar"/></svg></span></button><button type="button" class="bt cl" data-aller="3" data-reco="1">Ajuster ces prestations</button></div></div>
         <div class="bloc"><h3>Vos priorités</h3><ol>${prios.slice(0, 3).map(t => `<li><span>${esc(t)}</span></li>`).join('')}</ol>
           <div class="affine"><p class="cap">Pour affiner : ce qui coince le plus (trois au plus)</p><div class="choix">${DIFF.map(([k, l]) => `<label><input type="checkbox" value="${k}" ${st.diff.includes(k) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div>
           <label class="cap" for="est-bud" style="margin-top:6px">Enveloppe annuelle, si elle est fixée</label><select class="in" id="est-bud">${BUD.map(([k, l]) => `<option value="${k}"${st.budget === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
@@ -1457,6 +1457,7 @@
           <p class="note">Estimation indicative, pas un devis. La proposition écrite suit sous 48 h ouvrées.</p></div>
         <div class="suite"><a class="bt lg2" href="${U('demande/')}">Recevoir ma proposition <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>
           <a class="bt cl lg2" href="${U('contact/')}" data-cal>En parler 30 minutes</a>
+          ${f && f.id !== 'relais' ? `<p class="prop-ouv">Déjà décidé ? <a class="lien" href="/espace/?formule=${f.id}&amp;type=${etat.public === 'e' ? 'entreprise' : 'collectivite'}#ouverture">Ouvrir mon espace avec ${esc(f.nom)} <svg class="i"><use href="#ar"/></svg></a></p>` : ''}
           <div class="bts"><a class="lien" href="${U('note/')}">Note à imprimer <svg class="i"><use href="#ar"/></svg></a><button type="button" class="lien" data-lien>Copier le lien <svg class="i"><use href="#li"/></svg></button></div></div>
       </div>
       <div class="est-n"><button type="button" class="est-retour" data-aller="3"><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>Modifier mes prestations</button></div>`;
