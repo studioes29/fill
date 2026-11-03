@@ -98,6 +98,8 @@ ${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A
       ...(d.precedent ? { "In-Reply-To": d.precedent, "References": d.precedent } : {}),
     },
   };
+  // Brevo refuse un objet « headers » vide (400 « headers is blank ») : cas d'un premier message hors prospection
+  if (!Object.keys(corps.headers).length) delete corps.headers;
   if (d.cc) corps.cc = [{ email: d.cc }];
   const pj = piecesJointes(d.pj);
   if (pj.length) corps.attachment = pj;
