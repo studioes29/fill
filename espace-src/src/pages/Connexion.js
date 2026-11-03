@@ -8,7 +8,7 @@ var Xh = H(`<p class="mu">Indiquez votre adresse : un lien pour choisir un nouve
   Qh = H(`<p class="note n-danger" role="alert"><!> </p>`),
   $h = H(`<p class="note n-cible" role="status"><!> </p>`),
   eg = H(
-    `<p class="voir-demo entre svelte-1ilh1if">Envie de voir avant de vous lancer ? <button class="lien svelte-1ilh1if">Parcourir un espace de démonstration <!></button></p>`,
+    `<p class="voir-demo entre svelte-1ilh1if">Pas encore client ? Découvrez l’espace sur une commune fictive. <button class="lien svelte-1ilh1if">Essayer sans compte <!></button></p>`,
   ),
   tg = H(
     `<li><button><span class="av svelte-1ilh1if" aria-hidden="true"> </span> <span class="txt svelte-1ilh1if"><b> </b><span class="svelte-1ilh1if"> </span><small class="svelte-1ilh1if"> </small></span> <span class="fl svelte-1ilh1if"><!></span></button></li>`,

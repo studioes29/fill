@@ -48,7 +48,7 @@ function Equipe(e, t) {
     o = {
       referent: {
         nom: `Référent`,
-        det: `Dépose, valide les livrables, engage les unités, commande.`,
+        det: `Dépose, valide les livrables et le coût des demandes, commande les unités.`,
       },
       contributeur: {
         nom: `Contributeur`,

@@ -1120,12 +1120,12 @@ function NouvelleDemande(e, t) {
                 (W(
                   r,
                   B(a).statut === `a_activer`
-                    ? `Vos premières unités ne sont pas encore sur le compte`
+                    ? `Votre demande est prête`
                     : `Il manque ${B(ne)} unité${B(ne) > 1 ? `s` : ``} pour envoyer cette demande`,
                 ),
                   W(
                     o,
-                    `${e ?? ``} Votre demande est gardée sur cet appareil : rechargez le compte, puis revenez l’envoyer.`,
+                    `${e ?? ``} ${B(a).statut === `a_activer` ? `Elle reste enregistrée sur cet appareil et pourra partir dès que vos premières unités seront créditées.` : `Elle reste enregistrée sur cet appareil : rechargez le compte, puis revenez l’envoyer.`}`,
                   ));
               },
               [

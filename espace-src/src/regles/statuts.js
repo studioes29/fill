@@ -3,7 +3,7 @@
 
 var LIBELLES_STATUT = {
     deposee: `Déposée`,
-    accord_requis: `Accord attendu`,
+    accord_requis: `Coût à valider`,
     confirmee: `Confirmée`,
     production: `En production`,
     a_valider: `À valider`,

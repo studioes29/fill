@@ -56,7 +56,7 @@ var ag = [5, 10, 20],
     1,
   ),
   xg = H(
-    `<h2 class="t2">Votre interlocuteur</h2> <p class="mu">La personne qui valide les livrables et engage les unités. Elle pourra inviter ses collègues ensuite.</p> <label class="champ" for="o-p"><span>Prénom et nom</span> <input id="o-p" autocomplete="name" placeholder="Prénom Nom"/> <!></label> <label class="champ" for="o-f"><span>Fonction <small>(facultatif)</small></span> <input id="o-f" class="saisie" autocomplete="organization-title"/></label> <label class="champ" for="o-t"><span>Téléphone <small>(facultatif)</small></span> <input id="o-t" class="saisie" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78"/> <small>Fill vous appelle pour caler le volume d’unités, si vous le souhaitez.</small></label> <!>`,
+    `<h2 class="t2">Vous</h2> <p class="mu">Aucun paiement à cette étape. Vous serez le référent de l’espace : vous validez les livrables et le coût des demandes, et vous pourrez inviter vos collègues ensuite.</p> <label class="champ" for="o-p"><span>Prénom et nom</span> <input id="o-p" autocomplete="name" placeholder="Prénom Nom"/> <!></label> <label class="champ" for="o-f"><span>Fonction <small>(facultatif)</small></span> <input id="o-f" class="saisie" autocomplete="organization-title"/></label> <label class="champ" for="o-t"><span>Téléphone <small>(facultatif)</small></span> <input id="o-t" class="saisie" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78"/> <small>Fill vous appelle pour caler le volume d’unités, si vous le souhaitez.</small></label> <!>`,
     1,
   ),
   Sg = H(`<small class="svelte-yzl1dj"> </small>`),
@@ -78,11 +78,11 @@ var ag = [5, 10, 20],
     1,
   ),
   Pg = H(
-    `<main class="ouverture"><header class="tete svelte-yzl1dj"><span class="motif svelte-yzl1dj" aria-hidden="true"></span> <div class="w svelte-yzl1dj"><div class="barre svelte-yzl1dj"><a aria-label="Retour à la connexion"><!></a><a class="lien-discret">J’ai déjà un compte</a></div> <h1 class="t1">Ouvrir un compte</h1> <ol class="etapes svelte-yzl1dj" aria-label="Étapes"></ol></div></header> <section class="feuille"><div class="w grille svelte-yzl1dj"><div class="col svelte-yzl1dj"><!> <!></div> <aside class="resume svelte-yzl1dj"><span class="motif2 svelte-yzl1dj" aria-hidden="true"></span> <p class="it sur svelte-yzl1dj">Votre abonnement</p> <p class="nomr d svelte-yzl1dj"> </p> <p class="grand num svelte-yzl1dj"> <small class="svelte-yzl1dj">par mois</small></p> <ul class="lignes num svelte-yzl1dj"><li class="svelte-yzl1dj"><span class="svelte-yzl1dj"> </span><span class="svelte-yzl1dj">inclus</span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Mise en place</span><span class="svelte-yzl1dj"> </span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Engagement</span><span class="svelte-yzl1dj"> </span></li> <li class="tot svelte-yzl1dj"><span class="svelte-yzl1dj">Sur la durée d’engagement</span><span class="svelte-yzl1dj"> </span></li></ul> <div class="paie svelte-yzl1dj"><!></div> <p class="tres-petit mu">TVA non applicable, article 293 B du CGI.</p></aside></div></section></main>`,
+    `<main class="ouverture"><header class="tete svelte-yzl1dj"><span class="motif svelte-yzl1dj" aria-hidden="true"></span> <div class="w svelte-yzl1dj"><div class="barre svelte-yzl1dj"><a aria-label="Retour à la connexion"><!></a><span class="barre-l svelte-yzl1dj"><a class="lien-discret" href="./?demo">Essayer sans compte</a><a class="lien-discret">J’ai déjà un compte</a></span></div> <h1 class="t1">Ouvrir un compte</h1> <ol class="etapes svelte-yzl1dj" aria-label="Étapes"></ol></div></header> <section class="feuille"><div class="w grille svelte-yzl1dj"><div class="col svelte-yzl1dj"><!> <!></div> <aside class="resume svelte-yzl1dj"><span class="motif2 svelte-yzl1dj" aria-hidden="true"></span> <p class="it sur svelte-yzl1dj">Votre abonnement</p> <p class="nomr d svelte-yzl1dj"> </p> <p class="grand num svelte-yzl1dj"> <small class="svelte-yzl1dj">par mois</small></p> <ul class="lignes num svelte-yzl1dj"><li class="svelte-yzl1dj"><span class="svelte-yzl1dj"> </span><span class="svelte-yzl1dj">inclus</span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Mise en place</span><span class="svelte-yzl1dj"> </span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Engagement</span><span class="svelte-yzl1dj"> </span></li> <li class="tot svelte-yzl1dj"><span class="svelte-yzl1dj">Sur la durée d’engagement</span><span class="svelte-yzl1dj"> </span></li></ul> <div class="paie svelte-yzl1dj"><!></div> <p class="tres-petit mu">TVA non applicable, article 293 B du CGI.</p></aside></div></section></main>`,
   );
 function Ouverture(e, t) {
   qe(t, !0);
-  let n = [`Votre structure`, `Votre formule`, `Votre interlocuteur`, `Récapitulatif`],
+  let n = [`Vous`, `Votre structure`, `Votre formule`, `Récapitulatif`],
     r = N(0),
     i = N(`collectivite`),
     a = N(``),
@@ -107,12 +107,12 @@ function Ouverture(e, t) {
     S = () => {
       let e = {};
       return (
-        B(r) === 0 &&
+        B(r) === 1 &&
           (B(a).trim().length < 2 &&
             (e.structure =
               B(i) === `collectivite` ? `Indiquez le nom de la collectivité.` : `Indiquez le nom de l’entreprise.`),
           dg(B(o)) || (e.siret = `Le SIRET compte 14 chiffres (${ug(B(o)).length} saisis pour l’instant).`)),
-        B(r) === 2 &&
+        B(r) === 0 &&
           (B(l).trim().split(/\s+/).length < 2 && (e.nom = `Indiquez votre prénom et votre nom.`),
           (MODE_REEL && etat.sessionSansProfil) ||
             (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(B(f).trim()) || (e.email = `Saisissez une adresse e-mail complète.`),
@@ -225,7 +225,7 @@ function Ouverture(e, t) {
     fonce: !0,
   }),
     A(re));
-  var ie = R(re);
+  var ie = R(F(R(re)));
   A(ne);
   var ae = R(ne, 4);
   (K(
@@ -661,7 +661,7 @@ function Ouverture(e, t) {
             U(e, t));
         };
       (G(n, (e) => {
-        B(y) ? e(_) : B(r) === 0 ? e(v, 1) : B(r) === 1 ? e(b, 2) : B(r) === 2 ? e(S, 3) : e(C, -1);
+        B(y) ? e(_) : B(r) === 0 ? e(S, 3) : B(r) === 1 ? e(v, 1) : B(r) === 2 ? e(b, 2) : e(C, -1);
       }),
         A(t),
         U(e, t));

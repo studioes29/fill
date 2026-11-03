@@ -25,7 +25,7 @@ var D_ = H(`<a class="bt lg"><!>Nouvelle demande</a>`),
     `<a class="carte pad acces carte-lien svelte-5ho6zo"><span class="rond svelte-5ho6zo"><!></span> <span class="svelte-5ho6zo"><b> </b><small class="mu svelte-5ho6zo">Sans accès, Fill vous remet les fichiers et la publication reste de votre côté.</small></span> <!></a>`,
   ),
   I_ = H(`<img alt="" loading="lazy" class="svelte-5ho6zo"/>`),
-  L_ = H(`<b class="num svelte-5ho6zo"> </b><i class="svelte-5ho6zo">unités à engager</i>`, 1),
+  L_ = H(`<b class="num svelte-5ho6zo"> </b><i class="svelte-5ho6zo">unités à valider</i>`, 1),
   R_ = H(`<span class="sans svelte-5ho6zo"><!></span>`),
   z_ = H(
     `<li class="svelte-5ho6zo"><a class="action carte carte-lien svelte-5ho6zo"><span class="puits svelte-5ho6zo"><!> <span> </span></span> <span class="txt svelte-5ho6zo"><span class="etat-m svelte-5ho6zo"> </span> <b class="svelte-5ho6zo"> </b> <span class="mu petit"><!></span></span> <span class="fl svelte-5ho6zo" aria-hidden="true"><!></span></a></li>`,
@@ -56,7 +56,7 @@ var D_ = H(`<a class="bt lg"><!>Nouvelle demande</a>`),
     `<section class="carte pad cours svelte-5ho6zo" aria-labelledby="t-cours"><div class="entete"><h2 class="t2" id="t-cours">En cours</h2> <a class="lien">Toutes les demandes <!></a></div> <!></section>`,
   ),
   Uni_ = H(
-    `<a class="carte pad unites carte-lien svelte-5ho6zo"><div class="entete"><h2 class="t3"> </h2><span class="fl svelte-5ho6zo" aria-hidden="true"><!></span></div> <div class="u-corps svelte-5ho6zo"><!> <dl class="num svelte-5ho6zo"><div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c1 svelte-5ho6zo"></i>Disponibles</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c2 svelte-5ho6zo"></i>Réservées</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c3 svelte-5ho6zo"></i>Décomptées</dt><dd class="svelte-5ho6zo"> </dd></div></dl></div> <!></a>`,
+    `<a class="carte pad unites carte-lien svelte-5ho6zo"><div class="entete"><h2 class="t3"> </h2><span class="fl svelte-5ho6zo" aria-hidden="true"><!></span></div> <div class="u-corps svelte-5ho6zo"><!> <dl class="num svelte-5ho6zo"><div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c1 svelte-5ho6zo"></i>Disponibles</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c2 svelte-5ho6zo"></i>En cours</dt><dd class="svelte-5ho6zo"> </dd></div> <div class="svelte-5ho6zo"><dt class="svelte-5ho6zo"><i class="c3 svelte-5ho6zo"></i>Utilisées</dt><dd class="svelte-5ho6zo"> </dd></div></dl></div> <!></a>`,
   ),
   Par_ = H(
     `<section class="carte pad svelte-5ho6zo" aria-labelledby="t-par"><h2 class="t3" id="t-par">Prochaines parutions</h2> <!></section>`,
@@ -798,16 +798,16 @@ function Accueil(e, t) {
                     B(t).statut === `a_valider`
                       ? `À relire et valider`
                       : B(t).statut === `accord_requis`
-                        ? `Accord attendu`
-                        : `Pièce attendue`,
+                        ? `Coût à valider`
+                        : `Élément à envoyer`,
                   ),
                   W(
                     g,
                     B(t).statut === `a_valider`
                       ? `À relire et valider`
                       : B(t).statut === `accord_requis`
-                        ? `Accord attendu`
-                        : `Pièce attendue`,
+                        ? `Coût à valider`
+                        : `Élément à envoyer`,
                   ),
                   W(v, B(t).titre));
               },

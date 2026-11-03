@@ -8535,3 +8535,16 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
     color: var(--encre);
   }
 }
+/* ouverture : accès à la démonstration à côté de « J’ai déjà un compte » */
+.barre-l.svelte-yzl1dj {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 18px;
+}
+/* accueil : « Personnaliser » en retrait, l’option reste accessible sans attirer l’œil */
+.tdb-perso.svelte-5ho6zo {
+  background: transparent;
+  box-shadow: none;
+  color: var(--mu);
+}
