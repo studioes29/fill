@@ -2237,7 +2237,8 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 .cst span{color:var(--mu);font-size:16px;line-height:1.55}
 .cst-qui .qui-ph{background:var(--creme)}
 .cst-qui p{color:var(--encre)}
-@media (max-width:640px){.qui.cst-qui{grid-template-columns:72px minmax(0,1fr);gap:16px}.cst-qui .qui-ph{width:72px}.cst-qui p{font-size:15.5px}}
+@media (max-width:899px){.qui.cst-qui{grid-template-columns:72px minmax(0,1fr);gap:16px;align-items:start}.cst-qui .qui-ph{width:72px}}
+@media (max-width:640px){.cst-qui p{font-size:15.5px}}
 .et4-eq{margin-top:22px;max-width:30em;font-size:15.5px;line-height:1.55;color:var(--mu)}
 #realisations .u{display:none}
 #commencer .fin{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
