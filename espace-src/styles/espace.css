@@ -212,9 +212,6 @@ img {
 .evite:focus {
   top: 12px;
 }
-.num {
-  font-variant-numeric: tabular-nums;
-}
 svg.i:not([width]) {
   width: 1em;
   height: 1em;
@@ -3995,7 +3992,6 @@ button.on.svelte-2zflr {
   position: relative;
 }
 .date-fr.svelte-1pzw3gm input[type="text"]:where(.svelte-1pzw3gm) {
-  font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   width: 100%;
   padding-right: 52px;
@@ -4064,7 +4060,6 @@ button.on.svelte-2zflr {
   line-height: 1.4;
 }
 .h-saisie.svelte-1q2r354 select:where(.svelte-1q2r354) {
-  font-variant-numeric: tabular-nums;
   max-width: 160px;
 }
 @media (width<=520px) {
@@ -8550,19 +8545,6 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
   color: var(--mu);
 }
 
-/* Chiffres tabulaires dans les compteurs, unités et montants (le raccourci font: de certains composants annulait .num) */
-.num,
-dd.svelte-5ho6zo,
-.compte.svelte-5ho6zo,
-.pastille,
-.legende.svelte-5bas1k b:where(.svelte-5bas1k),
-.t.svelte-5bas1k b:where(.svelte-5bas1k),
-.mt.svelte-5bas1k,
-.act.svelte-og3neb dd:where(.svelte-og3neb),
-.chiffres.svelte-og3neb dd:where(.svelte-og3neb),
-.val.svelte-og3neb small:where(.svelte-og3neb) {
-  font-variant-numeric: tabular-nums !important;
-}
 /* Cibles tactiles sur mobile : zone de clic agrandie vers 44 px, sans changer le rendu */
 @media (width<=860px) {
   .barre-mobile.svelte-1n46o8q > a,
@@ -8610,5 +8592,15 @@ dd.svelte-5ho6zo,
   .adr.svelte-11nfxvx:before,
   .t.svelte-5bas1k a:where(.svelte-5bas1k):before { inset: -11px -3px; }
   details.histo > summary:before { inset: -10px 0; }
-  .lien:before { inset: -9px -3px; }
+  .lien:before { inset: -9px -3px; }  /* filtres, curseurs, sélecteurs et petits boutons : 44 px de haut sur mobile */
+  .bt.sm,
+  .filtre,
+  button.svelte-2zflr,
+  .petit.svelte-2zflr button:where(.svelte-2zflr),
+  .sel.svelte-5bas1k,
+  .sel.svelte-1pzjizl,
+  .sel.svelte-9c5yx5 {
+    min-height: 44px;
+  }
+  .outils.svelte-1o3b2d4 .bt.sm:where(.svelte-1o3b2d4) { width: 44px; }
 }
