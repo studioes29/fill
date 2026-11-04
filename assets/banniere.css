@@ -18,7 +18,7 @@
 .bn-nt .bx-nm{font-size:23px;font-weight:650;display:flex;justify-content:space-between;color:#1a1a1a}
 .bn-nt .bx-nm span{font-weight:450;color:#a39b92;font-size:21px}
 .bn-nt .bx-ms{font-size:31px;line-height:1.22;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bn-badge{min-width:86px;height:86px;border-radius:43px;background:#e5484d;color:#fff;font-weight:750;font-size:40px;display:grid;place-items:center;padding:0 20px;box-shadow:0 14px 30px -10px #e5484d99}
+.bn-badge{min-width:86px;height:86px;border-radius:43px;background:#e5484d;color:#fff;font-weight:750;font-size:40px;display:grid;place-items:center;padding:0 20px;box-shadow:0 14px 30px -10px #1a1a1a40;font-variant-numeric:tabular-nums}
 /* page facebook endormie */
 .bn-fb{width:560px;background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 40px 80px -30px #1a1a1a77,0 0 0 1px #1a1a1a12}
 .bn-fb .bx-hd{display:flex;gap:16px;align-items:center;padding:22px 24px 16px}
@@ -73,7 +73,7 @@
 .bn .bx-nl .bx-bd{padding:6px 24px 20px}
 .bn-lab{left:0!important;width:1000px;top:925px!important;text-align:center;font-size:28px;font-weight:650}
 .bn-lab span{color:#8a8279;font-weight:500}
-.bn-stamp{width:160px;height:160px;border-radius:50%;background:#2c7a57;display:grid;place-items:center;box-shadow:0 20px 40px -14px #2c7a5799}
+.bn-stamp{width:160px;height:160px;border-radius:50%;background:#2c7a57;display:grid;place-items:center;box-shadow:0 20px 40px -14px #1a1a1a40}
 .bn-row{display:flex;align-items:center;gap:18px;padding:17px 0;border-top:2px solid #efeae4}
 .bn-row .bx-av{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:22px;flex:none}
 .bn-row .bx-n{flex:1;font-size:27px;font-weight:650;min-width:0}
@@ -94,7 +94,7 @@
 
 /* intro et conclusion */
 .bn-intro{left:64px!important;top:0!important;width:872px;height:1000px;display:flex;flex-direction:column;justify-content:center;gap:30px}
-.bn-eye{font-size:30px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#1a1a1acc}
+.bn-eye{font-size:30px;font-weight:600;color:#1a1a1acc}
 .bn-big{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:150px;line-height:.92;letter-spacing:-.045em;color:#1a1a1a}
 .bn-big .bx-w,.bn-tag .bx-w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .03em .16em;margin:0 -.03em -.16em}
 .bn-big .bx-w>span,.bn-tag .bx-w>span{display:inline-block}
@@ -117,3 +117,4 @@
 .bn-heart{width:54px;height:54px;z-index:6}
 .bn-stamp{z-index:7}
 .bn-cap,.bn-sub{z-index:12}
+.bn-pp::before{content:"";position:absolute;inset:-6px;border-radius:50%}

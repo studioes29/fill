@@ -134,7 +134,7 @@ var donneesDemo = () => {
         {
           id: `herve`,
           nom: `Hervé Kervella`,
-          email: `dgs@lanvenec.test`,
+          email: `dgs@trevalan.test`,
           fonction: `Directeur général des services`,
           role: `referent`,
           organisationId: `lanvenec`,
@@ -742,7 +742,7 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
               },
               {
                 titre: `Budget participatif`,
-                texte: `Jusqu’au 15 janvier, chaque habitant peut proposer un projet pour la commune. Le dossier est disponible en mairie et sur lanvenec.fr. Une réunion d’information se tient le 9 décembre à 18 h 30.`,
+                texte: `Jusqu’au 15 janvier, chaque habitant peut proposer un projet pour la commune. Le dossier est disponible en mairie et sur trevalan.fr. Une réunion d’information se tient le 9 décembre à 18 h 30.`,
               },
               {
                 titre: `Travaux`,

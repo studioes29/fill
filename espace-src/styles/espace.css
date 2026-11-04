@@ -739,10 +739,10 @@ select.saisie {
 .delai.grave {
   background: var(--danger);
   color: #fff;
-  box-shadow: 0 8px 18px -10px var(--danger);
+  box-shadow: 0 8px 18px -10px #1a1a1a59;
 }
 .delai.grave svg {
-  animation: 1.6s ease-in-out infinite tic;
+  animation: 1.6s ease-in-out 1 tic;
 }
 @keyframes tic {
   50% {
@@ -1628,7 +1628,7 @@ footer.svelte-kei0y4 {
   background: var(--c-f);
   color: #fff;
   width: min(320px, 100%);
-  box-shadow: 0 18px 34px -20px var(--c-f);
+  box-shadow: 0 18px 34px -20px #1a1a1a66;
   animation: svelte-kei0y4-recoit 0.55s var(--sp) 0.15s both;
   border-radius: 18px;
   gap: 10px;
@@ -2341,7 +2341,10 @@ form.svelte-1ilh1if {
   height: 26px;
   box-shadow: inset 0 0 0 1.5px var(--ligne2);
   color: #0000;
-  transition: all 0.3s var(--sp);
+  transition:
+    background 0.3s var(--sp),
+    color 0.3s var(--sp),
+    box-shadow 0.3s var(--sp);
   border-radius: 50%;
   place-items: center;
   display: grid;
@@ -2730,8 +2733,7 @@ path.svelte-t746fa {
 }
 .cor.svelte-t746fa .perle:where(.svelte-t746fa) {
   animation:
-    svelte-t746fa-perle 0.6s var(--sp) 0.5s both,
-    svelte-t746fa-bat 2.4s ease-in-out 1.2s infinite;
+    svelte-t746fa-perle 0.6s var(--sp) 0.5s both;
 }
 @keyframes svelte-t746fa-bat {
   50% {
@@ -3842,7 +3844,7 @@ dd.svelte-5ho6zo {
 }
 .curseur.svelte-2zflr {
   background: var(--c-f);
-  box-shadow: 0 10px 20px -12px var(--c-f);
+  box-shadow: 0 10px 20px -12px #1a1a1a59;
   opacity: 0;
   transition:
     transform 0.55s var(--sp),
@@ -4656,7 +4658,6 @@ li.svelte-16qzz4d {
   box-shadow:
     inset 0 0 0 7px var(--c-f),
     0 0 0 7px color-mix(in srgb, var(--c) 35%, transparent);
-  animation: 2.6s ease-in-out 1.2s infinite svelte-16qzz4d-respire;
   transform: scale(1.12);
 }
 @keyframes svelte-16qzz4d-respire {
@@ -8547,4 +8548,67 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
   background: transparent;
   box-shadow: none;
   color: var(--mu);
+}
+
+/* Chiffres tabulaires dans les compteurs, unités et montants (le raccourci font: de certains composants annulait .num) */
+.num,
+dd.svelte-5ho6zo,
+.compte.svelte-5ho6zo,
+.pastille,
+.legende.svelte-5bas1k b:where(.svelte-5bas1k),
+.t.svelte-5bas1k b:where(.svelte-5bas1k),
+.mt.svelte-5bas1k,
+.act.svelte-og3neb dd:where(.svelte-og3neb),
+.chiffres.svelte-og3neb dd:where(.svelte-og3neb),
+.val.svelte-og3neb small:where(.svelte-og3neb) {
+  font-variant-numeric: tabular-nums !important;
+}
+/* Cibles tactiles sur mobile : zone de clic agrandie vers 44 px, sans changer le rendu */
+@media (width<=860px) {
+  .barre-mobile.svelte-1n46o8q > a,
+  .av.svelte-1n46o8q,
+  .retour.svelte-s7h9vm,
+  button.svelte-7mebf3,
+  .ico,
+  .progres.svelte-kei0y4 button:where(.svelte-kei0y4),
+  .lien-aj.svelte-bswkfh,
+  .lien-discret,
+  .lien,
+  .adr.svelte-11nfxvx,
+  .t.svelte-5bas1k a:where(.svelte-5bas1k),
+  details.histo > summary {
+    position: relative;
+  }
+  .barre-mobile.svelte-1n46o8q > a:before,
+  .cloche.svelte-1n46o8q:before,
+  .av.svelte-1n46o8q:before,
+  .retour.svelte-s7h9vm:before,
+  button.svelte-7mebf3:before,
+  .inter:before,
+  .ico:before,
+  .cal.svelte-1pzw3gm:before,
+  .passer.svelte-kei0y4:before,
+  .progres.svelte-kei0y4 button:where(.svelte-kei0y4):before,
+  .lien-aj.svelte-bswkfh:before,
+  .lien-discret:before,
+  .lien:before,
+  .adr.svelte-11nfxvx:before,
+  .t.svelte-5bas1k a:where(.svelte-5bas1k):before,
+  details.histo > summary:before {
+    content: "";
+    position: absolute;
+    inset: -7px -3px;
+  }
+  .barre-mobile.svelte-1n46o8q > a:before { inset: -9px -4px; }
+  .av.svelte-1n46o8q:before,
+  .cloche.svelte-1n46o8q:before,
+  button.svelte-7mebf3:before,
+  .ico:before,
+  .cal.svelte-1pzw3gm:before { inset: -3px; border-radius: 50%; }
+  .progres.svelte-kei0y4 button:where(.svelte-kei0y4):before { inset: -19px -2px; }
+  .lien-discret:before,
+  .adr.svelte-11nfxvx:before,
+  .t.svelte-5bas1k a:where(.svelte-5bas1k):before { inset: -11px -3px; }
+  details.histo > summary:before { inset: -10px 0; }
+  .lien:before { inset: -9px -3px; }
 }
