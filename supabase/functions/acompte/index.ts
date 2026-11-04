@@ -31,6 +31,37 @@ const json = (req: Request, d: unknown, status = 200) =>
 const net = (s: unknown, n = 200) => String(s ?? "").replace(/[\u0000-\u001f<>]/g, " ").trim().slice(0, n);
 const euros = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
 
+// catalogue de la commande en ligne (même contenu que dossiers.studioes.fr/commander/data.json)
+const CATALOGUE: Record<string, { p: number; type: "site" | "photo" | "opt-site" | "opt-photo"; et?: number[] }> = {
+  "site-essentiel": { p: 490, type: "site", et: [6, 12] },
+  "site-vitrine": { p: 990, type: "site", et: [6, 12, 24] },
+  "concert": { p: 250, type: "photo" },
+  "demi": { p: 350, type: "photo" },
+  "site-photo": { p: 350, type: "opt-site" },
+  "soir": { p: 150, type: "opt-photo" },
+  "heure": { p: 80, type: "opt-photo" },
+};
+const SUIVI_SITE = 9;
+function verifierCatalogue(brut: unknown, total: number, etale: number, engagement: number, suivi: number): string {
+  if (!Array.isArray(brut) || !brut.length || brut.length > 4) return "Commande incomplète";
+  const cles = [...new Set(brut.map(String))];
+  if (cles.some((k) => !CATALOGUE[k])) return "Commande inconnue";
+  const princ = cles.filter((k) => ["site", "photo"].includes(CATALOGUE[k].type));
+  if (princ.length !== 1) return "Une seule prestation par commande";
+  const m = CATALOGUE[princ[0]];
+  const opts = cles.filter((k) => k !== princ[0]);
+  if (opts.some((k) => CATALOGUE[k].type !== (m.type === "site" ? "opt-site" : "opt-photo"))) return "Option incompatible";
+  const sOpts = opts.reduce((x, k) => x + CATALOGUE[k].p, 0);
+  const egal = (a: number, b: number) => Math.abs(a - b) < 0.01;
+  if (etale > 0) {
+    if (m.type !== "site" || !m.et!.includes(engagement)) return "Paiement en plusieurs fois indisponible pour cette commande";
+    if (!egal(etale, m.p) || !egal(total, sOpts) || !egal(suivi, SUIVI_SITE)) return "Montant incohérent : rechargez la page";
+    return "";
+  }
+  if (!egal(total, m.p + sOpts) || suivi !== 0) return "Montant incohérent : rechargez la page";
+  return "";
+}
+
 async function courriel(a: { email: string; name?: string }[], sujet: string, titre: string, texte: string[], bouton?: { libelle: string; lien: string }, repondreA?: { email: string; name?: string }) {
   const cle = Deno.env.get("BREVO_API_KEY");
   if (!cle || !a.length) return;
@@ -183,6 +214,11 @@ Deno.serve(async (req) => {
   if (!((total >= 50 || (total === 0 && etale > 0)) && total <= 30000)) return json(req, { erreur: "Montant hors limites" }, 400);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(req, { erreur: "E-mail invalide" }, 400);
   if (particulier && !b.demarrage_anticipe) return json(req, { erreur: "La demande de démarrage avant la fin du délai de rétractation doit être cochée" }, 400);
+  // commande publique (studioes.fr ou dossiers.studioes.fr/commander) : le prix est recalculé ici à partir du catalogue, le montant envoyé par la page ne fait pas foi
+  if (dossier === "commander") {
+    const err = verifierCatalogue(b.cles, total, etale, engagement, suivi);
+    if (err) return json(req, { erreur: err }, 400);
+  }
   const montant = Math.round(total * 30) / 100;
 
   const { data: dejaPaye } = await sb.from("acompte").select("id").eq("devis", devis).eq("statut", "paye").limit(1).maybeSingle();
@@ -203,7 +239,7 @@ Deno.serve(async (req) => {
   }
 
   let retour = String(b.retour ?? `https://dossiers.studioes.fr/${dossier}/`);
-  if (!retour.startsWith("https://dossiers.studioes.fr/")) retour = `https://dossiers.studioes.fr/${dossier}/`;
+  if (!retour.startsWith("https://dossiers.studioes.fr/") && !retour.startsWith("https://studioes.fr/")) retour = `https://dossiers.studioes.fr/${dossier}/`;
   const [base, frag] = retour.split("#");
   const sep = base.includes("?") ? "&" : "?";
   const succes = `${base}${sep}paye={CHECKOUT_SESSION_ID}${frag ? "#" + frag : ""}`;
