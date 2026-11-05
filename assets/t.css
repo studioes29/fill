@@ -977,6 +977,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 @media (max-width:640px){.est-p button span{display:none}.est-p button[aria-current=step] span{display:block;white-space:nowrap}}
 .est-z{position:relative}
 .est-e{display:grid;gap:22px}
+/* les étapes glissent de côté en entrant : le conteneur les retient pour que la page ne s'élargisse pas au téléphone */
+.est-z{overflow-x:clip;overflow-clip-margin:16px}
 @media (prefers-reduced-motion:no-preference){.est-e.entre{animation:est-in .5s var(--e) both}.est-e.entre-g{animation:est-in-g .5s var(--e) both}}
 @keyframes est-in{from{opacity:0;transform:translateX(26px)}}
 @keyframes est-in-g{from{opacity:0;transform:translateX(-26px)}}
