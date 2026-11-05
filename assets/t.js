@@ -392,7 +392,7 @@
     if (bg === fondHd) return; fondHd = bg;
     const sombre = lum(bg) < .5, neutre = /^rgba?\((248, 245, 242|255, 255, 255|26, 26, 26)[,)]/.test(bg);
     hd.style.setProperty('--hd-bg', bg);
-    hd.style.setProperty('--hd-tx', sombre ? '#F8F5F2' : '#1A1A1A');
+    hd.style.setProperty('--hd-tx', sombre ? (neutre ? '#F8F5F2' : '#FFFFFF') : '#1A1A1A');
     hd.style.setProperty('--hd-ln', sombre ? 'rgba(248,245,242,.16)' : 'rgba(26,26,26,.1)');
     hd.classList.toggle('sombre', sombre); hd.classList.toggle('ton', !neutre); hd.classList.remove('rouge');
   };
