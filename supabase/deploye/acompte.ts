@@ -32,33 +32,53 @@ const net = (s: unknown, n = 200) => String(s ?? "").replace(/[\u0000-\u001f<>]/
 const euros = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
 
 // catalogue de la commande en ligne (même contenu que dossiers.studioes.fr/commander/data.json)
-const CATALOGUE: Record<string, { p: number; type: "site" | "photo" | "opt-site" | "opt-photo"; et?: number[] }> = {
-  "site-essentiel": { p: 490, type: "site", et: [6, 12] },
-  "site-vitrine": { p: 990, type: "site", et: [6, 12, 24] },
+type Article = { p: number; type: "site" | "app" | "photo" | "mariage" | "annee" | "opt-site" | "opt-photo"; et?: number[]; sv?: number; m?: number; qmax?: number };
+const CATALOGUE: Record<string, Article> = {
+  "site-essentiel": { p: 490, type: "site", et: [6, 12], sv: 9 },
+  "site-vitrine": { p: 990, type: "site", et: [6, 12, 24], sv: 9 },
+  "app-outil": { p: 490, type: "app", et: [6, 12], sv: 9 },
+  "app-application": { p: 990, type: "app", et: [6, 12, 24], sv: 19 },
   "concert": { p: 250, type: "photo" },
   "demi": { p: 350, type: "photo" },
+  "journee": { p: 550, type: "photo", qmax: 5 },
+  "mariage-ceremonie": { p: 1290, type: "mariage" },
+  "mariage-journee": { p: 1890, type: "mariage" },
+  "mariage-album": { p: 2590, type: "mariage" },
+  "annee-4": { p: 1290, type: "annee", m: 109 },
+  "annee-8": { p: 2490, type: "annee", m: 209 },
+  "annee-12": { p: 3590, type: "annee", m: 299 },
   "site-photo": { p: 350, type: "opt-site" },
   "soir": { p: 150, type: "opt-photo" },
   "heure": { p: 80, type: "opt-photo" },
 };
-const SUIVI_SITE = 9;
+const PRINCIPAUX = ["site", "app", "photo", "mariage", "annee"];
+const OPTIONS_OK: Record<string, string> = { site: "opt-site", photo: "opt-photo", mariage: "opt-photo" };
+// prestation principale de la commande (pour nommer le suivi), ou "" si la liste est illisible
+function principale(brut: unknown): string {
+  if (!Array.isArray(brut)) return "";
+  return brut.map((x) => String(x).split("*")[0]).find((k) => CATALOGUE[k] && PRINCIPAUX.includes(CATALOGUE[k].type)) ?? "";
+}
 function verifierCatalogue(brut: unknown, total: number, etale: number, engagement: number, suivi: number): string {
   if (!Array.isArray(brut) || !brut.length || brut.length > 4) return "Commande incomplète";
-  const cles = [...new Set(brut.map(String))];
-  if (cles.some((k) => !CATALOGUE[k])) return "Commande inconnue";
-  const princ = cles.filter((k) => ["site", "photo"].includes(CATALOGUE[k].type));
+  const lus = [...new Set(brut.map(String))].map((x) => { const [k, n] = x.split("*"); return { k, q: n === undefined ? 1 : Number(n) }; });
+  if (lus.some(({ k, q }) => !CATALOGUE[k] || !Number.isInteger(q) || q < 1 || q > (CATALOGUE[k].qmax ?? 1))) return "Commande inconnue";
+  const princ = lus.filter(({ k }) => PRINCIPAUX.includes(CATALOGUE[k].type));
   if (princ.length !== 1) return "Une seule prestation par commande";
-  const m = CATALOGUE[princ[0]];
-  const opts = cles.filter((k) => k !== princ[0]);
-  if (opts.some((k) => CATALOGUE[k].type !== (m.type === "site" ? "opt-site" : "opt-photo"))) return "Option incompatible";
-  const sOpts = opts.reduce((x, k) => x + CATALOGUE[k].p, 0);
+  const m = CATALOGUE[princ[0].k], q = princ[0].q;
+  const opts = lus.filter(({ k }) => k !== princ[0].k);
+  if (opts.some(({ k }) => CATALOGUE[k].type !== OPTIONS_OK[m.type])) return "Option incompatible";
+  const sOpts = opts.reduce((x, { k }) => x + CATALOGUE[k].p, 0);
   const egal = (a: number, b: number) => Math.abs(a - b) < 0.01;
   if (etale > 0) {
-    if (m.type !== "site" || !m.et!.includes(engagement)) return "Paiement en plusieurs fois indisponible pour cette commande";
-    if (!egal(etale, m.p) || !egal(total, sOpts) || !egal(suivi, SUIVI_SITE)) return "Montant incohérent : rechargez la page";
+    if (m.type === "annee") {
+      if (engagement !== 12 || !egal(etale, m.m! * 12) || total !== 0 || suivi !== 0 || opts.length) return "Montant incohérent : rechargez la page";
+      return "";
+    }
+    if (!m.et || !m.et.includes(engagement)) return "Paiement en plusieurs fois indisponible pour cette commande";
+    if (!egal(etale, m.p) || !egal(total, sOpts) || !egal(suivi, m.sv ?? 0)) return "Montant incohérent : rechargez la page";
     return "";
   }
-  if (!egal(total, m.p + sOpts) || suivi !== 0) return "Montant incohérent : rechargez la page";
+  if (!egal(total, m.p * q + sOpts) || suivi !== 0) return "Montant incohérent : rechargez la page";
   return "";
 }
 
@@ -220,6 +240,8 @@ Deno.serve(async (req) => {
     if (err) return json(req, { erreur: err }, 400);
   }
   const montant = Math.round(total * 30) / 100;
+  const pr = dossier === "commander" ? principale(b.cles) : "";
+  const nomSuivi = pr === "app-outil" ? "Suivi de l'outil" : pr === "app-application" ? "Suivi de l'application" : "Suivi du site";
 
   const { data: dejaPaye } = await sb.from("acompte").select("id").eq("devis", devis).eq("statut", "paye").limit(1).maybeSingle();
   if (dejaPaye) return json(req, { erreur: "L'acompte de ce devis est déjà réglé" }, 409);
@@ -255,7 +277,7 @@ Deno.serve(async (req) => {
       client_reference_id: `acompte:${a.id}`,
       line_items: [
         { quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(mensuel * 100), recurring: { interval: "month" }, product_data: { name: `Paiement en ${engagement} fois sans frais, devis n° ${devis}`, description: `${structure || nom}. ${euros(etale)} réglés en ${engagement} mensualités, sans frais.`, metadata: { role: "echeance" } } } },
-        ...(suivi > 0 ? [{ quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(suivi * 100), recurring: { interval: "month" as const }, product_data: { name: "Suivi du site", description: "Hébergement, nom de domaine, sécurité et sauvegardes. Résiliable avec un mois de préavis.", metadata: { role: "suivi" } } } }] : []),
+        ...(suivi > 0 ? [{ quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(suivi * 100), recurring: { interval: "month" as const }, product_data: { name: nomSuivi, description: nomSuivi === "Suivi du site" ? "Hébergement, nom de domaine, sécurité et sauvegardes. Résiliable avec un mois de préavis." : "Hébergement, sauvegardes et mises à jour. Résiliable avec un mois de préavis.", metadata: { role: "suivi" } } } }] : []),
         ...(montant > 0 ? [{ quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(montant * 100), product_data: { name: `Acompte de 30 %, devis n° ${devis}`, description: "Prestations réglées une fois : solde de 70 % à la livraison." } } }] : []),
       ],
       metadata: { type: "acompte", acompte: a.id, devis, dossier },
