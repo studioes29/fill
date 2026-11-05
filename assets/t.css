@@ -1710,7 +1710,7 @@ html[data-cible=e] .tg.sw .ind::after{translate:24px 0}
   .et4::after{right:auto;height:6px;width:calc(75% * var(--p));transition:width .7s var(--io)}
   .et4-b{justify-items:center;text-align:center;padding:36px 0 6px;gap:1px}
   .et4-b::before{left:50%;top:-1px;margin-left:-14px}
-  .et4-b .n2{font-size:10px}
+  .et4-b .n2{font-size:12px}
   .et4-b b{font-size:15px;line-height:1.15}
   .et4-b .info{display:none}
   .et4-t{left:20%;right:20%;bottom:0}
@@ -2080,7 +2080,7 @@ html:not(.est-compose) body:has(#est) .recap-mob{display:none}
 /* en-tête entre 980 et 1279 px : le menu se range à côté des boutons au lieu d'être centré, pour ne jamais passer dessous */
 @media (min-width:980px) and (max-width:1279px){.nav{position:static;transform:none;margin-left:auto;margin-right:clamp(8px,1.6vw,20px);gap:clamp(18px,2.2vw,28px)}}
 /* trajet d'une demande sur petit mobile : libellés d'étape resserrés pour tenir dans leur colonne */
-@media (max-width:374px){.et4-b b{font-size:13.5px;letter-spacing:-.02em}.et4-b .n2{font-size:9.5px}}
+@media (max-width:374px){.et4-b b{font-size:13.5px;letter-spacing:-.02em}.et4-b .n2{font-size:11.5px}}
 /* lien au fil du texte : même filet, sans boîte qui agrandit la ligne */
 .lien.dans{display:inline;padding-bottom:0}
 .lien.dans::after{bottom:-3px}
