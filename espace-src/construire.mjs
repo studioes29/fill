@@ -48,5 +48,8 @@ writeFileSync(join(assets, nomJs), js.code);
 writeFileSync(join(assets, nomCss), feuille.code);
 const page = readFileSync(join(ici, 'index.html'), 'utf8').replace('%JS%', nomJs).replace('%CSS%', nomCss);
 writeFileSync(join(sortie, 'index.html'), page);
+// l'écran admin-virements reprend la feuille de l'Espace : son lien suit la nouvelle empreinte
+const admin = join(sortie, 'admin-virements.html');
+writeFileSync(admin, readFileSync(admin, 'utf8').replace(/\.\/assets\/index-[^"]+\.css/, `./assets/${nomCss}`));
 const nbTempsForts = Object.values(calendrierType.mois).reduce((n, t) => n + Object.values(t).flat().length, 0);
 console.log(`${ordre.length} fichiers, calendrier type de assets/t.js (${nbTempsForts} temps forts, ${Object.keys(calendrierType.packs).length} ensembles), ${nomJs} (${js.code.length} octets), ${nomCss} (${feuille.code.length} octets) dans ${sortie}`);
