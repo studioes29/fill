@@ -82,6 +82,14 @@ function verifierCatalogue(brut: unknown, total: number, etale: number, engageme
   return "";
 }
 
+// lien du mail interne : le dossier de prospection, ou Hors-champ pour une commande passée sur studioes.fr
+const HORS_CHAMP = "https://claude.ai/artifact/EQsrQBTmm8EYhZo1zhFCDT";
+const lienInterne = (dossier: unknown): { libelle: string; lien: string } => dossier && dossier !== "commander"
+  ? { libelle: "Ouvrir le dossier", lien: `https://dossiers.studioes.fr/${dossier}/` }
+  : { libelle: "Ouvrir Hors-champ", lien: HORS_CHAMP };
+// hors commande en ligne, le montant vient de la page du dossier (souvent chiffrée) : à rapprocher du devis envoyé
+const aVerifier = (dossier: unknown) => dossier && dossier !== "commander" ? ["Montant calculé par la page du dossier : vérifie qu'il correspond au devis envoyé avant de facturer."] : [];
+
 async function courriel(a: { email: string; name?: string }[], sujet: string, titre: string, texte: string[], bouton?: { libelle: string; lien: string }, repondreA?: { email: string; name?: string }) {
   const cle = Deno.env.get("BREVO_API_KEY");
   if (!cle || !a.length) return;
@@ -153,8 +161,9 @@ async function confirmerAcompte(sb: ReturnType<typeof createClient>, sessionId: 
       [`${euros(m)} payés par carte pour le devis n° ${net(a.devis)} : première mensualité de ${euros(mensuel)}${suivi ? `, premier mois de suivi de ${euros(suivi)}` : ""}${Number(a.montant) > 0 ? ` et acompte de ${euros(Number(a.montant))}` : ""}.`,
        `Paiement en ${eng} fois sans frais, prélevé chaque mois sur la carte ; dernière mensualité le ${finTxt || "(date à vérifier dans Stripe)"}${suivi ? `, puis le suivi seul (${euros(suivi)} par mois) continue` : ""}.`,
        `Client : ${net(a.nom)} &lt;${net(a.email)}&gt;.`,
-       "À faire : émettre sur Indy la facture de cette échéance avec ce numéro de devis (une facture par échéance), puis lancer l'accueil depuis Hors-champ. Stripe envoie un reçu à chaque prélèvement."],
-      { libelle: "Ouvrir le dossier", lien: a.dossier ? `https://dossiers.studioes.fr/${a.dossier}/` : "https://studioes.fr" }, a.email ? { email: a.email, name: a.nom } : undefined);
+       ...aVerifier(a.dossier),
+       "À faire : émettre sur Indy la facture de cette échéance avec ce numéro de devis (une facture par échéance), puis lancer l'accueil depuis Hors-champ. Chaque échéance suivante arrive dans un mail « Échéance reçue », un refus dans « Échéance refusée »."],
+      lienInterne(a.dossier), a.email ? { email: a.email, name: a.nom } : undefined);
     if (a.email) await courriel([{ email: a.email, name: a.nom ?? undefined }],
       `Commande confirmée, devis n° ${a.devis}`,
       "Votre commande est confirmée",
@@ -165,14 +174,15 @@ async function confirmerAcompte(sb: ReturnType<typeof createClient>, sessionId: 
       { libelle: "Choisir un créneau", lien: "https://cal.com/studioes/30min" });
     return a;
   }
-  const lienDossier = a.dossier ? `https://dossiers.studioes.fr/${a.dossier}/` : "https://studioes.fr";
+
   await courriel([{ email: Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr" }],
     `Acompte reçu : ${a.structure || a.nom} (${euros(m)})`,
     `Acompte reçu : ${net(a.structure || a.nom)}`,
     [`${euros(m)} payés par carte pour le devis n° ${net(a.devis)} (total ponctuel ${euros(Number(a.total_ponctuel))}).`,
      `Client : ${net(a.nom)} &lt;${net(a.email)}&gt;${a.particulier ? ", particulier (démarrage anticipé demandé)" : ""}.`,
+     ...aVerifier(a.dossier),
      "À faire : émettre la facture d'acompte sur Indy avec ce numéro de devis, puis lancer l'accueil depuis Hors-champ."],
-    { libelle: "Ouvrir le dossier", lien: lienDossier }, a.email ? { email: a.email, name: a.nom } : undefined);
+    lienInterne(a.dossier), a.email ? { email: a.email, name: a.nom } : undefined);
   if (a.email) await courriel([{ email: a.email, name: a.nom ?? undefined }],
     `Acompte bien reçu, devis n° ${a.devis}`,
     "Votre acompte est bien reçu",
@@ -256,7 +266,7 @@ Deno.serve(async (req) => {
       [`Devis n° ${devis} accepté, total ponctuel ${euros(total)}, acompte de ${euros(montant)} à régler par virement.`,
        `Client : ${nom} &lt;${email}&gt;${particulier ? ", particulier" : ""}.`,
        "À faire sous 24 h : envoyer la facture d'acompte Indy (elle porte le RIB). La commande est ferme à réception du virement."],
-      { libelle: "Ouvrir le dossier", lien: `https://dossiers.studioes.fr/${dossier}/` }, email ? { email, name: nom } : undefined);
+      lienInterne(dossier), email ? { email, name: nom } : undefined);
     return json(req, { ok: true, montant, id: a.id });
   }
 
@@ -276,7 +286,7 @@ Deno.serve(async (req) => {
       ...(email ? { customer_email: email } : {}),
       client_reference_id: `acompte:${a.id}`,
       line_items: [
-        { quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(mensuel * 100), recurring: { interval: "month" }, product_data: { name: `Paiement en ${engagement} fois sans frais, devis n° ${devis}`, description: `${structure || nom}. ${euros(etale)} réglés en ${engagement} mensualités, sans frais.`, metadata: { role: "echeance" } } } },
+        { quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(mensuel * 100), recurring: { interval: "month" }, product_data: { name: `Studio ES, devis n° ${devis} : ${engagement} mensualités de ${euros(mensuel)}`, description: `${structure || nom}. ${euros(etale)} réglés en ${engagement} mensualités, sans frais.`, metadata: { role: "echeance" } } } },
         ...(suivi > 0 ? [{ quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(suivi * 100), recurring: { interval: "month" as const }, product_data: { name: nomSuivi, description: nomSuivi === "Suivi du site" ? "Hébergement, nom de domaine, sécurité et sauvegardes. Résiliable avec un mois de préavis." : "Hébergement, sauvegardes et mises à jour. Résiliable avec un mois de préavis.", metadata: { role: "suivi" } } } }] : []),
         ...(montant > 0 ? [{ quantity: 1, price_data: { currency: "eur", unit_amount: Math.round(montant * 100), product_data: { name: `Acompte de 30 %, devis n° ${devis}`, description: "Prestations réglées une fois : solde de 70 % à la livraison." } } }] : []),
       ],

@@ -1,6 +1,8 @@
 // Webhook Stripe unique du compte Studio ES.
 // Trie chaque paiement par sa référence : Fill (commande:, ouverture:, mensualite:), acompte Studio ES (acompte:),
 // carte cadeau Pierceval (carte:). Seuls les paiements Fill créditent des unités.
+// Commandes Studio ES en plusieurs fois (abonnements Stripe) : chaque échéance payée, refusée, ou l'arrêt de l'abonnement
+// prévient Studio ES par mail (facture Indy par échéance, relance en cas de refus).
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -62,6 +64,33 @@ Deno.serve(async (req) => {
     } else if (objet === "carte" || s.metadata?.type === "carte-cadeau-v2") {
       await fetch(`${URL_SB}/functions/v1/carte-cadeau?action=verify-gift&session=${encodeURIComponent(s.id)}`).catch(() => null);
     }
+  }
+  if (evt.type === "invoice.paid" || evt.type === "invoice.payment_failed" || evt.type === "customer.subscription.deleted") {
+    const o = evt.data.object as any;
+    const md = (evt.type === "customer.subscription.deleted" ? o.metadata : (o.parent?.subscription_details?.metadata ?? o.subscription_details?.metadata)) ?? {};
+    if (md.type !== "acompte") return new Response("ok"); // seules les commandes Studio ES en plusieurs fois sont suivies ici
+    // la première échéance est déjà annoncée par le mail « Commande en N fois »
+    if (evt.type === "invoice.paid" && o.billing_reason === "subscription_create") return new Response("ok");
+    const { data: a } = await sb.from("acompte").select("devis, structure, nom, email, mensuel, suivi, engagement").eq("id", md.acompte).maybeSingle();
+    const qui = a?.structure || a?.nom || o.customer_email || "client";
+    const euros = (c: number) => (c / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+    const lien = o.hosted_invoice_url ?? "https://dashboard.stripe.com/subscriptions";
+    const devis = a?.devis ?? md.devis ?? "?";
+    const [sujet, lignes] = evt.type === "invoice.paid"
+      ? [`Échéance reçue : ${qui} (${euros(o.amount_paid ?? 0)})`, [`Échéance payée par carte pour le devis n° ${devis}.`, "À faire : la facture Indy de cette échéance, même numéro de devis."]]
+      : evt.type === "invoice.payment_failed"
+      ? [`Échéance refusée : ${qui} (${euros(o.amount_due ?? 0)})`, [`Le prélèvement de l'échéance du devis n° ${devis} a été refusé. Stripe réessaie automatiquement et prévient le client.`, `À faire : écrire au client${a?.email ? " (" + a.email + ")" : ""} si le deuxième essai échoue aussi.`]]
+      : [`Abonnement arrêté : ${qui}`, [`L'abonnement du devis n° ${devis} est arrêté (fin normale ou résiliation).`, "À vérifier : toutes les échéances sont-elles réglées ? Le suivi du site continue-t-il ailleurs ?"]];
+    const cle = lire("BREVO_API_KEY");
+    if (cle) await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST", headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        sender: { name: "Studio ES", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
+        to: [{ email: Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr" }],
+        subject: sujet, textContent: [...lignes, "", lien].join("\n"), tags: ["stripe-echeance"],
+      }),
+    }).catch((e) => console.error("brevo", String(e)));
+    else console.error("BREVO_API_KEY absente : alerte non envoyée", sujet);
   }
   return new Response("ok");
 });
