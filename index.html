@@ -31,7 +31,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="./assets/f/br.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/f/it.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="./assets/t.css?v=24">
+<link rel="stylesheet" href="./assets/t.css?v=25">
 <link rel="stylesheet" href="./assets/banniere.css?v=2">
 <script>(function(h){try{var e=JSON.parse(localStorage.getItem("fil.v1")||"{}");if(e.public==="e")h.dataset.cible="e"}catch(_){}try{var t=+sessionStorage.getItem("fil.nav");if(t&&Date.now()-t<1500)h.classList.add("entre");sessionStorage.removeItem("fil.nav")}catch(_){}try{if(!sessionStorage.getItem("fil.intro")&&!h.classList.contains("entre")&&!matchMedia("(prefers-reduced-motion: reduce)").matches&&!/[?&]sans-intro/.test(location.search))h.classList.add("intro")}catch(_){}})(document.documentElement)</script>
 <noscript><style>.js-only{display:none!important}</style></noscript>
@@ -89,32 +89,59 @@
   </div>
 </section>
 
-<section class="sec feuille blanc cst-f" id="constat" aria-labelledby="t-cst">
+<div class="passage" id="passage" data-sens="g" style="--de:var(--cible2);--trait:var(--cible3);--vers:var(--cible)">
+  <div class="passage-s">
+    <span class="motif pa-m" aria-hidden="true"></span>
+    <svg class="js-only" aria-hidden="true"><g><path/></g></svg>
+    <div class="w passage-t"><h2 id="t-cst">Une communication <span class="it">qui ne <span class="lie"><span class="trait">s’arrête</span> pas.</span></span></h2><p class="lead">Fill prend en charge la communication courante, chaque mois, à prix fixe : quand le temps manque, quand un poste ne se justifie pas, ou pendant une absence.</p></div>
+  </div>
+</div>
+
+<section class="sec ton-f cas-f" id="constat" aria-labelledby="t-cst">
+  <div class="w cas-h">
+    <h3 id="t-cas">Vous vous reconnaissez&nbsp;?</h3>
+    <p>Situations types, inspirées des demandes les plus fréquentes.</p>
+    <button type="button" class="cas-pp js-only" aria-pressed="false" aria-label="Mettre le défilement en pause"><svg class="i cas-pa" aria-hidden="true"><use href="#pa"/></svg><svg class="i cas-pv" aria-hidden="true"><use href="#pv"/></svg></button>
+  </div>
+
+  <div class="cas-r" data-pour="c" role="region" aria-labelledby="t-cas">
+    <div class="cas-p">
+      <ul class="cas-l">
+        <li class="cas-c"><span class="cas-s">Manque de temps</span><p class="cas-q">« Le bulletin, c’est moi qui le monte, entre deux conseils municipaux. Il sort quand il peut. »</p><p class="cas-a"><b>Nathalie</b>Secrétaire générale de mairie</p><p class="cas-fi"><span>Avec Fill</span>Le bulletin est mis en page à partir de vos textes. Vous relisez, il part à l’imprimeur.</p></li>
+        <li class="cas-c"><span class="cas-s">Absence</span><p class="cas-q">« Notre chargée de communication part en congé en mars. Six mois sans personne pour le site et les réseaux. »</p><p class="cas-a"><b>Isabelle</b>Directrice générale des services</p><p class="cas-fi"><span>Avec Fill</span>Relais assure la continuité pendant l’absence, avec vos outils et votre charte, puis prépare la passation.</p></li>
+        <li class="cas-c"><span class="cas-s">Pas de poste dédié</span><p class="cas-q">« Un poste de chargé de communication, nous n’en avons pas les moyens. Les habitants attendent pourtant d’être informés. »</p><p class="cas-a"><b>Bernard</b>Maire d’une commune de 900 habitants</p><p class="cas-fi"><span>Avec Fill</span>Un abonnement à prix fixe, ajusté au volume réel de la commune.</p></li>
+        <li class="cas-c"><span class="cas-s">Surcharge</span><p class="cas-q">« Je suis seul au service. Entre le magazine, le site et les demandes des élus, les réseaux passent en dernier. »</p><p class="cas-a"><b>Thomas</b>Chargé de communication</p><p class="cas-fi"><span>Avec Fill</span>Fill prend en charge une partie du courant. Vous gardez la main sur les projets.</p></li>
+        <li class="cas-c"><span class="cas-s">Pas de poste dédié</span><p class="cas-q">« Pour chaque événement, on me demande une affiche. Je les fais le soir, sans être graphiste. »</p><p class="cas-a"><b>Patrick</b>Adjoint à la communication</p><p class="cas-fi"><span>Avec Fill</span>Affiches et visuels conçus par un professionnel, déclinés pour les réseaux.</p></li>
+        <li class="cas-c"><span class="cas-s">Manque de temps</span><p class="cas-q">« Je publie sur la page de la commune entre deux appels. Certaines informations sortent après l’événement. »</p><p class="cas-a"><b>Julie</b>Agente d’accueil</p><p class="cas-fi"><span>Avec Fill</span>Les publications sont rédigées et programmées à la date prévue.</p></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cas-r" data-pour="e" role="region" aria-labelledby="t-cas" hidden>
+    <div class="cas-p">
+      <ul class="cas-l">
+        <li class="cas-c"><span class="cas-s">Manque de temps</span><p class="cas-q">« Notre dernière publication date de juin. Il faudrait être présents, mais personne n’a le temps. »</p><p class="cas-a"><b>Laurent</b>Gérant d’une entreprise du bâtiment</p><p class="cas-fi"><span>Avec Fill</span>Un calendrier de publications établi avec vous, des posts préparés chaque mois.</p></li>
+        <li class="cas-c"><span class="cas-s">Absence</span><p class="cas-q">« Je pars en congé en avril. Personne en interne ne peut reprendre la newsletter et les réseaux. »</p><p class="cas-a"><b>Sandrine</b>Responsable marketing</p><p class="cas-fi"><span>Avec Fill</span>Relais assure la continuité pendant l’absence et prépare votre retour.</p></li>
+        <li class="cas-c"><span class="cas-s">Pas de poste dédié</span><p class="cas-q">« Un chargé de communication à temps plein&nbsp;? Le volume ne le justifie pas. »</p><p class="cas-a"><b>Karim</b>Dirigeant d’une PME de 20 salariés</p><p class="cas-fi"><span>Avec Fill</span>Le volume dont vous avez besoin, chaque mois, à prix fixe.</p></li>
+        <li class="cas-c"><span class="cas-s">Manque de temps</span><p class="cas-q">« Je fais mes visuels sur mon téléphone, le soir. Ils ne ressemblent jamais à l’image de la boutique. »</p><p class="cas-a"><b>Émilie</b>Gérante d’une boutique</p><p class="cas-fi"><span>Avec Fill</span>Des visuels cohérents, déclinés de modèles à vos couleurs.</p></li>
+        <li class="cas-c"><span class="cas-s">Pas de poste dédié</span><p class="cas-q">« Notre site affiche encore les offres de l’an dernier. Le mettre à jour n’est le travail de personne. »</p><p class="cas-a"><b>Olivier</b>Directeur commercial</p><p class="cas-fi"><span>Avec Fill</span>Les actualités du site sont rédigées et mises en ligne au fil de vos demandes.</p></li>
+        <li class="cas-c"><span class="cas-s">Surcharge</span><p class="cas-q">« On m’a confié la communication en plus de mon poste. Je ne sais pas par où commencer. »</p><p class="cas-a"><b>Lucie</b>Assistante de direction</p><p class="cas-fi"><span>Avec Fill</span>Vous décrivez le besoin en quelques lignes, Fill s’occupe du reste.</p></li>
+      </ul>
+    </div>
+  </div>
+
   <div class="w">
-    <div class="sec-t"><h2 id="t-cst">Une communication <span class="it">qui ne <span class="lie"><span class="trait">s’arrête</span> pas.</span></span></h2><p class="lead">Fill prend en charge la communication courante, chaque mois, à prix fixe. Pour trois situations fréquentes :</p></div>
-    <ul class="cst">
-      <li><b>Personne n’a le temps</b><span>La communication passe après le reste : le site vieillit, les réseaux restent muets entre deux événements.</span></li>
-      <li><b>Un poste à temps plein ne se justifie pas</b><span>Le volume ne justifie pas un recrutement, mais il faut publier chaque semaine.</span></li>
-      <li><b>Le chargé de communication est absent ou débordé</b><span>Congé, arrêt, poste vacant ou trop de demandes à la fois : la communication continue.</span></li>
-    </ul>
-    <div class="qui cst-qui">
+    <div class="qui cas-qui">
       <div class="qui-ph"><img src="./assets/img/ewen-s.webp" alt="Ewen Soupault" loading="lazy" width="640" height="853"></div>
       <p><b>Ewen Soupault</b> traite chaque demande. Il pratique la communication territoriale depuis 2020, auprès de plusieurs collectivités, et accompagne aussi des entreprises. Fill est un service de <a class="lien" href="https://studioes.fr" rel="noopener">Studio ES</a>, studio de création en Bretagne.</p>
     </div>
   </div>
 </section>
 
-<div class="passage" id="passage" data-sens="g" style="--de:var(--cible2);--trait:var(--cible3);--vers:var(--cible)">
-  <div class="passage-s">
-    <span class="motif pa-m" aria-hidden="true"></span>
-    <svg class="js-only" aria-hidden="true"><g><path/></g></svg>
-    <div class="w passage-t"><h2 id="t-re">Une information, <span class="it">plusieurs <span class="lie"><span class="trait">supports</span>.</span></span></h2><p class="lead">Newsletter, publications, affiches, reportages : un aperçu de ce que Fill prépare chaque mois.</p></div>
-  </div>
-</div>
-
 <section class="sec ton-f" id="realisations" aria-labelledby="t-re">
   <span class="motif re-m" aria-hidden="true"></span>
   <div class="w">
+    <div class="sec-t"><h2 id="t-re">Une information, <span class="it">plusieurs <span class="lie"><span class="trait">supports</span>.</span></span></h2><p class="lead">Newsletter, publications, affiches, reportages : un aperçu de ce que Fill prépare chaque mois.</p></div>
     <div class="gal" data-rail=".gal-c:not([hidden])">
       <figure class="gal-c g-big" tabindex="0" data-pour="c"><div class="gal-i"><img src="./assets/img/mk-nl-c2-s.webp" alt="Exemple de newsletter municipale : les vœux du maire" loading="lazy" decoding="async" width="640" height="800"><span class="ex">Exemple</span></div><figcaption><span class="t"><b>Newsletter</b><span class="u" data-u="news"></span></span><span class="dsc">Rédaction, mise en page et envoi à vos abonnés.</span></figcaption></figure>
       <figure class="gal-c " tabindex="0" data-pour="c"><div class="gal-i"><img src="./assets/img/nu-grille-s.webp" alt="Publications d’une commune pour les réseaux sociaux, en grille" loading="lazy" decoding="async" width="640" height="800"></div><figcaption><span class="t"><b>Publications</b><span class="u" data-u="post"></span></span><span class="dsc">Texte et visuel, sur deux réseaux.</span></figcaption></figure>
@@ -235,6 +262,7 @@
 <script src="./assets/offre.js?v=16"></script>
 <script src="./assets/t.js?v=27" defer></script>
 <script src="./assets/banniere.js?v=4" defer></script>
+<script src="./assets/cas.js?v=1" defer></script>
 <script src="/assets/blackweek.js?v=5" defer></script>
 </body>
 </html>
