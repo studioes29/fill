@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     if (commande) {
       const { data: c } = await sb.from("commande").select("unites, total, statut, bon_commande").eq("id", commande).single();
       if (!c || c.statut !== "a_valider" || !c.bon_commande) return new Response("Rien \xE0 signaler", { status: 404, headers: cors });
-      quoi = `${c.unites} unit\xE9s suppl\xE9mentaires (${Number(c.total).toLocaleString("fr-FR")} \u20AC HT)`;
+      quoi = `${c.unites} unit\xE9s suppl\xE9mentaires (${Number(c.total).toLocaleString("fr-FR")} \u20AC, TVA non applicable)`;
     } else {
       if (o.statut !== "a_activer" || !o.bon_commande) return new Response("Rien \xE0 signaler", { status: 404, headers: cors });
       quoi = `les premi\xE8res unit\xE9s de la formule ${o.formule}`;

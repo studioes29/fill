@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     if (commande) {
       const { data: c } = await sb.from("commande").select("unites, total, statut, bon_commande").eq("id", commande).single();
       if (!c || c.statut !== "a_valider" || !c.bon_commande) return new Response("Rien à signaler", { status: 404, headers: cors });
-      quoi = `${c.unites} unités supplémentaires (${Number(c.total).toLocaleString("fr-FR")} € HT)`;
+      quoi = `${c.unites} unités supplémentaires (${Number(c.total).toLocaleString("fr-FR")} €, TVA non applicable)`;
     } else {
       if (o.statut !== "a_activer" || !o.bon_commande) return new Response("Rien à signaler", { status: 404, headers: cors });
       quoi = `les premières unités de la formule ${o.formule}`;
