@@ -522,7 +522,7 @@ function Ouverture(e, t) {
                   var a = R(r),
                     o = F(a);
                   {
-                    let e = M(() => (B(m) ? `non` : `lire`));
+                    let e = M(() => (B(m) ? `oeil-barre` : `oeil`));
                     Icone(o, {
                       get n() {
                         return B(e);

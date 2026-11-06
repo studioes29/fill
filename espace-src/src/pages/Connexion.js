@@ -143,7 +143,7 @@ function Connexion(e, t) {
       var o = R(a),
         s = F(o);
       {
-        let e = M(() => (B(i) ? `non` : `lire`));
+        let e = M(() => (B(i) ? `oeil-barre` : `oeil`));
         Icone(s, {
           get n() {
             return B(e);

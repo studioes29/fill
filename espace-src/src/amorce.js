@@ -45,3 +45,10 @@ var e = Object.defineProperty,
     fetch(e.href, n);
   }
 })();
+
+// route courante sur <html data-route> : la feuille de style masque le menu du bas pendant une nouvelle demande
+{
+  const route = () => { document.documentElement.dataset.route = (location.hash || "").replace(/^#\/?/, "").split(/[/?&]/)[0]; };
+  addEventListener("hashchange", route);
+  route();
+}

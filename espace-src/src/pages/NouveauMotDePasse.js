@@ -39,7 +39,7 @@ function NouveauMotDePasse(e, t) {
   var p = R(f),
     m = F(p);
   {
-    let e = M(() => (B(r) ? `non` : `lire`));
+    let e = M(() => (B(r) ? `oeil-barre` : `oeil`));
     Icone(m, {
       get n() {
         return B(e);
