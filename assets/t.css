@@ -340,7 +340,7 @@ html:not([data-cible=e]) .pour-e,html[data-cible=e] .pour-c{display:none}
 .fil-pont.loin{opacity:0}
 
 /* ---------- le passage : la caméra suit le fil, puis plonge dedans ---------- */
-.passage{position:relative;height:150vh;height:150svh;background:var(--creme);margin-top:-1px}
+.passage{position:relative;height:120vh;height:120svh;background:var(--creme);margin-top:-1px}
 .passage-s{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid;align-items:end}
 .passage-s.plein{background:var(--nuit)}
 .passage svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
@@ -355,7 +355,7 @@ html:not(.js) .passage,.passage.fixe{height:auto}
 html:not(.js) .passage-s,.passage.fixe .passage-s{position:relative;height:auto;padding-top:clamp(90px,10vw,150px);background:var(--nuit)}
 .passage.fixe svg{display:none}
 .passage.fixe .passage-t{opacity:1!important;transform:none!important}
-@media (max-width:979px){.passage{height:140vh;height:140svh}}
+@media (max-width:979px){.passage{height:115vh;height:115svh}}
 #realisations{padding-top:clamp(8px,2vw,24px)}
 
 /* ---------- les liaisons : le même fil, rendu dans chaque rubrique qu'il traverse ---------- */
@@ -1389,7 +1389,7 @@ html{background:var(--sable)}
 .passage{background:var(--de,var(--cible2));transition:background-color .6s var(--e)}
 .passage-s.plein{background:var(--vers,var(--cible))}
 .passage path{stroke:var(--trait)}
-.passage.p2{height:130vh;height:130svh}
+.passage.p2{height:110vh;height:110svh}
 .p2 .passage-t{color:var(--encre)}.p2 .passage-t .lead{color:var(--mu)}
 html:not(.js) .passage-s,.passage.fixe .passage-s{background:var(--vers,var(--cible))}
 .passage-t{--filet:color-mix(in srgb,var(--cible3) 70%,transparent)}
