@@ -99,7 +99,7 @@ const hide = el => S(el, { o: 0 });
 const CAPS = [
   [0.15, 2.9, 'Les demandes *s’empilent.*', ''],
   [2.95, 5.5, 'Et la page Facebook *dort.*', ''],
-  [5.75, 7.35, 'Fill *prend le relais.*', 'Un interlocuteur, un prix fixe, un espace pour tout suivre.'],
+  [5.75, 7.35, 'Fill *prend le relais.*', 'Un prix fixe chaque mois, et un espace en ligne où suivre chaque demande.'],
   [7.45, 10.05, 'Trois lignes *suffisent.*', ''],
   [10.15, 13.0, 'Fill décline *tous vos supports.*', 'Confirmé sous 24 h ouvrées.'],
   [13.1, 15.6, 'Rien ne part *sans votre accord.*', ''],
