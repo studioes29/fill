@@ -2266,7 +2266,7 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 .lg::before{inset:-7px -6px}
 .fo-plus::before,.tg button::before{inset:-8px 0}
 .tg button::before{inset:-3px 0}
-.dots button{position:relative}
+.dots button{position:relative}.dots button::after{content:"";position:absolute;inset:-9px -4px}
 .dots button::before{inset:-18px -3px}
 .ft ul a::before{inset:-5px -4px}
 .ft-a p a::before,.ft .bas a::before{inset:-12px -4px}
