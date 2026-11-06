@@ -329,7 +329,7 @@
     pub: { l: 'Publication', p: { post: 1 } }, pa: { l: 'Publication et actualité', p: { post: 1, actu: 1 } },
     aff: { l: 'Affiche et deux publications', p: { affiche: 1, post: 2 } }, news: { l: 'Newsletter', p: { news: 1 } },
     cp: { l: 'Communiqué et publication', p: { presse: 1, post: 1 } }, prog: { l: 'Programme recto verso et publication', p: { flyer: 1, post: 1 } },
-    bul: { l: 'Bulletin de 8 pages', p: { bulletin: 8 } }, photo: { l: 'Reportage photo', p: { photo: 1 } }, video: { l: 'Vidéo courte', p: { video: 1 } }
+    bul: { l: 'Bulletin de 8 pages', p: { bulletin: 8 } }, photo: { l: 'Reportage photo', p: { photo: 1 } }
   };
   /* @calendrier-type:packs:fin */
   const panierCal = evs => { const tot = [{}, {}, {}]; evs.forEach(e => Object.entries(PACKS[e.k].p).forEach(([k, n]) => { tot[e.m][k] = (tot[e.m][k] || 0) + n; })); return tot; };
@@ -796,7 +796,7 @@
       e: { 1: [[8, 'Vœux aux clients', 'news'], [15, 'Bilan de l’année', 'pa'], [29, 'Recrutements de printemps', 'pa']], 2: [[5, 'Salon professionnel', 'aff'], [19, 'Portraits d’équipe', 'photo'], [26, 'Lettre clients', 'news']],
         3: [[10, 'Chantier de référence', 'pa'], [17, 'Offres d’emploi', 'pa'], [31, 'Clôture du trimestre', 'pub']], 4: [[7, 'Nouveau produit', 'pa'], [14, 'Portes ouvertes', 'aff'], [28, 'Lettre clients', 'news']],
         5: [[12, 'Salon régional', 'aff'], [19, 'Témoignage client', 'pa'], [26, 'Recrutement d’été', 'pa']], 6: [[9, 'Anniversaire de l’entreprise', 'cp'], [16, 'Chantiers de l’été', 'pub'], [30, 'Fermeture estivale', 'pub']],
-        7: [[7, 'Coulisses de l’atelier', 'video'], [15, 'Fermeture estivale', 'pub'], [29, 'Préparer la rentrée', 'pub']], 8: [[26, 'Rentrée', 'pa'], [28, 'Offres de rentrée', 'pa'], [31, 'Lettre de rentrée', 'news']],
+        7: [[7, 'Coulisses de l’atelier', 'pub'], [15, 'Fermeture estivale', 'pub'], [29, 'Préparer la rentrée', 'pub']], 8: [[26, 'Rentrée', 'pa'], [28, 'Offres de rentrée', 'pa'], [31, 'Lettre de rentrée', 'news']],
         9: [[8, 'Rentrée commerciale', 'pa'], [16, 'Salon de rentrée', 'aff'], [29, 'Lettre clients', 'news']], 10: [[7, 'Nouvelle réalisation', 'photo'], [14, 'Semaine de l’industrie', 'pub'], [28, 'Recrutement', 'pa']],
         11: [[4, 'Retour d’expérience client', 'pa'], [18, 'Vœux de fin d’année', 'aff'], [25, 'Lettre clients', 'news']], 12: [[5, 'Bilan de l’année', 'pa'], [12, 'Vœux aux clients', 'news'], [19, 'Fermeture des fêtes', 'pub']] }
     };

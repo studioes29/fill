@@ -523,12 +523,12 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
     let T = g({
       organisationId: `kerlan`,
       auteurId: `yannick`,
-      titre: `Vidéo : concert du bagad à la Sainte-Barbe`,
-      lignes: h([`video`, 1]),
+      titre: `Affiche : concert du bagad à la Sainte-Barbe`,
+      lignes: h([`affiche`, 1]),
       creee: r(ajouterJours(s, 20), 14),
       unites: 4,
       livraison: n(0),
-      brief: `Montage court pour les réseaux à partir des images du concert. Sous-titres en français.`,
+      brief: `Affiche A3 et déclinaison pour les réseaux, à partir des photos du concert.`,
       parcours: [
         [`confirmee`, r(ajouterJours(s, 21), 9), `ewen`],
         [`production`, r(t(-5), 9), `ewen`],
@@ -540,23 +540,22 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
       r(t(-2), 15),
       [
         {
-          nom: `bagad-sainte-barbe.mp4`,
-          type: `video`,
+          nom: `affiche-bagad-sainte-barbe.webp`,
+          type: `affiche`,
           src: Ao,
-          legende: `0:48 · 1080 × 1920 · sous-titrée`,
+          legende: `A3 · déclinaison 1080 × 1350 pour les réseaux`,
           contenu: {
-            titre: `Sous-titres`,
+            titre: `Textes de l’affiche`,
             corps: [
-              `0:00 · Sainte-Barbe, salle des fêtes de Saint-Ivenec`,
-              `0:06 · Le bagad de Saint-Ivenec, 32 musiciens sur scène`,
-              `0:15 · « On répète depuis septembre pour ce soir »`,
-              `0:27 · Prochain concert : le 21 décembre à l’église`,
-              `0:41 · Retrouvez le programme sur saint-ivenec.fr`,
+              `Concert du bagad de Saint-Ivenec`,
+              `Sainte-Barbe, salle des fêtes`,
+              `Prochain concert : le 21 décembre à l’église`,
+              `Programme sur saint-ivenec.fr`,
             ],
           },
         },
       ],
-      `Format vertical pour Instagram et Facebook, sous-titres incrustés.`,
+      `Affiche A3 pour les commerces, déclinaison carrée pour Instagram et Facebook.`,
     ),
       m({
         organisationId: `kerlan`,

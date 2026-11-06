@@ -44,14 +44,6 @@ var fv = [
       },
     },
     {
-      id: `video`,
-      nom: `Une vidéo`,
-      lignes: {
-        video: 1,
-        post: 1,
-      },
-    },
-    {
       id: `bulletin`,
       nom: `Un bulletin`,
       lignes: {
@@ -77,7 +69,6 @@ var fv = [
     [`newsletter`, /\b(newsletter|lettre d.information|lettre mensuelle|la lettre)\b/, `une lettre d’information`],
     [`bulletin`, /\b(bulletin|magazine|journal municipal|mag)\b/, `un bulletin`],
     [`presse`, /\b(communique|presse|journalistes?)\b/, `une annonce à la presse`],
-    [`video`, /\b(video|film|clip|montage|reel)\b/, `une vidéo`],
     [`reportage`, /\b(reportage|photos?|photographe|couvrir|couverture)\b/, `un reportage`],
     [
       `information`,

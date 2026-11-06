@@ -1,7 +1,7 @@
 // Module regles/remise.
 // Fichier de l'Espace Fill reconstitué depuis le bundle en ligne ; concaténé dans l'ordre de src/ordre.txt.
 
-var TYPES_PUBLIES = [`post`, `actu`, `agenda`, `presse`, `news`, `page`, `video`];
+var TYPES_PUBLIES = [`post`, `actu`, `agenda`, `presse`, `news`, `page`];
 var TYPES_SANS_LIVRABLE = [`point`, `moder`];
 var estPublie = (e) => TYPES_PUBLIES.includes(e);
 var modeRemise = (e) => {

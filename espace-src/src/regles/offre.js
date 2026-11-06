@@ -166,7 +166,7 @@ var offreJson = {
               post: 10,
               actu: 6,
               news: 1,
-              video: 1,
+              affiche: 1,
               point: 2,
             },
           },
@@ -316,16 +316,6 @@ var offreJson = {
         creation: !0,
       },
       {
-        id: `video`,
-        cat: `creer`,
-        nom: `Vidéo courte`,
-        u: 4,
-        detail: `Montage de moins de 60 secondes à partir de vos images`,
-        max: 4,
-        t: `#A9CCFF`,
-        creation: !0,
-      },
-      {
         id: `photo`,
         cat: `terrain`,
         nom: `Reportage photo`,
@@ -467,7 +457,7 @@ var formule = (e) => {
     return t;
   };
 var prestation = (e) => CATALOGUE.find((t) => t.id === e);
-var TYPES_CREATION = [`affiche`, `flyer`, `news`, `page`, `video`];
+var TYPES_CREATION = [`affiche`, `flyer`, `news`, `page`];
 var TYPES_PLANIFIES = [`bulletin`, `photo`];
 var ABONNEMENTS = FORMULES.filter((e) => e.id !== `relais`);
 var ORDRE_FORMULES = [`essentiel`, `regulier`, `soutenu`, `relais`];
