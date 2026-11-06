@@ -134,7 +134,7 @@ var offreJson = {
         exemples: [
           [`8 pages de bulletin`, `12 publications`, `6 actualités`, `2 newsletters`, `1 affiche en création`],
           [`1 reportage photo`, `12 publications`, `8 actualités`, `2 newsletters`, `1 flyer`, `agenda en ligne`],
-          [`2 reportages photo`, `10 publications`, `6 actualités`, `1 newsletter`, `1 vidéo courte`],
+          [`2 reportages photo`, `10 publications`, `6 actualités`, `1 newsletter`, `1 affiche en création`],
         ],
         repartitions: [
           {

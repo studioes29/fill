@@ -173,7 +173,7 @@
           "10 publications",
           "6 actualités",
           "1 newsletter",
-          "1 vidéo courte"
+          "1 affiche en création"
         ]
       ],
       "repartitions": [
@@ -206,8 +206,8 @@
             "post": 10,
             "actu": 6,
             "news": 1,
-            "video": 1,
-            "point": 2
+            "point": 2,
+            "affiche": 1
           }
         }
       ],
@@ -360,16 +360,6 @@
       "u": 2,
       "detail": "Mise en page d’une page, textes fournis. Au-delà de 12 pages par numéro : devis",
       "max": 12,
-      "t": "#A9CCFF",
-      "creation": true
-    },
-    {
-      "id": "video",
-      "cat": "creer",
-      "nom": "Vidéo courte",
-      "u": 4,
-      "detail": "Montage de moins de 60 secondes à partir de vos images",
-      "max": 4,
       "t": "#A9CCFF",
       "creation": true
     },
