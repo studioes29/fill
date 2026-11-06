@@ -451,13 +451,13 @@
     }
   ],
   "engagement_long": 12,
-  "mise_en_place_regle": "490 € HT pour Essentiel, 990 € HT pour Régulier et Soutenu ; offerte avec un engagement de 12 mois",
+  "mise_en_place_regle": "490 € pour Essentiel, 990 € pour Régulier et Soutenu (TVA non applicable) ; offerte avec un engagement de 12 mois",
   "urgence_unites": 1,
   "report": "Les unités non utilisées sont reportées une fois, sur le mois suivant ; elles sont consommées en premier",
   "delais": {
     "courant": "publication, actualité, agenda, visuel sur gabarit, communiqué",
     "creation": "5 jours ouvrés",
-    "creation_liste": "affiche, flyer, newsletter, page de site, vidéo",
+    "creation_liste": "affiche, flyer, newsletter, page de site",
     "bulletin": "Rétroplanning fixé ensemble, éléments à fournir trois semaines avant parution",
     "photo": "Date convenue ensemble, au moins une semaine à l’avance",
     "courant_j": "1 à 2 jours ouvrés"

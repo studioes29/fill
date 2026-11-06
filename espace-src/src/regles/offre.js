@@ -409,7 +409,7 @@ var offreJson = {
     delais: {
       courant: `publication, actualité, agenda, visuel sur gabarit, communiqué`,
       creation: `5 jours ouvrés`,
-      creation_liste: `affiche, flyer, newsletter, page de site, vidéo`,
+      creation_liste: `affiche, flyer, newsletter, page de site`,
       bulletin: `Rétroplanning fixé ensemble, éléments à fournir trois semaines avant parution`,
       photo: `Date convenue ensemble, au moins une semaine à l’avance`,
       courant_j: `1 à 2 jours ouvrés`,

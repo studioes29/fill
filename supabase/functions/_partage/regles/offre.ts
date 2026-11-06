@@ -5,7 +5,7 @@ const o = brut;
 export const OFFRE = {
   version: o.version,
   uniteSup: o.unite_sup,
-  // prix HT d'une unité hors forfait
+  // prix d'une unité hors forfait (TVA non applicable)
   engagementMois: o.engagement_mois,
   engagementLong: o.engagement_long,
   // mise en place offerte à partir de cet engagement
