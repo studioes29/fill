@@ -6,6 +6,7 @@
 // mois ; après la dernière mensualité, l'abonnement continue sur le seul suivi (calendrier d'abonnement Stripe).
 // Chaque échéance donne lieu à sa propre facture.
 // GET  ?session=cs_...  -> état du paiement pour la page de retour du dossier
+// GET  ?reprendre=<id>   -> les choix d'une commande de studioes.fr non payée (lien de l'e-mail « Reprendre ma commande »)
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -193,12 +194,32 @@ async function confirmerAcompte(sb: ReturnType<typeof createClient>, sessionId: 
   return a;
 }
 
+// état de la page de commande gardé pour la reprise : nombres, booléens et textes courts sans balises, profondeur limitée
+const nettoyer = (v: unknown, n = 0): unknown => {
+  if (n > 5 || v === null || v === undefined) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") return v.replace(/[<>"'`\\]/g, "").slice(0, 300);
+  if (Array.isArray(v)) return v.slice(0, 60).map((x) => nettoyer(x, n + 1));
+  if (typeof v === "object") { const o: Record<string, unknown> = {}; for (const [k, x] of Object.entries(v as Record<string, unknown>).slice(0, 60)) if (/^[A-Za-z0-9_]{1,24}$/.test(k)) o[k] = nettoyer(x, n + 1); return o; }
+  return null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, CLE_SECRETE, { auth: { persistSession: false } });
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "");
   const url = new URL(req.url);
 
+  if (req.method === "GET" && url.searchParams.has("reprendre")) {
+    const id = url.searchParams.get("reprendre") ?? "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) return json(req, { erreur: "Lien invalide" }, 400);
+    const { data: a } = await sb.from("acompte").select("statut, reprise, cree, dossier").eq("id", id).maybeSingle();
+    if (!a || a.dossier !== "commander" || !a.reprise) return json(req, { statut: "inconnu" }, 404);
+    if (a.statut === "paye") return json(req, { statut: "paye" });
+    if (Date.now() - new Date(a.cree).getTime() > 14 * 864e5) return json(req, { statut: "expire" });
+    return json(req, { statut: "a_reprendre", reprise: a.reprise });
+  }
   if (req.method === "GET") {
     const session = url.searchParams.get("session") ?? "";
     if (!/^cs_(live|test)_[A-Za-z0-9]{10,}$/.test(session)) return json(req, { erreur: "Session invalide" }, 400);
@@ -277,7 +298,9 @@ Deno.serve(async (req) => {
   const succes = `${base}${sep}paye={CHECKOUT_SESSION_ID}${frag ? "#" + frag : ""}`;
   const annule = `${base}${frag ? "#" + frag : ""}`;
 
-  const { data: a, error } = await sb.from("acompte").insert({ devis, dossier, structure, nom, email, particulier, total_ponctuel: total + etale, montant, mensuel, suivi, engagement: mensuel > 0 ? engagement : null }).select("id").single();
+  const brut = dossier === "commander" && b.reprise ? nettoyer(b.reprise) : null;
+  const reprise = brut && JSON.stringify(brut).length <= 20000 ? brut : null;
+  const { data: a, error } = await sb.from("acompte").insert({ devis, dossier, structure, nom, email, particulier, total_ponctuel: total + etale, montant, mensuel, suivi, engagement: mensuel > 0 ? engagement : null, reprise }).select("id").single();
   if (error) return json(req, { erreur: "Enregistrement impossible" }, 500);
   if (etale > 0) {
     const session = await stripe.checkout.sessions.create({

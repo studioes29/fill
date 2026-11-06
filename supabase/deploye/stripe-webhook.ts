@@ -65,6 +65,40 @@ Deno.serve(async (req) => {
       await fetch(`${URL_SB}/functions/v1/carte-cadeau?action=verify-gift&session=${encodeURIComponent(s.id)}`).catch(() => null);
     }
   }
+  // commande de studioes.fr abandonnée sur la page Stripe (session expirée sans paiement) : un seul e-mail au client
+  // avec un lien qui rouvre sa commande telle qu'il l'avait laissée ; jamais deux fois, jamais si le devis est payé
+  if (evt.type === "checkout.session.expired") {
+    const s = evt.data.object as any;
+    if (s.metadata?.type !== "acompte" || s.metadata?.dossier !== "commander" || !s.metadata?.acompte) return new Response("ok");
+    const { data: a } = await sb.from("acompte").select("id, devis, nom, email, statut, reprise, reprise_envoyee").eq("id", s.metadata.acompte).maybeSingle();
+    if (!a || a.statut !== "en_attente" || a.reprise_envoyee || !a.reprise || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a.email ?? "")) return new Response("ok");
+    const { data: paye } = await sb.from("acompte").select("id").eq("email", a.email).eq("statut", "paye").gte("paye_le", new Date(Date.now() - 3 * 864e5).toISOString()).limit(1).maybeSingle();
+    await sb.from("acompte").update({ statut: "abandonne", reprise_envoyee: new Date().toISOString() }).eq("id", a.id);
+    if (paye) return new Response("ok");
+    const cle = lire("BREVO_API_KEY");
+    if (!cle) { console.error("BREVO_API_KEY absente : reprise non envoyée", a.id); return new Response("ok"); }
+    const prenom = String(a.nom ?? "").trim().split(/\s+/)[0].replace(/[<>&"]/g, "");
+    const lien = `https://studioes.fr/?reprendre=${a.id}`;
+    const p = "margin:0 0 16px;font:400 16px/1.6 Arial,Helvetica,sans-serif;color:#2A2926";
+    await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST", headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        sender: { name: "Ewen Soupault, Studio ES", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
+        replyTo: { email: "contact@studioes.fr", name: "Ewen Soupault, Studio ES" },
+        to: [{ email: a.email, name: a.nom ?? undefined }],
+        subject: `Votre commande Studio ES, devis n° ${a.devis}`,
+        htmlContent: `<!doctype html><html lang="fr"><body style="margin:0;padding:32px 16px;background:#F0EEE9"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:22px;padding:36px 32px">` +
+          `<p style="${p}">Bonjour${prenom ? " " + prenom : ""},</p>` +
+          `<p style="${p}">Votre commande (devis n° ${String(a.devis).replace(/[<>&"]/g, "")}) n'a pas été réglée : la page de paiement a expiré. Vos choix sont gardés : ce lien rouvre la commande telle que vous l'aviez laissée.</p>` +
+          `<p style="margin:26px 0"><a href="${lien}" style="display:inline-block;padding:15px 28px;border-radius:999px;background:#141414;color:#F0EEE9;font:700 16px Arial,Helvetica,sans-serif;text-decoration:none">Reprendre ma commande</a></p>` +
+          `<p style="${p}">Le lien reste valable 14 jours. Pour une question ou un ajustement, il suffit de répondre à ce message.</p>` +
+          `<p style="${p}">Bien cordialement<br>Ewen Soupault<br><span style="color:#65615A">Studio ES · studioes.fr</span></p>` +
+          `<p style="margin:24px 0 0;font:400 13px/1.5 Arial,Helvetica,sans-serif;color:#97928A">Vous recevez ce message unique parce que vous avez commencé une commande sur studioes.fr. Aucun autre rappel ne suivra.</p></div></body></html>`,
+        tags: ["reprise-commande"],
+      }),
+    }).catch((e) => console.error("brevo", String(e)));
+    return new Response("ok");
+  }
   if (evt.type === "invoice.paid" || evt.type === "invoice.payment_failed" || evt.type === "customer.subscription.deleted") {
     const o = evt.data.object as any;
     const md = (evt.type === "customer.subscription.deleted" ? o.metadata : (o.parent?.subscription_details?.metadata ?? o.subscription_details?.metadata)) ?? {};
