@@ -482,7 +482,7 @@
       let pu = document.body.dataset.parent || racine; if (T.preview && /\/$/.test(pu)) pu += 'index.html';
       const dest = prec ? { u: prec.u, t: court(prec.t) } : { u: pu, t: document.body.dataset.parentL || 'Accueil' };
       const box = document.createElement('div'); box.className = 'retour';
-      box.innerHTML = `<a class="rt" href="${esc(dest.u)}"><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>Retour${dest.t ? ' : ' + esc(dest.t) : ''}</a>`;
+      box.innerHTML = `<a class="rt" href="${esc(dest.u)}"${dest.t ? ` aria-label="Retour : ${esc(dest.t)}"` : ''}><i aria-hidden="true"><svg class="i"><use href="#al"/></svg></i>Retour</a>`;
       ar.replaceWith(box); box.appendChild(ar);
       $('a.rt', box).addEventListener('click', e => {
         let ref = ''; try { ref = new URL(document.referrer).pathname; } catch (er) {}
