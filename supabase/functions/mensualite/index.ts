@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(cleStripe);
     const periode = String(d.periode);
     const lib = libellePeriode(periode, d);
-    const quoi = d.semaine ? `Relais, ${lib}` : `formule ${d.formule}, ${lib}`;
+    const quoi = d.semaine ? `Relais, ${lib}` : `formule ${d.formule}, ${lib}${Number(d.mise_en_place) > 0 ? " et mise en place" : ""}`;
     const ref = await referent(d.organisation);
     const meta = { type: "fill-mensualite", organisation: String(d.organisation), periode };
     try {

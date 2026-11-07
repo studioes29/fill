@@ -23,9 +23,9 @@ Deno.serve(async (req) => {
     const { data: o } = await sb.from("organisation").select("id, formule, engagement_mois, statut").eq("id", id).single();
     const { data: f } = await sb.from("formule").select("nom, prix, unites, mise_en_place").eq("id", o?.formule).eq("offre_id", (await sb.rpc("offre_active")).data).single();
     if (!o || o.statut !== "a_activer" || !f) return new Response("Compte introuvable", { status: 404, headers: cors });
-    const mep = o.engagement_mois >= 12 ? 0 : Number(f.mise_en_place);
-    libelle = `Fill · formule ${f.nom}, premier mois (${f.unites} unités)${mep ? " et mise en place" : ""}`;
-    montant = Number(f.prix) + mep;
+    // premier mois sans engagement : il est réglé seul ; la mise en place suit avec le deuxième mois (fonction mensualite)
+    libelle = `Fill · formule ${f.nom}, premier mois (${f.unites} unités), sans engagement`;
+    montant = Number(f.prix);
     ref = `ouverture:${o.id}`;
   } else return new Response("Objet inconnu", { status: 400, headers: cors });
   const site = SITE;

@@ -1251,8 +1251,8 @@
       prixAnim($('[data-pxg]', sim), r.prix);
       reco.innerHTML = `<div class="nm"><b>${esc(r.f.nom)}${r.sup ? ` <small style="font-size:.5em;font-weight:600">+${r.sup} u.</small>` : ''}</b><span>formule adaptée</span></div><p>${esc(expl)}</p>${alt}`;
       lig.innerHTML = `<div><span>Demandes courantes</span><span>${esc(r.f.delai)}</span></div>
-        <p class="eng-t">Deux engagements possibles</p>
-        <div class="eng2"><p><b>${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, une fois</small></p><p class="on"><b>${O.engagement_long} mois</b><span>Offerte</span><small>mise en place</small></p></div>
+        <p class="eng-t">Premier mois sans engagement, puis</p>
+        <div class="eng2"><p><b>${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, avec le 2<sup>e</sup> mois</small></p><p class="on"><b>${O.engagement_long} mois</b><span>Offerte</span><small>mise en place</small></p></div>
         <p class="note">Première année : ${eur(c.an)} € avec ${O.engagement_mois} mois, ${eur(c.an12)} € avec ${O.engagement_long} mois.</p>`;
       if (mob) { mobT.textContent = `${r.f.nom}${r.sup ? ' +' + r.sup + ' u.' : ''} · ${eur(r.prix)} €/mois`; mobS.textContent = `${r.u} unité${r.u > 1 ? 's' : ''} sur ${r.f.unites}`; }
       maj('panier', panier); maj('urg', urg);
@@ -1452,7 +1452,7 @@
           <div class="lig2">${s.mensuel ? `<div><span>Abonnement</span><span>${esc(s.prix)}</span></div>` : `<div><span>Prix</span><span>${esc(s.prix || 'Sur étude')}</span></div>`}
           ${f ? `<div><span>Demandes courantes</span><span>${esc(f.delai)}</span></div>` : ''}
           </div>
-          ${c ? `<div class="eng2"><p><b>Engagement ${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, une fois · ${eur(c.an)} € la 1<sup>re</sup> année</small></p><p class="on"><b>Engagement ${O.engagement_long} mois</b><span>Offerte</span><small>mise en place · ${eur(c.an12)} € la 1<sup>re</sup> année</small></p></div>` : ''}
+          ${c ? `<div class="eng2"><p><b>Engagement ${O.engagement_mois} mois</b><span>+ ${eur(c.mep)} €</span><small>mise en place, avec le 2<sup>e</sup> mois · ${eur(c.an)} € la 1<sup>re</sup> année</small></p><p class="on"><b>Engagement ${O.engagement_long} mois</b><span>Offerte</span><small>mise en place · ${eur(c.an12)} € la 1<sup>re</sup> année</small></p></div>` : ''}
           ${(s.lignes || []).length ? `<ul class="panier2" aria-label="Contenu">${s.lignes.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
           <p class="note">Estimation indicative, pas un devis. La proposition écrite suit sous 48 h ouvrées.</p></div>
         <div class="suite"><a class="bt lg2" href="${U('demande/')}">Recevoir ma proposition <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a>
@@ -1692,7 +1692,7 @@
       const auj = new Date();
       const f = s.formule ? FORM.find(x => x.id === s.formule) : null;
       const lignesCout = s.relais ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix)}</td></tr><tr><td>Mise en place</td><td class="r">incluse</td></tr>`
-        : (!s.mensuel ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix || 'Sur étude')}</td></tr>` : (() => { const c = couts(s.mensuel, f); return `<tr><td>Abonnement mensuel (${esc(s.titre)})</td><td class="r">${eur(s.mensuel)} €</td></tr><tr><td>Mise en place, une fois (offerte avec ${O.engagement_long} mois d’engagement)</td><td class="r">${eur(c.mep)} €</td></tr><tr><td>Engagement minimum de ${O.engagement_mois} mois</td><td class="r">${eur(c.six)} €</td></tr><tr><th>Première année, engagement de ${O.engagement_mois} mois</th><th class="r">${eur(c.an)} €</th></tr><tr><th>Première année, engagement de ${O.engagement_long} mois</th><th class="r">${eur(c.an12)} €</th></tr>`; })());
+        : (!s.mensuel ? `<tr><td>${esc(s.titre)}</td><td class="r">${esc(s.prix || 'Sur étude')}</td></tr>` : (() => { const c = couts(s.mensuel, f); return `<tr><td>Abonnement mensuel (${esc(s.titre)})</td><td class="r">${eur(s.mensuel)} €</td></tr><tr><td>Premier mois sans engagement : arrêt possible à son terme, sans autre somme due</td><td class="r">${eur(s.mensuel)} €</td></tr><tr><td>Mise en place, avec le deuxième mois (offerte avec ${O.engagement_long} mois d’engagement)</td><td class="r">${eur(c.mep)} €</td></tr><tr><td>Engagement minimum de ${O.engagement_mois} mois</td><td class="r">${eur(c.six)} €</td></tr><tr><th>Première année, engagement de ${O.engagement_mois} mois</th><th class="r">${eur(c.an)} €</th></tr><tr><th>Première année, engagement de ${O.engagement_long} mois</th><th class="r">${eur(c.an12)} €</th></tr>`; })());
       doc.innerHTML = `
         <div class="ent"><div><p class="n">Note de présentation</p><h1>Externaliser la communication courante</h1></div><div style="text-align:right;font-size:13px;color:var(--fa)">${esc(fdate(auj))} ${auj.getFullYear()}<br><span contenteditable="true" spellcheck="false" style="border-bottom:1px dashed var(--ln2)">${esc(ct.structure || 'Nom de la structure')}</span></div></div>
         <section><h2>1. Le besoin</h2><p>${s.synthese ? 'Situation décrite lors du diagnostic en ligne. ' : ''}${esc(s.synthese || 'La structure doit assurer une communication régulière (site, réseaux sociaux, supports) sans disposer du temps ou de la personne dédiée pour la tenir dans la durée.')}</p>

@@ -54,7 +54,7 @@ var bonOuverture = (e, t) => {
           libelle: `Mise en place`,
           detail: r.miseEnPlaceOfferte
             ? `offerte pour un engagement de ${OFFRE.engagementLong} mois`
-            : `facturée avec le premier mois`,
+            : `facturée avec le deuxième mois, si l’abonnement se poursuit`,
           quantite: 1,
           unitaire: r.miseEnPlace,
         }),
@@ -65,6 +65,7 @@ var bonOuverture = (e, t) => {
         objet: `Abonnement au service de communication externalisée Fill, formule ${n.nom}`,
         lignes: i,
         modalites: [
+          `Premier mois sans engagement : la structure peut mettre fin à l’abonnement au terme de la première période, par simple courriel, sans autre somme due. À défaut, l’engagement de ${e.engagementMois} mois court depuis la première période.`,
           `Facturation mensuelle à terme échu, déposée sur Chorus Pro ; paiement à 30 jours par mandat administratif.`,
           `Les ${n.unites} unités de la première période sont créditées dans l’espace dès la validation de ce bon ; les suivantes chaque mois à la même date, le jour de cette validation fixant l’échéance.`,
           `Unités non utilisées reportées une fois sur la période suivante. Unité supplémentaire : ${euros(OFFRE.uniteSup)}, sur commande.`,

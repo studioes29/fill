@@ -8,10 +8,15 @@ var ligneFacture = (e, t, n) => ({
     total: Math.round(t * n * 100) / 100,
   });
 var premierePeriode = (e) => periodeAnniversaire(e, e.anniversaire ?? e.debut);
+// premier mois sans engagement : la mise en place (facturée ou offerte) figure sur la deuxième période, une fois l'abonnement poursuivi
+var deuxiemePeriode = (e) => {
+    let [a, m] = premierePeriode(e).split(`-`).map(Number);
+    return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, `0`)}`;
+  };
 var projetFacture = (e, t, n, r = [], i = !0) => {
     let a = formule(e.formule),
       o = [ligneFacture(`Abonnement Fill ${a.nom} (${a.unites} unités)`, 1, a.prix)];
-    if (t === premierePeriode(e) && a.mise_en_place > 0) {
+    if (t === deuxiemePeriode(e) && a.mise_en_place > 0) {
       let t = e.engagementMois >= OFFRE.engagementLong;
       o.push(
         ligneFacture(

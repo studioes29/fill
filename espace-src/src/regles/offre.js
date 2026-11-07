@@ -403,7 +403,7 @@ var offreJson = {
       },
     ],
     engagement_long: 12,
-    mise_en_place_regle: `490 € pour Essentiel, 990 € pour Régulier et Soutenu ; offerte avec un engagement de 12 mois`,
+    mise_en_place_regle: `490 € pour Essentiel, 990 € pour Régulier et Soutenu, réglée avec le deuxième mois ; offerte avec un engagement de 12 mois ; premier mois sans engagement`,
     urgence_unites: 1,
     report: `Les unités non utilisées sont reportées une fois, sur le mois suivant ; elles sont consommées en premier`,
     delais: {

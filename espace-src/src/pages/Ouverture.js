@@ -16,7 +16,7 @@ var ag = [5, 10, 20],
     let n = formule(e),
       r = t >= OFFRE.engagementLong,
       i = r ? 0 : n.mise_en_place,
-      a = Math.round(i * cg * 100) / 100;
+      a = 0;
     return {
       formule: e,
       engagementMois: t,
@@ -24,8 +24,8 @@ var ag = [5, 10, 20],
       miseEnPlace: i,
       miseEnPlaceOfferte: r && n.mise_en_place > 0,
       acompte: a,
-      premiereFacture: n.prix + i - a,
-      premierReglement: n.prix + i,
+      premiereFacture: n.prix,
+      premierReglement: n.prix,
       totalEngagement: n.prix * t + i,
     };
   },
@@ -45,7 +45,7 @@ var ag = [5, 10, 20],
   ),
   _g = H(`<li class="svelte-yzl1dj"><span> </span><b class="num"> </b></li>`),
   vg = H(
-    `<h2 class="t2">Votre formule</h2> <p class="mu">Les mêmes prix pour une commune ou une entreprise. Vous pourrez changer de formule chaque mois.</p> <div class="formules svelte-yzl1dj" role="radiogroup" aria-label="Formule"></div> <div class="eng svelte-yzl1dj"><span class="libelle">Engagement</span> <div class="engs svelte-yzl1dj" role="radiogroup" aria-label="Durée d’engagement"><button type="button" role="radio"><b class="svelte-yzl1dj">6 mois</b><small class="svelte-yzl1dj"> </small></button> <button type="button" role="radio"><b class="svelte-yzl1dj">12 mois</b><small class="svelte-yzl1dj">Mise en place offerte</small></button></div> <p class="tres-petit mu">Ensuite, résiliable chaque mois avec un mois de préavis.</p></div> <details class="equiv svelte-yzl1dj"><summary class="svelte-yzl1dj"> </summary> <ul class="svelte-yzl1dj"></ul></details>`,
+    `<h2 class="t2">Votre formule</h2> <p class="mu">Les mêmes prix pour une commune ou une entreprise. Vous pourrez changer de formule chaque mois.</p> <div class="formules svelte-yzl1dj" role="radiogroup" aria-label="Formule"></div> <div class="eng svelte-yzl1dj"><span class="libelle">Engagement</span> <div class="engs svelte-yzl1dj" role="radiogroup" aria-label="Durée d’engagement"><button type="button" role="radio"><b class="svelte-yzl1dj">6 mois</b><small class="svelte-yzl1dj"> </small></button> <button type="button" role="radio"><b class="svelte-yzl1dj">12 mois</b><small class="svelte-yzl1dj">Mise en place offerte</small></button></div> <p class="tres-petit mu">Le premier mois est sans engagement : vous pouvez arrêter à son terme sans rien devoir de plus. Si vous continuez, l’engagement compte depuis le premier mois, puis l’abonnement se résilie chaque mois avec un mois de préavis.</p></div> <details class="equiv svelte-yzl1dj"><summary class="svelte-yzl1dj"> </summary> <ul class="svelte-yzl1dj"></ul></details>`,
     1,
   ),
   yg = H(
@@ -466,7 +466,7 @@ function Ouverture(e, t) {
                   (o = q(a, 1, `choix e6 svelte-yzl1dj`, null, o, {
                     on: B(c) === 6,
                   })),
-                  W(l, `Mise en place ${e ?? ``}, une fois`),
+                  W(l, `Mise en place ${e ?? ``}, au deuxième mois`),
                   J(u, `aria-checked`, B(c) === 12),
                   (d = q(u, 1, `choix e12 svelte-yzl1dj`, null, d, {
                     on: B(c) === 12,
@@ -749,7 +749,7 @@ function Ouverture(e, t) {
           (W(r, `Premier règlement : ${e ?? ``}`),
             W(
               i,
-              `Le premier mois${B(b).miseEnPlace ? ` et la mise en place` : ``}, par carte depuis votre espace une fois créé, ou par virement automatique (virement permanent programmé depuis votre banque, IBAN sur la facture envoyée par Fill). L’espace est accessible tout de suite ; les ${B(x).unites ?? ``} unités sont créditées au premier règlement, puis chaque mois à la même date : le jour de ce premier règlement fixe votre échéance.`,
+              `Le premier mois seulement${B(b).miseEnPlace ? ` (la mise en place est réglée avec le deuxième mois, si vous continuez)` : ``}, par carte depuis votre espace une fois créé, ou par virement automatique (virement permanent programmé depuis votre banque, IBAN sur la facture envoyée par Fill). L’espace est accessible tout de suite ; les ${B(x).unites ?? ``} unités sont créditées au premier règlement, puis chaque mois à la même date : le jour de ce premier règlement fixe votre échéance.`,
             ));
         },
         [() => euros(B(b).premierReglement)],
@@ -777,7 +777,7 @@ function Ouverture(e, t) {
           W(ge, n),
           W(ye, `${B(x).unites ?? ``} unités par mois`),
           W(xe, r),
-          W(Ce, `${B(c) ?? ``} mois`),
+          W(Ce, `${B(c) ?? ``} mois, le premier sans engagement`),
           W(we, `${i ?? ``}`));
       },
       [

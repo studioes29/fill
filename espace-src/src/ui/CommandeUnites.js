@@ -165,7 +165,7 @@ function CommandeUnites(e, t) {
                 (W(i, `${e ?? ``}`),
                   W(
                     s,
-                    ` pour le premier mois (${B(a).unites ?? ``} unités)${B(o).miseEnPlace ? ` et la mise en place` : ``}, par carte ci-dessous ou par virement automatique (IBAN sur la facture envoyée par Fill). Elles sont créditées dès le paiement par carte, ou à réception du virement.`,
+                    ` pour le premier mois (${B(a).unites ?? ``} unités), sans engagement${B(o).miseEnPlace ? ` ; la mise en place suit avec le deuxième mois si vous continuez` : ``}, par carte ci-dessous ou par virement automatique (IBAN sur la facture envoyée par Fill). Elles sont créditées dès le paiement par carte, ou à réception du virement.`,
                   ),
                   (c.disabled = B(p)),
                   W(u, `Régler ${t ?? ``} par carte`));
