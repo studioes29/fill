@@ -173,19 +173,70 @@ async function donneesGoogle(id: string, f: any, nbPhotos = 6) {
 }
 
 /* ---------- site existant : titre, description et début du texte, pour confirmer l'activité ---------- */
-async function siteWeb(url: string | null) {
-  if (!url) return "";
+// couleurs par défaut des thèmes (WordPress, Bootstrap, Wix…) : ce n'est pas la charte de l'établissement
+const THEMES = new Set(["#0073aa", "#2271b1", "#1e73be", "#007bff", "#0d6efd", "#337ab7", "#428bca", "#116dff", "#3858e9", "#0693e3", "#00a0d2", "#0066cc", "#1a73e8", "#4285f4", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff"]);
+const saturee = (c: string) => { const v = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255); const mx = Math.max(...v), mn = Math.min(...v); return mx - mn >= 0.18 && mx > 0.2 && mn < 0.92; };
+const hex6 = (c: string) => { c = c.toLowerCase(); return c.length === 4 ? "#" + [...c.slice(1)].map((x) => x + x).join("") : c.slice(0, 7); };
+async function charger(url: string, ms = 4000) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
   try {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);
     const r = await fetch(url, { signal: ctl.signal, headers: { "User-Agent": "Mozilla/5.0 (apercu Studio ES)" }, redirect: "follow" });
-    clearTimeout(t);
-    if (!r.ok || !(r.headers.get("content-type") ?? "").includes("html")) return "";
-    const h = (await r.text()).slice(0, 300_000);
+    return r.ok ? { r, url: r.url || url } : null;
+  } catch { return null; } finally { clearTimeout(t); }
+}
+async function siteWeb(url: string | null) {
+  const vide = { texte: "", logo: null as string | null, couleur: null as string | null };
+  if (!url) return vide;
+  try {
+    const p = await charger(url);
+    if (!p || !(p.r.headers.get("content-type") ?? "").includes("html")) return vide;
+    const h = (await p.r.text()).slice(0, 300_000), base = p.url;
+    const abs = (u: string) => { try { return new URL(u.replace(/&amp;/g, "&"), base).href; } catch { return null; } };
     const m = (re: RegExp) => (re.exec(h)?.[1] ?? "").replace(/<[^>]+>/g, " ");
     const corps = h.replace(/<(script|style|noscript|svg)[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&");
-    return [m(/<title[^>]*>([\s\S]*?)<\/title>/i), m(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)/i), m(/<h1[^>]*>([\s\S]*?)<\/h1>/i), str(corps, 900)]
+    const texte = [m(/<title[^>]*>([\s\S]*?)<\/title>/i), m(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)/i), m(/<h1[^>]*>([\s\S]*?)<\/h1>/i), str(corps, 900)]
       .map((x) => str(x, 900)).filter(Boolean).join(" | ").slice(0, 1400);
-  } catch { return ""; }
+    // logo : image dont l'adresse, la classe, l'identifiant ou le texte alternatif parle de logo, dans le haut de la page
+    let logo: string | null = null;
+    for (const t of h.slice(0, 120_000).match(/<img\b[^>]*>/gi) ?? []) {
+      if (!/logo/i.test(t)) continue;
+      const src = /\b(?:data-src|data-lazy-src|src)=["']([^"']+)["']/i.exec(t)?.[1];
+      if (src && !/^data:/i.test(src) && !/(facebook|instagram|google|tripadvisor|pagesjaunes|qualirepar|label|partenaire|sponsor)/i.test(src)) { logo = abs(src); break; }
+    }
+    // couleur : déclarée (theme-color, variables primary/brand/accent), sinon la plus fréquente des feuilles de style
+    let couleur = hex(hex6(m(/<meta[^>]+name=["']theme-color["'][^>]+content=["'](#[0-9a-f]{3,6})/i) || "x"));
+    let css = (h.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) ?? []).join(" ") + " " + (h.match(/style=["'][^"']*["']/gi) ?? []).join(" ");
+    for (const l of (h.match(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi) ?? []).slice(0, 3)) {
+      const u = /href=["']([^"']+)["']/i.exec(l)?.[1]; const a = u && abs(u);
+      if (!a || /fonts\.googleapis|font-awesome|fontawesome|bootstrap(\.min)?\.css|wp-block-library|dashicons|elementor\/assets\/lib/i.test(a)) continue;
+      const q = await charger(a, 3000); if (q) css += " " + (await q.r.text()).slice(0, 400_000);
+    }
+    if (!couleur || !saturee(couleur)) {
+      const v = /--(?:[\w-]*?(?:primary|brand|accent|main|principal|couleur-1|color-1))[\w-]*\s*:\s*(#[0-9a-f]{6}|#[0-9a-f]{3})\b/i.exec(css)?.[1];
+      couleur = v && saturee(hex6(v)) && !THEMES.has(hex6(v)) ? hex6(v) : null;
+    }
+    if (!couleur) {
+      const n = new Map<string, number>();
+      for (const c of css.match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi) ?? []) { const x = hex6(c); if (saturee(x) && !THEMES.has(x)) n.set(x, (n.get(x) ?? 0) + 1); }
+      const top = [...n.entries()].sort((a, b) => b[1] - a[1])[0];
+      couleur = top && top[1] >= 4 ? top[0] : null;
+    }
+    return { texte, logo, couleur };
+  } catch { return vide; }
+}
+// logo du site actuel copié chez nous (la page d'aperçu n'affiche que des images hébergées par Studio ES ou Google)
+async function logoSite(id: string, url: string | null) {
+  if (!url) return null;
+  try {
+    const p = await charger(url, 4000); if (!p) return null;
+    const type = (p.r.headers.get("content-type") ?? "").split(";")[0].trim();
+    const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg", "image/gif": "gif" } as Record<string, string>)[type];
+    const b = new Uint8Array(await p.r.arrayBuffer());
+    if (!ext || b.length < 400 || b.length > 1_500_000) return null;
+    const chemin = `${id}/logo-site.${ext}`;
+    const up = await sb.storage.from("apercus").upload(chemin, b, { contentType: type, upsert: true });
+    return up.error ? null : sb.storage.from("apercus").getPublicUrl(chemin).data.publicUrl;
+  } catch { return null; }
 }
 
 /* ---------- textes : Claude cadré par le gabarit, sinon le gabarit seul ---------- */
@@ -238,6 +289,7 @@ const SCHEMA = `{
  "activite": l'activité en quelques mots (30 signes max), en minuscules sauf noms propres, vérifiée par le site actuel ou la recherche web (par exemple « tatouage et piercing », « boulangerie », « garage automobile », « maison des jeunes »),
  "cta": bouton principal (22 signes max) adapté à l'activité ("Réserver une table", "Prendre rendez-vous", "Demander un devis", "Nous appeler"),
  "avis": liste des numéros des avis qui parlent vraiment de l'activité indiquée ; écarte ceux qui portent sur autre chose (par exemple un point relais colis, un autre commerce ou un autre service au même endroit) et ne t'en sers pas pour les textes,
+ "couleur": couleur d'accent en hexadécimal (#rrggbb) qui évoque ce métier précis et son univers, comme un graphiste la choisirait (par exemple vert prairie ou sable pour un centre équestre, blé doré pour une boulangerie, bleu acier pour un plombier, vert feuillage pour un fleuriste, terracotta pour une friperie) ; si l'enseigne a une couleur connue (devanture, site, logo), reprends-la ; jamais un rose ou un violet sans lien avec l'activité,
  "appel": [gras, italique] titre du bloc d'accès, par exemple ["Passer au", "studio"] ou ["Venir à la", "boulangerie"]
 }`;
 function valide(t: any, g: any) {
@@ -319,6 +371,7 @@ async function rediger(S: any, activite: string) {
     const brut = JSON.parse(x.slice(x.indexOf("{"), x.lastIndexOf("}") + 1));
     const act = sansTiret(str(brut.activite, 60)).replace(/[.;:,]+$/, "");
     if (act) v.activiteDeduite = act.charAt(0).toUpperCase() + act.slice(1);
+    if (hex(brut.couleur)) v.couleurMetier = hex(brut.couleur);
     if (Array.isArray(brut.avis)) v.avisRetenus = brut.avis.map(Number).filter((n: number) => n >= 1 && n <= (S.avis?.length ?? 0));
     return { textes: v, ia: true };
   } catch (e) {
@@ -341,13 +394,15 @@ function paletteDe(c: string) {
   let h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60;
   return { fond: hslHex(h, Math.min(.38, s * .5), .09), accent: hslHex(h, Math.max(.45, Math.min(.85, s)), Math.max(.58, Math.min(.72, l))), clair: hslHex(h, .22, .93) };
 }
-async function trierPhotos(photos: { url: string; credit: string }[], nom: string) {
-  if (!ANTHROPIC || !photos.length) return { photos, logo: null as string | null, couleur: null as string | null };
+async function trierPhotos(photos: { url: string; credit: string }[], nom: string, logoWeb: string | null = null) {
+  const rien = { photos, logo: null as string | null, couleur: null as string | null, logoSite: false, couleurSite: null as string | null };
+  if (!ANTHROPIC || (!photos.length && !logoWeb)) return rien;
   try {
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
     const contenu: any[] = [{ type: "text", text: `Images de la fiche Google de « ${nom} », numérotées de 1 à ${photos.length} dans l'ordre.` }];
     photos.forEach((p, i) => { contenu.push({ type: "text", text: `Image ${i + 1} :` }); contenu.push({ type: "image", source: { type: "url", url: p.url } }); });
-    contenu.push({ type: "text", text: `Classe ces images pour un site vitrine. Une « photo » est une vraie photographie (devanture, intérieur, travail réalisé, produits, équipe) ; un logo, une enseigne graphique, une affiche, un flyer, un menu, une capture d'écran ou une image surtout faite de texte n'en est pas une. Réponds uniquement par ce JSON : {"photos": [numéros des vraies photos nettes, la plus belle pour une grande bannière d'abord], "logo": numéro de l'image qui est le logo de l'établissement ou null, "couleur": couleur principale du logo en hexadécimal (#rrggbb, hors noir, blanc et gris) ou null}` });
+    if (logoWeb && !/\.svg$/i.test(logoWeb)) { contenu.push({ type: "text", text: "Image L (trouvée sur le site actuel, peut-être son logo) :" }); contenu.push({ type: "image", source: { type: "url", url: logoWeb } }); }
+    contenu.push({ type: "text", text: `Classe ces images pour un site vitrine. Une « photo » est une vraie photographie (devanture, intérieur, travail réalisé, produits, équipe) ; un logo, une enseigne graphique, une affiche, un flyer, un menu, une capture d'écran ou une image surtout faite de texte n'en est pas une. Réponds uniquement par ce JSON : {"photos": [numéros des vraies photos nettes, la plus belle pour une grande bannière d'abord], "logo": numéro de l'image qui est le logo de l'établissement ou null, "couleur": couleur principale du logo en hexadécimal (#rrggbb, hors noir, blanc et gris) ou null, "logoSite": true si l'image L est bien le logo de « ${nom} » (pas celui d'un partenaire, d'un label ou d'un réseau social), sinon false, "couleurSite": couleur principale de l'image L si c'est le logo (#rrggbb, hors noir, blanc et gris) ou null}` });
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST", signal: ctl.signal,
       headers: { "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -359,10 +414,10 @@ async function trierPhotos(photos: { url: string; credit: string }[], nom: strin
     const j = JSON.parse(x.slice(x.indexOf("{"), x.lastIndexOf("}") + 1));
     const ok = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= photos.length;
     const ordre = (Array.isArray(j.photos) ? j.photos : []).filter(ok).filter((n: number, i: number, a: number[]) => a.indexOf(n) === i);
-    return { photos: ordre.map((n: number) => photos[n - 1]), logo: ok(j.logo) ? photos[j.logo - 1].url : null, couleur: hex(j.couleur) };
+    return { photos: ordre.map((n: number) => photos[n - 1]), logo: ok(j.logo) ? photos[j.logo - 1].url : null, couleur: hex(j.couleur), logoSite: j.logoSite === true, couleurSite: hex(j.couleurSite) };
   } catch (e) {
     console.error("tri des photos", String(e).slice(0, 200));
-    return { photos, logo: null, couleur: null };
+    return rien;
   }
 }
 
@@ -463,7 +518,8 @@ async function construire(o: { source: "site" | "horschamp"; placeId?: string; s
   if (o.placeId) {
     if (!GOOGLE) throw new Error("Clé Google absente (secret GOOGLE_PLACES_KEY)");
     S = await donneesGoogle(id, await fiche(o.placeId, o.session));
-    S.extraitWeb = await siteWeb(S.web);
+    const w = await siteWeb(S.web);
+    S.extraitWeb = w.texte; S.charte = { logo: w.logo, couleur: w.couleur };
   } else {
     // aperçu sans fiche Google (prospect sans fiche) : données saisies dans Hors-champ
     const m = o.manuel ?? {};
@@ -475,23 +531,33 @@ async function construire(o: { source: "site" | "horschamp"; placeId?: string; s
   let activite = str(o.activite, 60);
   // l'activité saisie, sinon celle que la rédaction déduit, prime sur la catégorie Google (souvent vague : « Magasin »)
   if (activite && S.activite !== activite) { S.categorie = S.activite || null; S.activite = activite; }
-  const [{ textes, ia }, lg, tri] = await Promise.all([rediger(S, activite), logo(id, o.logo), trierPhotos(S.photos ?? [], S.nom)]);
+  const lw = !o.logo && !o.palette ? await logoSite(id, S.charte?.logo ?? null) : null;
+  const [{ textes, ia }, lg, tri] = await Promise.all([rediger(S, activite), logo(id, o.logo), trierPhotos(S.photos ?? [], S.nom, lw)]);
   S.photos = tri.logo ? tri.photos.filter((p: any) => p.url !== tri.logo) : tri.photos;
   if (!activite && textes.activiteDeduite) { S.categorie = S.activite || null; S.activite = textes.activiteDeduite; }
   delete textes.activiteDeduite;
   activite = activite || S.activite || "";
-  // couleurs : celles du logo (calculées par le navigateur), sinon la famille de l'activité
+  // identité, par ordre de fiabilité :
+  // 1. couleurs choisies ou calculées sur le logo envoyé (navigateur) ; 2. logo du site actuel, vérifié ; 3. charte du site (theme-color, CSS) ;
+  // 4. logo repéré parmi les photos Google ; 5. couleur du métier choisie par la rédaction ; 6. famille de l'activité
   const pals = palettesPour(`${activite} ${S.categorie ?? ""} ${S.types ?? ""} ${S.nom}`);
-  // logo repéré parmi les photos Google quand le visiteur n'en a pas donné : il sert de logo et de couleur
-  const logoGoogle = !lg && !o.palette ? tri.logo : null, palLogo = logoGoogle && tri.couleur ? paletteDe(tri.couleur) : null;
-  const choisie = o.palette && hex(o.palette.fond) && hex(o.palette.accent) && hex(o.palette.clair)
-    ? { fond: hex(o.palette.fond), accent: hex(o.palette.accent), clair: hex(o.palette.clair) } : palLogo ?? { fond: pals[0].fond, accent: pals[0].accent, clair: pals[0].clair };
+  const logoWeb = lw && (tri.logoSite || /\.svg$/i.test(lw)) ? lw : null;
+  const logoGoogle = !lg && !logoWeb && !o.palette ? tri.logo : null;
+  const depuis = (c: string | null | undefined) => c ? paletteDe(c) : null;
+  const choisie = (o.palette && hex(o.palette.fond) && hex(o.palette.accent) && hex(o.palette.clair) ? { fond: hex(o.palette.fond), accent: hex(o.palette.accent), clair: hex(o.palette.clair) } : null)
+    ?? (logoWeb ? depuis(tri.couleurSite) : null)
+    ?? depuis(S.charte?.couleur)
+    ?? (logoGoogle ? depuis(tri.couleur) : null)
+    ?? depuis(textes.couleurMetier)
+    ?? { fond: pals[0].fond, accent: pals[0].accent, clair: pals[0].clair };
+  const origine = o.palette ? "visiteur" : logoWeb && tri.couleurSite ? "logo du site" : S.charte?.couleur && depuis(S.charte.couleur) ? "charte du site" : logoGoogle && tri.couleur ? "logo Google" : textes.couleurMetier ? "métier" : "famille";
+  delete textes.couleurMetier; delete S.charte;
   // avis hors sujet (point relais, autre service au même endroit) écartés par la rédaction
   if (Array.isArray(textes.avisRetenus)) { const k = new Set(textes.avisRetenus); S.avis = (S.avis ?? []).filter((_: any, i: number) => k.has(i + 1)); delete textes.avisRetenus; }
   delete S.extraitWeb;
   const row = {
     id, source: o.source, email: o.email ?? null, nom_saisi: str(o.nom, 120) || null, activite: activite || null, ville: str(o.ville, 80) || S.ville || null,
-    place_id: o.placeId ?? null, donnees: S, textes: { ...textes, ia }, style: { ...choisie, logo: lg ?? logoGoogle }, ip: o.ip ?? null, fiche_hc: o.fiche ?? null,
+    place_id: o.placeId ?? null, donnees: S, textes: { ...textes, ia }, style: { ...choisie, logo: lg ?? logoWeb ?? logoGoogle, origine }, ip: o.ip ?? null, fiche_hc: o.fiche ?? null,
     importe_hc: o.source === "horschamp", debloque: o.source !== "site",
   };
   const { data, error } = await sb.from("apercu").insert(row).select("id, expire").single();
