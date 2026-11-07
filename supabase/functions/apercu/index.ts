@@ -10,6 +10,7 @@
 // Secrets : GOOGLE_PLACES_KEY (obligatoire pour Google), ANTHROPIC_API_KEY (textes, sinon gabarit), BREVO_API_KEY,
 // facultatifs : APERCU_MODELE (claude-haiku-5-5), BREVO_LISTE_APERCU (identifiant de liste), ALERTE_EMAIL, EXPEDITEUR_EMAIL.
 // Conditions de Google : le contenu (photos, avis, horaires) n'est gardé que 30 jours, puis effacé par l'action « purger » (cron apercu-purge).
+// POST {action:"reperer"}     cron (jeton pilote) : établissements d'un métier autour d'une commune, pour le vivier Studio ES
 // POST {action:"purger"}       cron (jeton pilote) : efface fichiers et données des aperçus expirés
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -101,6 +102,23 @@ async function chercher(nom: string, ville: string) {
   // fiches à plus de 40 km de la commune écartées quand il en reste de proches
   if (c) { const pres = l.filter((p: any) => p.location && distance(c, { lat: p.location.latitude, lng: p.location.longitude }) < 40); if (pres.length) l = pres; }
   return l.slice(0, 6).map((p: any) => ({ id: p.id, nom: p.displayName?.text ?? "", lieu: str(p.formattedAddress, 120).replace(/, France$/, "") }));
+}
+// repérage de prospects pour le vivier Studio ES : établissements d'un métier autour d'une commune, avec leur site (ou son absence)
+async function reperer(q: string, ville: string, rayon = 15000) {
+  const c = ville ? await commune(ville) : null;
+  const corps: any = { textQuery: `${q} ${c?.nom ?? ville}`.trim(), languageCode: "fr", regionCode: "fr", pageSize: 20 };
+  if (c) corps.locationBias = { circle: { center: { latitude: c.lat, longitude: c.lng }, radius: Math.min(50000, Math.max(2000, rayon)) } };
+  const r = await fetch(`${G}/places:searchText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": GOOGLE, "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.businessStatus,places.websiteUri,places.rating,places.userRatingCount,places.primaryTypeDisplayName,places.nationalPhoneNumber,places.googleMapsUri" },
+    body: JSON.stringify(corps),
+  });
+  if (!r.ok) throw new Error(`Google ${r.status} : ${(await r.text()).slice(0, 200)}`);
+  return ((await r.json()).places ?? []).filter((p: any) => p.businessStatus === "OPERATIONAL").map((p: any) => {
+    const a = str(p.formattedAddress, 160).replace(/, France$/, ""), cp = /(\d{5})\s+([^,]+)$/.exec(a);
+    return { id: p.id, nom: str(p.displayName?.text, 120), adresse: a, cp: cp?.[1] ?? null, ville: cp?.[2] ?? null, lat: p.location?.latitude ?? null, lon: p.location?.longitude ?? null,
+      web: p.websiteUri ?? null, note: p.rating ?? null, nbAvis: p.userRatingCount ?? 0, categorie: p.primaryTypeDisplayName?.text ?? null, tel: p.nationalPhoneNumber ?? null, maps: p.googleMapsUri ?? null };
+  });
 }
 // recherche texte avec identifiants seuls : SKU « Text Search Essentials (IDs Only) », sans coût
 async function premierePlace(q: string) {
@@ -224,6 +242,7 @@ async function siteWeb(url: string | null) {
     return { texte, logo, couleur };
   } catch { return vide; }
 }
+const couleurSvg = new Map<string, string | null>();
 // logo du site actuel copié chez nous (la page d'aperçu n'affiche que des images hébergées par Studio ES ou Google)
 async function logoSite(id: string, url: string | null) {
   if (!url) return null;
@@ -233,6 +252,12 @@ async function logoSite(id: string, url: string | null) {
     const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg", "image/gif": "gif" } as Record<string, string>)[type];
     const b = new Uint8Array(await p.r.arrayBuffer());
     if (!ext || b.length < 400 || b.length > 1_500_000) return null;
+    if (ext === "svg") {
+      // couleur d'un logo vectoriel : la teinte saturée la plus présente dans ses remplissages et contours
+      const n = new Map<string, number>();
+      for (const c of new TextDecoder().decode(b).match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi) ?? []) { const x = hex6(c); if (saturee(x)) n.set(x, (n.get(x) ?? 0) + 1); }
+      couleurSvg.set(id, [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null);
+    }
     const chemin = `${id}/logo-site.${ext}`;
     const up = await sb.storage.from("apercus").upload(chemin, b, { contentType: type, upsert: true });
     return up.error ? null : sb.storage.from("apercus").getPublicUrl(chemin).data.publicUrl;
@@ -545,13 +570,13 @@ async function construire(o: { source: "site" | "horschamp"; placeId?: string; s
   const logoGoogle = !lg && !logoWeb && !o.palette ? tri.logo : null;
   const depuis = (c: string | null | undefined) => c ? paletteDe(c) : null;
   const choisie = (o.palette && hex(o.palette.fond) && hex(o.palette.accent) && hex(o.palette.clair) ? { fond: hex(o.palette.fond), accent: hex(o.palette.accent), clair: hex(o.palette.clair) } : null)
-    ?? (logoWeb ? depuis(tri.couleurSite) : null)
+    ?? (logoWeb ? depuis(tri.couleurSite ?? couleurSvg.get(id)) : null)
     ?? depuis(S.charte?.couleur)
     ?? (logoGoogle ? depuis(tri.couleur) : null)
     ?? depuis(textes.couleurMetier)
     ?? { fond: pals[0].fond, accent: pals[0].accent, clair: pals[0].clair };
-  const origine = o.palette ? "visiteur" : logoWeb && tri.couleurSite ? "logo du site" : S.charte?.couleur && depuis(S.charte.couleur) ? "charte du site" : logoGoogle && tri.couleur ? "logo Google" : textes.couleurMetier ? "métier" : "famille";
-  delete textes.couleurMetier; delete S.charte;
+  const origine = o.palette ? "visiteur" : logoWeb && (tri.couleurSite || couleurSvg.get(id)) ? "logo du site" : S.charte?.couleur && depuis(S.charte.couleur) ? "charte du site" : logoGoogle && tri.couleur ? "logo Google" : textes.couleurMetier ? "métier" : "famille";
+  delete textes.couleurMetier; delete S.charte; couleurSvg.delete(id);
   // avis hors sujet (point relais, autre service au même endroit) écartés par la rédaction
   if (Array.isArray(textes.avisRetenus)) { const k = new Set(textes.avisRetenus); S.avis = (S.avis ?? []).filter((_: any, i: number) => k.has(i + 1)); delete textes.avisRetenus; }
   delete S.extraitWeb;
@@ -659,6 +684,12 @@ Deno.serve(async (req) => {
         textContent: `${row.donnees.nom} (${row.activite ?? row.donnees.activite ?? "activité ?"}, ${row.donnees.ville ?? "?"})\n${email}\n${VOIR + id}\n\nLa fiche est dans Hors-champ, étape « À contacter ».`,
       });
       return json(req, { id, url: VOIR + id, envoye });
+    }
+
+    if (action === "reperer") {
+      if (!pilote) return json(req, { erreur: "réservé à Hors-champ" }, 401);
+      if (!GOOGLE) return json(req, { erreur: "Clé Google absente" }, 500);
+      return json(req, { q: str(corps.q, 80), ville: str(corps.ville, 80), places: await reperer(str(corps.q, 80), str(corps.ville, 80), Number(corps.rayon) || 15000) });
     }
 
     if (action === "prospect") {
