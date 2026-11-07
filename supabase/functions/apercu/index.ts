@@ -57,7 +57,9 @@ const dateFr = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", mont
 type Pal = { nom: string; fond: string; accent: string; clair: string };
 const P = (nom: string, fond: string, accent: string, clair: string): Pal => ({ nom, fond, accent, clair });
 const FAMILLES: [RegExp, Pal[]][] = [
-  [/restau|bistro|brasserie|cr[eê]p|pizz|caf[eé]|\bbar\b|traiteur|boulang|p[aâ]tiss|cuisine|snack|burger|glac|food|cave|vin|[ée]picerie|chocolat|fromag|boucher|poissonn|bakery|restaurant|cafe|meal|grocery|butcher|wine|liquor/i,
+  [/[ée]questre|[ée]curie|poney|cheval|chevaux|haras|ferme\b|g[iî]te|camping|chambres? d['’]h[oô]tes|randonn|kayak|cano[ëe]|\bsurf\b|\bvoile|nautique|plong[ée]e|golf|escalade|fitness|salle de sport|\bclub\b|stable|farm|campground|horse|riding|gym|sports_club|marina/i,
+    [P("Prairie", "#14201a", "#d8b46a", "#efede4"), P("Lande", "#1a1d14", "#c9d37a", "#eeefe4"), P("Embrun", "#0f1d22", "#7fc8c0", "#ecf0ee")]],
+  [/restau|bistro|brasserie|cr[eê]p|pizz|caf[eé]|\bbar\b|traiteur|boulang|p[aâ]tiss|cuisine|snack|burger|glac|food|\bcaves?\b|\bvins?\b|vignob|[ée]picerie|chocolat|fromag|boucher|poissonn|bakery|restaurant|cafe|meal|grocery|butcher|wine|liquor/i,
     [P("Bordeaux", "#1f0f10", "#f0875a", "#f2eadf"), P("Olive", "#161a10", "#d9c35c", "#eee9da"), P("Nuit", "#101521", "#f2a65a", "#efe9e0")]],
   [/coiff|beaut|esth[eé]t|ongl|spa\b|massage|bien-[eê]tre|barb|tatou|pierc|maquill|institut|soin|hair|beauty|nail|tattoo|barber|piercing/i,
     [P("Aubergine", "#1c0f1f", "#e68dca", "#ece6df"), P("Poudre", "#24181b", "#efb3a8", "#f4ece8"), P("Sauge", "#142019", "#b6d6b1", "#edf0e8")]],
@@ -65,8 +67,10 @@ const FAMILLES: [RegExp, Pal[]][] = [
     [P("Anthracite", "#141518", "#f2c14e", "#ecebe6"), P("Bleu nuit", "#0f1726", "#7fb0ff", "#e9edf2"), P("Rouille", "#1b1411", "#e07a4f", "#efe7dd")]],
   [/kin[eé]|ost[eé]o|infirm|m[eé]dec|dentist|psych|sophro|pharma|sant[eé]|v[eé]t[eé]rin|di[eé]t|orthophon|podo|naturo|th[eé]rap|cabinet|avocat|notaire|comptab|conseil|assurance|immobili|doctor|dentist|physiotherap|health|lawyer|insurance|real_estate|accounting|veterinar/i,
     [P("Marine", "#0f1a24", "#8cc7c2", "#eef1ef"), P("Ardoise", "#161a1f", "#b6a6ff", "#eceae6"), P("Forêt", "#102018", "#9fd8a8", "#ebeee6")]],
+  [/fripe|boutique|magasin|librair|fleur|cadeau|d[ée]co|brocante|antiquit|mercerie|v[eê]tement|pr[eê]t-[aà]-porter|association|\bmjc\b|culture|mus[ée]e|th[ée][aâ]tre|cin[ée]ma|galerie|biblioth|m[ée]diath|[ée]cole|store|clothing|florist|book_store|museum|association_or_organization|art_gallery|library/i,
+    [P("Terracotta", "#1b1512", "#e9956b", "#f2ebe2"), P("Moutarde", "#1a1710", "#e2b84a", "#f1ede2"), P("Pétrole", "#0f1c1f", "#6fc0b5", "#edf0ec")]],
 ];
-const DEFAUT: Pal[] = [P("Aubergine", "#1c0f1f", "#e68dca", "#ece6df"), P("Forêt", "#102018", "#9fd8a8", "#ebeee6"), P("Nuit", "#101521", "#f2a65a", "#efe9e0")];
+const DEFAUT: Pal[] = [P("Encre", "#16171a", "#e0b07a", "#efece6"), P("Forêt", "#102018", "#9fd8a8", "#ebeee6"), P("Bleu nuit", "#0f1726", "#7fb0ff", "#e9edf2")];
 const palettesPour = (activite: string) => (FAMILLES.find(([r]) => r.test(activite))?.[1]) ?? DEFAUT;
 const hex = (c: unknown) => /^#[0-9a-f]{6}$/i.test(String(c ?? "")) ? String(c).toLowerCase() : null;
 
@@ -215,6 +219,9 @@ Règles impératives :
 - français soigné, ton humain, sobre, descriptif et concret ; aucun superlatif ni formule publicitaire (interdits : meilleur, incontournable, exceptionnel, unique, passionné, savoir-faire inégalé, qualité irréprochable, n'attendez plus, découvrez) ;
 - n'invente RIEN : aucun prix, aucune date, aucune année de création, aucune durée d'expérience, aucun diplôme, aucun prénom, aucun produit ou service absent de l'activité ou des avis ; en cas de doute, reste général ;
 - appuie-toi sur ce que les avis disent vraiment (accueil, conseils, rapidité, propreté…), sans citer les clients ;
+- le texte parle au nom de l'établissement, jamais comme un compte rendu d'avis : interdit d'écrire « les avis mentionnent / soulignent », « les clients décrivent / apprécient », « reviennent dans les avis », « est apprécié », « selon les avis ». Ce que plusieurs avis confirment s'écrit comme un fait de la maison (« Nous prenons le temps d'expliquer », « Les vêtements sont classés par tailles »). Seule exception : la seconde partie de presentation.sous, déjà introduite par « d'après N avis Google » ;
+- les boutons mènent seulement à ce que la page permet : appeler, écrire, prendre rendez-vous, demander un devis, réserver, venir sur place. Jamais « voir le planning », « voir nos offres », « nos tarifs », « la carte », « le menu », « le catalogue », « la boutique » : ces pages n'existent pas ;
+- les trois « faits » de la présentation sont des informations pratiques utiles au visiteur (horaires, accès et stationnement si connus, public accueilli, sur rendez-vous ou sans, zone d'intervention, contact), jamais un résumé des avis ;
 - s'il n'y a pas d'avis, reste strictement factuel (activité, lieu, horaires, contact) : n'affirme rien sur la fabrication, les produits, la méthode ou le service rendu ;
 - typographie française : espaces avant « : ; ? ! », apostrophe ’, guillemets « » ; jamais de tiret long ni demi-cadratin ;
 - vouvoiement du visiteur, « nous » pour l'établissement ;
@@ -243,24 +250,31 @@ function valide(t: any, g: any) {
     while (LIAISON.test(c)) c = c.replace(LIAISON, "");
     return c.replace(/[,;:\s]+$/, "");
   };
+  // phrases qui commentent les avis au lieu de parler au nom de l'établissement : retirées s'il reste autre chose
+  const META = /\b(les |des |nos )?(avis|clients?|visiteurs)\b[^.]*\b(mentionn|soulign|d[ée]cri|reviennent|appr[ée]ci|salu|[ée]voqu|retienn)|\b(appr[ée]ci[ée]e?s?|salu[ée]e?s?)\s*(par|dans)\s+(les\s+)?(avis|clients)|selon les avis|dans les avis|\bsont (tr[eè]s |souvent )?(appr[ée]ci|salu)/i;
+  const sansMeta = (x: string, d = "") => { const ph = x.split(/(?<=[.!?])\s+/); const k = ph.filter((p) => !META.test(p)); return k.length === ph.length ? x : k.length ? k.join(" ") : (d || x); };
+  const ACTION = /appel|t[ée]l[ée]phon|[ée]cri|contact|rendez-vous|\brdv\b|devis|r[ée]serv|venir|visite|passer|nous voir|itin[ée]raire|inscri|demande/i;
+  const INTERDIT = /planning|offre|tarif|prix|catalogue|boutique|menu|\bcarte\b|galerie|produits|collection|programme/i;
+  const action = (x: string, d: string) => x && ACTION.test(x) && !INTERDIT.test(x) ? x : d;
   const s = (v: unknown, n: number, d = "") => { const x = sansTiret(str(v, n + 200)); return x ? (x.length > n ? coupe(x, n) : x) : d; };
   const paire = (v: any, d: string[]) => Array.isArray(v) && v.length >= 2 ? [s(v[0], 30, d[0]), s(v[1], 64, d[1])] : d;
   const o: any = {};
   o.h1 = Array.isArray(t?.h1) && t.h1.length === 3 && t.h1[0] ? t.h1.map((x: unknown) => s(x, 20)) : g.h1;
-  o.sous = s(t?.sous, 170, g.sous);
+  o.sous = sansMeta(s(t?.sous, 170, g.sous), g.sous);
+  const ctaDef = g.cta;
   o.ruban = Array.isArray(t?.ruban) && t.ruban.length >= 4 ? t.ruban.slice(0, 7).map((x: unknown) => s(x, 24)).filter(Boolean) : g.ruban;
   o.servicesTitre = paire(t?.servicesTitre, g.servicesTitre);
   o.services = Array.isArray(t?.services) && t.services.length >= 2 ? t.services.slice(0, 2).map((x: any, i: number) => ({
-    titre: s(x?.titre, 12, g.services[i].titre), it: s(x?.it, 26, g.services[i].it), tag: s(x?.tag, 28), texte: s(x?.texte, 170, g.services[i].texte), cta: s(x?.cta, 24, "Nous contacter"),
+    titre: s(x?.titre, 12, g.services[i].titre), it: s(x?.it, 26, g.services[i].it), tag: s(x?.tag, 28), texte: sansMeta(s(x?.texte, 170, g.services[i].texte), g.services[i].texte), cta: action(s(x?.cta, 24), ctaDef),
   })) : g.services;
   o.galerieTitre = paire(t?.galerieTitre, g.galerieTitre);
   const p = t?.presentation ?? {};
   o.presentation = {
     legende: s(p.legende, 50, g.presentation.legende),
     sous: paire(p.sous, g.presentation.sous),
-    faits: Array.isArray(p.faits) && p.faits.length >= 3 ? p.faits.slice(0, 3).map((f: any, i: number) => ({ t: s(f?.t, 18, g.presentation.faits[i].t), d: s(f?.d, 130, g.presentation.faits[i].d) })) : g.presentation.faits,
+    faits: Array.isArray(p.faits) && p.faits.length >= 3 ? p.faits.slice(0, 3).map((f: any, i: number) => ({ t: s(f?.t, 18, g.presentation.faits[i].t), d: sansMeta(s(f?.d, 130, g.presentation.faits[i].d), g.presentation.faits[i].d) })) : g.presentation.faits,
   };
-  o.cta = s(t?.cta, 24, g.cta);
+  o.cta = action(s(t?.cta, 24), g.cta);
   o.appel = paire(t?.appel, g.appel);
   return o;
 }
