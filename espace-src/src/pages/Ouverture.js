@@ -746,7 +746,7 @@ function Ouverture(e, t) {
       var i = L(R(n, 2));
       (z(
         (e) => {
-          (W(r, `Premier règlement : ${e ?? ``}`),
+          (W(r, `Premier mois, sans engagement : ${e ?? ``}`),
             W(
               i,
               `Le premier mois seulement${B(b).miseEnPlace ? ` (la mise en place est réglée avec le deuxième mois, si vous continuez)` : ``}, par carte depuis votre espace une fois créé, ou par virement automatique (virement permanent programmé depuis votre banque, IBAN sur la facture envoyée par Fill). L’espace est accessible tout de suite ; les ${B(x).unites ?? ``} unités sont créditées au premier règlement, puis chaque mois à la même date : le jour de ce premier règlement fixe votre échéance.`,
@@ -777,7 +777,7 @@ function Ouverture(e, t) {
           W(ge, n),
           W(ye, `${B(x).unites ?? ``} unités par mois`),
           W(xe, r),
-          W(Ce, `${B(c) ?? ``} mois, le premier sans engagement`),
+          W(Ce, `${B(c) ?? ``} mois`),
           W(we, `${i ?? ``}`));
       },
       [
