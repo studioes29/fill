@@ -2,7 +2,7 @@
 // Fichier de l'Espace Fill reconstitué depuis le bundle en ligne ; concaténé dans l'ordre de src/ordre.txt.
 
 var offreJson = {
-    version: `2026-10-27`,
+    version: `2026-11-07`,
     unite_sup: 55,
     engagement_mois: 6,
     formules: [
@@ -51,7 +51,7 @@ var offreJson = {
           `Demandes courantes en 2 jours ouvrés`,
           `Un point de suivi par trimestre`,
         ],
-        mise_en_place: 490,
+        mise_en_place: 0,
         court: `présence entretenue`,
         atouts: [
           `<b>10 unités</b> par mois`,
@@ -115,7 +115,7 @@ var offreJson = {
           },
         ],
         points: [`Site, réseaux et newsletter`, `Demandes courantes en 2 jours ouvrés`, `Un point de suivi par mois`],
-        mise_en_place: 990,
+        mise_en_place: 0,
         court: `présence chaque semaine`,
         atouts: [`<b>22 unités</b> par mois`, `Point de suivi <b>chaque mois</b>`, `<b>Reportage photo</b> possible`],
       },
@@ -176,7 +176,7 @@ var offreJson = {
           `Deux urgences par mois incluses`,
           `Un point toutes les deux semaines`,
         ],
-        mise_en_place: 990,
+        mise_en_place: 0,
         court: `production soutenue`,
         atouts: [`<b>45 unités</b> par mois`, `Courant en <b>1 jour</b> ouvré`, `<b>2 urgences</b> incluses par mois`],
       },
@@ -402,8 +402,8 @@ var offreJson = {
         },
       },
     ],
-    engagement_long: 12,
-    mise_en_place_regle: `490 € pour Essentiel, 990 € pour Régulier et Soutenu, réglée avec le deuxième mois ; offerte avec un engagement de 12 mois ; premier mois sans engagement`,
+    engagement_long: 6,
+    mise_en_place_regle: `Aucune mise en place facturée ; premier mois sans engagement, puis 6 mois minimum comptés depuis le premier mois, puis résiliable chaque mois avec un mois de préavis`,
     urgence_unites: 1,
     report: `Les unités non utilisées sont reportées une fois, sur le mois suivant ; elles sont consommées en premier`,
     delais: {

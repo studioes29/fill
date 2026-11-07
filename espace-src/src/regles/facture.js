@@ -8,7 +8,7 @@ var ligneFacture = (e, t, n) => ({
     total: Math.round(t * n * 100) / 100,
   });
 var premierePeriode = (e) => periodeAnniversaire(e, e.anniversaire ?? e.debut);
-// premier mois sans engagement : la mise en place (facturée ou offerte) figure sur la deuxième période, une fois l'abonnement poursuivi
+// aucune mise en place facturée depuis le 7 novembre 2026 (mise_en_place à 0) : ce bloc ne produit plus de ligne
 var deuxiemePeriode = (e) => {
     let [a, m] = premierePeriode(e).split(`-`).map(Number);
     return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, `0`)}`;

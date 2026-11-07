@@ -21,9 +21,9 @@ Deno.serve(async (req) => {
     ref = `commande:${c.id}`;
   } else if (objet === "ouverture") {
     const { data: o } = await sb.from("organisation").select("id, formule, engagement_mois, statut").eq("id", id).single();
-    const { data: f } = await sb.from("formule").select("nom, prix, unites, mise_en_place").eq("id", o?.formule).eq("offre_id", (await sb.rpc("offre_active")).data).single();
+    const { data: f } = await sb.from("formule").select("nom, prix, unites").eq("id", o?.formule).eq("offre_id", (await sb.rpc("offre_active")).data).single();
     if (!o || o.statut !== "a_activer" || !f) return new Response("Compte introuvable", { status: 404, headers: cors });
-    // premier mois sans engagement : il est réglé seul ; la mise en place suit avec le deuxième mois (fonction mensualite)
+    // une seule mensualité : le premier mois, sans engagement (aucune mise en place depuis le 7 novembre 2026)
     libelle = `Fill · formule ${f.nom}, premier mois (${f.unites} unités), sans engagement`;
     montant = Number(f.prix);
     ref = `ouverture:${o.id}`;

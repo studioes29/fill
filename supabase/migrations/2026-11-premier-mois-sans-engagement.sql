@@ -1,5 +1,5 @@
--- Premier mois sans engagement (7 novembre 2026) : le premier mois est réglé seul ; la mise en place (Essentiel, Régulier,
--- Soutenu, engagement de 6 mois) est facturée avec le deuxième mois, une fois l'abonnement poursuivi ; offerte à 12 mois.
+-- Premier mois sans engagement (7 novembre 2026) : le premier mois est réglé seul. La logique de mise en place reportée au
+-- deuxième mois reste en place par sécurité, mais la mise en place vaut désormais 0 (voir la fin du fichier).
 
 -- montant de mise en place dû pour une période : la deuxième période de l'abonnement seulement
 create or replace function prive._mise_en_place_due(o organisation, per text)
@@ -98,3 +98,8 @@ begin
     (select case when o.relais_semaine then f.prix_semaine else f.prix + prive._mise_en_place_due(o, per) end from formule f where f.offre_id = offre_active() and f.id = o.formule),
     'virement', null, auth.uid());
 end $function$;
+
+-- Même jour, décision finale : plus aucune mise en place facturée, un seul engagement (premier mois libre, puis 6 mois
+-- comptés depuis le premier mois). L'offre active garde son identifiant (références des organisations et factures).
+update formule set mise_en_place = 0 where offre_id = (select id from offre_version where active);
+update offre_version set engagement_long = 6 where active;

@@ -45,7 +45,7 @@ var ag = [5, 10, 20],
   ),
   _g = H(`<li class="svelte-yzl1dj"><span> </span><b class="num"> </b></li>`),
   vg = H(
-    `<h2 class="t2">Votre formule</h2> <p class="mu">Les mêmes prix pour une commune ou une entreprise. Vous pourrez changer de formule chaque mois.</p> <div class="formules svelte-yzl1dj" role="radiogroup" aria-label="Formule"></div> <div class="eng svelte-yzl1dj"><span class="libelle">Engagement</span> <div class="engs svelte-yzl1dj" role="radiogroup" aria-label="Durée d’engagement"><button type="button" role="radio"><b class="svelte-yzl1dj">6 mois</b><small class="svelte-yzl1dj"> </small></button> <button type="button" role="radio"><b class="svelte-yzl1dj">12 mois</b><small class="svelte-yzl1dj">Mise en place offerte</small></button></div> <p class="tres-petit mu">Le premier mois est sans engagement : vous pouvez arrêter à son terme sans rien devoir de plus. Si vous continuez, l’engagement compte depuis le premier mois, puis l’abonnement se résilie chaque mois avec un mois de préavis.</p></div> <details class="equiv svelte-yzl1dj"><summary class="svelte-yzl1dj"> </summary> <ul class="svelte-yzl1dj"></ul></details>`,
+    `<h2 class="t2">Votre formule</h2> <p class="mu">Les mêmes prix pour une commune ou une entreprise. Vous pourrez changer de formule chaque mois.</p> <div class="formules svelte-yzl1dj" role="radiogroup" aria-label="Formule"></div> <div class="eng svelte-yzl1dj"><span class="libelle">Engagement</span> <div class="engs svelte-yzl1dj" role="radiogroup" aria-label="Durée d’engagement" hidden><button type="button" role="radio"><b class="svelte-yzl1dj">6 mois</b><small class="svelte-yzl1dj"> </small></button> <button type="button" role="radio"><b class="svelte-yzl1dj">12 mois</b><small class="svelte-yzl1dj">Mise en place offerte</small></button></div> <p class="mu">Premier mois sans engagement : vous pouvez arrêter à son terme sans rien devoir de plus. Ensuite, 6 mois minimum, comptés depuis le premier mois, puis résiliable chaque mois avec un mois de préavis.</p></div> <details class="equiv svelte-yzl1dj"><summary class="svelte-yzl1dj"> </summary> <ul class="svelte-yzl1dj"></ul></details>`,
     1,
   ),
   yg = H(
@@ -78,7 +78,7 @@ var ag = [5, 10, 20],
     1,
   ),
   Pg = H(
-    `<main class="ouverture"><header class="tete svelte-yzl1dj"><span class="motif svelte-yzl1dj" aria-hidden="true"></span> <div class="w svelte-yzl1dj"><div class="barre svelte-yzl1dj"><a aria-label="Retour à la connexion"><!></a><span class="barre-l svelte-yzl1dj"><a class="lien-discret" href="./?demo">Essayer sans compte</a><a class="lien-discret">J’ai déjà un compte</a></span></div> <h1 class="t1">Ouvrir un compte</h1> <ol class="etapes svelte-yzl1dj" aria-label="Étapes"></ol></div></header> <section class="feuille"><div class="w grille svelte-yzl1dj"><div class="col svelte-yzl1dj"><!> <!></div> <aside class="resume svelte-yzl1dj"><span class="motif2 svelte-yzl1dj" aria-hidden="true"></span> <p class="it sur svelte-yzl1dj">Votre abonnement</p> <p class="nomr d svelte-yzl1dj"> </p> <p class="grand num svelte-yzl1dj"> <small class="svelte-yzl1dj">par mois</small></p> <ul class="lignes num svelte-yzl1dj"><li class="svelte-yzl1dj"><span class="svelte-yzl1dj"> </span><span class="svelte-yzl1dj">inclus</span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Mise en place</span><span class="svelte-yzl1dj"> </span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Engagement</span><span class="svelte-yzl1dj"> </span></li> <li class="tot svelte-yzl1dj"><span class="svelte-yzl1dj">Sur la durée d’engagement</span><span class="svelte-yzl1dj"> </span></li></ul> <div class="paie svelte-yzl1dj"><!></div> <p class="tres-petit mu">TVA non applicable, article 293 B du CGI.</p></aside></div></section></main>`,
+    `<main class="ouverture"><header class="tete svelte-yzl1dj"><span class="motif svelte-yzl1dj" aria-hidden="true"></span> <div class="w svelte-yzl1dj"><div class="barre svelte-yzl1dj"><a aria-label="Retour à la connexion"><!></a><span class="barre-l svelte-yzl1dj"><a class="lien-discret" href="./?demo">Essayer sans compte</a><a class="lien-discret">J’ai déjà un compte</a></span></div> <h1 class="t1">Ouvrir un compte</h1> <ol class="etapes svelte-yzl1dj" aria-label="Étapes"></ol></div></header> <section class="feuille"><div class="w grille svelte-yzl1dj"><div class="col svelte-yzl1dj"><!> <!></div> <aside class="resume svelte-yzl1dj"><span class="motif2 svelte-yzl1dj" aria-hidden="true"></span> <p class="it sur svelte-yzl1dj">Votre abonnement</p> <p class="nomr d svelte-yzl1dj"> </p> <p class="grand num svelte-yzl1dj"> <small class="svelte-yzl1dj">par mois</small></p> <ul class="lignes num svelte-yzl1dj"><li class="svelte-yzl1dj"><span class="svelte-yzl1dj"> </span><span class="svelte-yzl1dj">inclus</span></li> <li class="svelte-yzl1dj" hidden><span class="svelte-yzl1dj">Mise en place</span><span class="svelte-yzl1dj"> </span></li> <li class="svelte-yzl1dj"><span class="svelte-yzl1dj">Engagement</span><span class="svelte-yzl1dj"> </span></li> <li class="tot svelte-yzl1dj"><span class="svelte-yzl1dj">Sur la durée d’engagement</span><span class="svelte-yzl1dj"> </span></li></ul> <div class="paie svelte-yzl1dj"><!></div> <p class="tres-petit mu">TVA non applicable, article 293 B du CGI.</p></aside></div></section></main>`,
   );
 // formule et type choisis sur le site (estimation, formules) : /espace/?formule=essentiel&type=entreprise#ouverture
 var depuisUrl = (k, ok, d) => {
@@ -97,7 +97,7 @@ function Ouverture(e, t) {
     a = N(``),
     o = N(``),
     s = N(depuisUrl(`formule`, [`essentiel`, `regulier`, `soutenu`], `regulier`)),
-    c = N(12),
+    c = N(6),
     l = N(``),
     u = N(``),
     d = N(``),
@@ -214,7 +214,7 @@ function Ouverture(e, t) {
             P(a, e.structure, !0),
             P(o, e.siret, !0),
             P(s, e.fo, !0),
-            P(c, e.engagement, !0),
+            P(c, 6, !0),
             P(l, e.nom, !0),
             P(u, e.fonction, !0),
             P(d, _(e.telephone, ``), !0),
@@ -466,7 +466,7 @@ function Ouverture(e, t) {
                   (o = q(a, 1, `choix e6 svelte-yzl1dj`, null, o, {
                     on: B(c) === 6,
                   })),
-                  W(l, `Mise en place ${e ?? ``}, au deuxième mois`),
+                  W(l, ``),
                   J(u, `aria-checked`, B(c) === 12),
                   (d = q(u, 1, `choix e12 svelte-yzl1dj`, null, d, {
                     on: B(c) === 12,
@@ -749,7 +749,7 @@ function Ouverture(e, t) {
           (W(r, `Premier mois, sans engagement : ${e ?? ``}`),
             W(
               i,
-              `Le premier mois seulement${B(b).miseEnPlace ? ` (la mise en place est réglée avec le deuxième mois, si vous continuez)` : ``}, par carte depuis votre espace une fois créé, ou par virement automatique (virement permanent programmé depuis votre banque, IBAN sur la facture envoyée par Fill). L’espace est accessible tout de suite ; les ${B(x).unites ?? ``} unités sont créditées au premier règlement, puis chaque mois à la même date : le jour de ce premier règlement fixe votre échéance.`,
+              `Le premier mois, par carte depuis votre espace une fois créé, ou par virement automatique (virement permanent programmé depuis votre banque, IBAN sur la facture envoyée par Fill). L’espace est accessible tout de suite ; les ${B(x).unites ?? ``} unités sont créditées au premier règlement, puis chaque mois à la même date : le jour de ce premier règlement fixe votre échéance.`,
             ));
         },
         [() => euros(B(b).premierReglement)],
