@@ -8422,8 +8422,23 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
   }
   .bandeau-demo.svelte-1n46o8q {
     top: calc(56px + env(safe-area-inset-top, 0px));
-    padding: 8px 12px;
+    padding: 6px 12px;
     font-size: 13px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  /* au téléphone, le bandeau tient sur une ligne : le mot « Démonstration », puis les deux actions */
+  .bandeau-demo.svelte-1n46o8q span:where(.svelte-1n46o8q) {
+    font-size: 0;
+    margin-right: auto;
+  }
+  .bandeau-demo.svelte-1n46o8q span:where(.svelte-1n46o8q) b:where(.svelte-1n46o8q) {
+    font-size: 13px;
+  }
+  .bandeau-demo.svelte-1n46o8q .bt:where(.svelte-1n46o8q) {
+    min-height: 34px;
+    padding: 0 14px;
   }
   .page.svelte-1n46o8q {
     min-height: auto;
@@ -8610,4 +8625,20 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
   html[data-route="nouvelle"] .onglets.svelte-1n46o8q { display: none; }
   html[data-route="nouvelle"] .page.svelte-1n46o8q { padding-bottom: env(safe-area-inset-bottom, 0px); }
   html[data-route="nouvelle"] .barre-envoi.svelte-1q2r354 { bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+}
+/* repère concret sous les unités de l'accueil (valeurs du catalogue : publication et actualité 1, newsletter 3, affiche 4) */
+.unites.svelte-5ho6zo::after {
+  content: "1 unité : une publication ou une actualité. Une affiche en compte 4.";
+  display: block;
+  color: var(--mu);
+  font-size: 13px;
+  line-height: 1.4;
+}
+/* accueil au téléphone : sans le bouton « Nouvelle demande », « Personnaliser » se range à droite du titre */
+@media (width<=860px) {
+  .ligne.svelte-s7h9vm:has(> .actions > .tdb-perso:only-child) {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
 }

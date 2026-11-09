@@ -380,8 +380,10 @@ function Accueil(e, t) {
               z((e) => J(t, `href`, e), [() => lienRoute(`nouvelle`)]),
               U(e, t));
           };
+        // Le bouton « Nouvelle demande » de l'en-tête n'est plus affiché (10 novembre 2026) : un seul accès,
+        // le menu sur ordinateur et la barre du bas sur téléphone. Le gabarit D_ et la fonction i restent en place.
         (G(r, (e) => {
-          B(n).role !== `lecteur` && e(i);
+          !1 && B(n).role !== `lecteur` && e(i);
         }),
           G(r2, (e) => {
             B(tdbEdition) ||
