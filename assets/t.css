@@ -2289,7 +2289,7 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 .cas-p{display:flex;width:max-content}
 .cas-l{display:flex;gap:16px;margin:0;padding:0 16px 0 0;list-style:none}
 .cas-r:not(.defile) .cas-l{padding-right:0}
-.cas-c{display:flex;flex-direction:column;justify-content:space-between;gap:28px;width:clamp(280px,27vw,390px);padding:28px 28px 26px;border-radius:var(--r);background:var(--blanc);color:var(--encre)}
+.cas-c{display:flex;flex-direction:column;justify-content:flex-start;gap:14px;width:clamp(280px,27vw,390px);padding:28px 28px 26px;border-radius:var(--r);background:var(--blanc);color:var(--encre)}
 .cas-q{font-family:var(--d);font-size:clamp(17px,1.3vw,19px);font-weight:500;line-height:1.42;letter-spacing:-.008em;text-wrap:pretty}
 .cas-a{display:grid;gap:3px;font-size:14px;line-height:1.35}
 .cas-a b{font-weight:650;font-size:15px}
@@ -2298,7 +2298,7 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 .cas-qui p{color:#fff}
 .cas-qui .qui-ph{background:rgba(255,255,255,.2)}
 @media (max-width:899px){.qui.cas-qui{grid-template-columns:72px minmax(0,1fr);gap:16px;align-items:start}.cas-qui .qui-ph{width:72px}}
-@media (max-width:640px){.cas-qui p{font-size:15.5px}.cas-c{padding:22px;gap:22px}.cas-g{gap:12px}.cas-l{gap:12px;padding-right:12px}}
+@media (max-width:640px){.cas-qui p{font-size:15.5px}.cas-c{padding:22px;gap:12px}.cas-g{gap:12px}.cas-l{gap:12px;padding-right:12px}}
 /* défilement : seulement avec JavaScript et sans réduction des animations */
 @media (prefers-reduced-motion:no-preference){
   .cas-r.defile{overflow:hidden;padding-inline:0}
