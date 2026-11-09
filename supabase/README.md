@@ -5,7 +5,7 @@ Ce dossier contient la source de toutes les fonctions serveur (Edge Functions) d
 ## Deux sortes de fonctions
 
 - **En modules** (`alerte`, `atelier`, `inviter`, `notifier`, `paiement`, `pilote`) : elles importent des modules communs de `functions/_partage/` (clés, gabarit des e-mails, offre, règles). Supabase reçoit un seul fichier, assemblé par esbuild. Le fichier déployé gardait le chemin de chaque module : il a été redécoupé selon ces chemins.
-- **En un seul fichier** (`acompte`, `carte-cadeau`, `envoi`, `formulaire`, `mensualite`, `parcours`, `stripe-webhook`) : écrites directement en TypeScript et déployées telles quelles. Le fichier rangé ici est le fichier déployé.
+- **En un seul fichier** (`acompte`, `carte-cadeau`, `desinscription`, `envoi`, `formulaire`, `mensualite`, `parcours`, `stripe-webhook`) : écrites directement en TypeScript et déployées telles quelles. Le fichier rangé ici est le fichier déployé.
 
 ## Preuve que la source correspond au déployé
 
@@ -30,6 +30,7 @@ Toutes sont déployées sans vérification du jeton JWT par Supabase (`verify_jw
 | `formulaire` | Formulaires des sites (à la place de FormSubmit) : enregistrement puis envoi par Brevo | studioes.fr, fill.studioes.fr, dossiers.studioes.fr, piercevaltattoo.fr | origine du site, limite d'envois par adresse IP | clé secrète Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `PIERCEVAL_EMAIL`, `EXPEDITEUR_EMAIL` |
 | `parcours` | Mails de parcours (fin de mission, relance à trois mois, avis Google), prospects Brevo, campagne de lancement par vagues, liens « stop » | tâche planifiée `fill-parcours-mails` (9 h 05 UTC, en semaine), Hors-champ ; liens signés pour les visiteurs | clé secrète ou jeton pilote ; signature HMAC pour les liens | clé secrète Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL` |
 | `envoi` | Envois automatiques de Hors-champ (séquences de prospection et de suivi) via Brevo, avec plafonds | tâche planifiée `horschamp-envois` (toutes les 10 min, 6 h à 17 h UTC, en semaine) | clé secrète ou jeton pilote | clé secrète Supabase, `BREVO_API_KEY`, `EXPEDITEUR_EMAIL` |
+| `desinscription` | Lien « ne plus recevoir » des envois automatiques : un GET renvoie vers la page de confirmation https://studioes.fr/desinscription/ (dépôt `site`), seul un POST inscrit l'adresse (bouton de la page ou désabonnement en un clic des messageries), par `sequence_desinscrire` | liens des mails de prospection (`envoi`), page de confirmation du site | signature HMAC du lien ; POST accepté depuis studioes.fr | clé secrète Supabase |
 
 Clés Supabase : `CLE_SECRETE` et `CLE_PUBLIABLE` si elles sont posées dans les secrets, sinon les variables fournies par Supabase (`SUPABASE_SECRET_KEY(S)`, `SUPABASE_PUBLISHABLE_KEY(S)`, puis les anciennes `SUPABASE_SERVICE_ROLE_KEY` et `SUPABASE_ANON_KEY`). `SUPABASE_URL` est fournie par Supabase. Les secrets se règlent dans le tableau de bord Supabase (Edge Functions, Secrets) ; ils ne sont jamais écrits dans ce dépôt.
 
@@ -52,5 +53,7 @@ Une réserve sur ces modules : esbuild retire les commentaires et les types en a
 Changer un module commun touche toutes les fonctions qui l'importent : elles sont toutes à redéployer.
 
 ## Historique
+
+- `desinscription`, version 3, et `envoi`, version 10 (9 novembre 2026) : les filtres de sécurité des messageries ouvraient le lien « stop » et désinscrivaient les prospects à leur place. Le lien des mails mène maintenant à `desinscription`, qui n'inscrit rien sur un GET et renvoie vers la page de confirmation du site ; les anciens liens (`parcours`, `?a=stop`) partent en attente (migration `2026-11-desinscription-confirmation.sql`). Supabase sert le HTML d'une fonction en texte brut : une page avec un bouton doit vivre sur le site, pas dans la fonction. `deploye/envoi.ts` a été reconstitué à partir de la version 10 déployée (seul le lien change) : à comparer au fichier déployé lors de la prochaine modification.
 
 - `pilote`, version 4 (30 octobre 2026) : le pré-contrôle des unités raisonne sur la période d'abonnement de chaque organisation (date anniversaire du premier paiement, fonctions SQL `periode_org`, `debut_periode_org`, `fin_periode_org`) au lieu du mois civil. La version 3, reconstituée à l'identique, est au commit f67a808.

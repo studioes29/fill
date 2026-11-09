@@ -23,8 +23,9 @@ const signer = async (txt: string) => {
   const s = new Uint8Array(await crypto.subtle.sign("HMAC", k, enc.encode(txt)));
   return btoa(String.fromCharCode(...s)).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" } as Record<string, string>)[c]).slice(0, 32);
 };
-// même lien que la fonction « parcours » : il inscrit l'adresse dans mail_stop
-const lienStop = async (email: string) => `${URL_SB}/functions/v1/parcours?a=stop&e=${encodeURIComponent(email)}&s=${await signer("stop:" + email)}`;
+// lien de désinscription : la fonction « desinscription » demande une confirmation sur GET (les robots de sécurité des
+// messageries cliquent sur tous les liens) et n'inscrit dans mail_stop que sur POST (bouton ou désabonnement en un clic)
+const lienStop = async (email: string) => `${URL_SB}/functions/v1/desinscription?e=${encodeURIComponent(email)}&s=${await signer("stop:" + email)}`;
 const echap = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" } as Record<string, string>)[c]);
 const lierUrls = (t: string) => t.replace(/https?:\/\/[^\s<)]+[^\s<).,;:!?]/g, (u) => `<a href="${u}" style="color:#141414">${u}</a>`);
 
