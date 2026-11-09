@@ -1002,16 +1002,18 @@
       cB = couleurDe(getComputedStyle(passage).getPropertyValue('--vers') || 'currentColor', passage);
       maj();
     };
-    // la position est lissée d'une image à l'autre : le fil suit le défilement sans à-coups
-    let lis = null;
-    const maj = () => {
-      const vh = innerHeight, h = passage.offsetHeight, course = Math.max(1, h - vh);
-      const top = lis == null ? passage.getBoundingClientRect().top : lis;
-      const s = clamp01(-top / course);                       // avancée dans la partie collée
-      const dessin = clamp01((vh * .55 - top) / (vh * .55 + course * .5)); // le fil se trace en entrant
-      const z = clamp01((s - .5) / .5);                          // la plongée
-      let l = lz * doux(dessin);
-      if (z > 0) l = lz + (L - lz) * clamp01(z * 2.4);
+    // l'avancée affichée (u) suit le défilement à vitesse plafonnée : même après un défilement brusque, le fil se
+    // trace, boucle et plonge en continu. De 0 à 1 : le fil entre, fait sa boucle entière et ressort, tracé terminé
+    // quand la scène se colle en haut de l'écran ; de 1 à 2 : la caméra plonge dans le bas de la boucle, sur toute
+    // la partie collée.
+    let u = null, tPrec = 0;
+    const cible = () => {
+      const vh = innerHeight, h = passage.offsetHeight, course = Math.max(1, h - vh), top = passage.getBoundingClientRect().top;
+      return { v: clamp01((vh * .62 - top) / (vh * .62)) + clamp01(-top / course), vu: top < vh && top + h > 0, parti: -top > course + vh * .35 };
+    };
+    const rendre = () => {
+      const dessin = Math.min(1, u), z = Math.max(0, u - 1);
+      const l = L * doux(dessin);
       p.style.strokeDashoffset = f1(L - Math.min(L, l));
       const e = Math.pow(z, 2.5), k = 1 + z * .22 + e * smax, rot = (gauche ? -1 : 1) * 16 * doux(clamp01(z * 1.4));
       g.setAttribute('transform', `translate(${f1(O.x)} ${f1(O.y)}) rotate(${rot.toFixed(2)}) scale(${k.toFixed(3)}) translate(${f1(-O.x)} ${f1(-O.y)})`);
@@ -1021,17 +1023,24 @@
       tt.style.transform = `translateY(${f1((1 - clamp01((z - .7) / .3)) * 34)}px)`;
       ps.style.setProperty('--zt', clamp01((z - .82) / .18).toFixed(3));
     };
+    // hors de l'écran, ou au premier affichage, la scène se pose directement dans son état
+    const maj = () => { const c = cible(); if (u == null || !c.vu) u = c.v; rendre(); };
     if (RM) passage.classList.add('fixe');
     else {
       let raf = 0;
-      const boucle = () => {
-        const t = passage.getBoundingClientRect().top;
-        if (lis == null || Math.abs(t - lis) > innerHeight * 1.5) lis = t; else lis += (t - lis) * .2;
-        if (Math.abs(t - lis) < .4) lis = t;
-        maj();
-        raf = lis !== t ? requestAnimationFrame(boucle) : 0;
+      const boucle = (t) => {
+        const c = cible(), dt = Math.max(1, Math.min(64, t - tPrec)); tPrec = t;
+        if (u == null || !c.vu) u = c.v;
+        else {
+          // vitesse plafonnée : le tracé dure au moins 0,9 s, la plongée au moins 0,75 s (plus vite si la scène est déjà sortie)
+          const ecart = c.v - u, vmax = dt / (c.parti ? 240 : (ecart > 0 ? u < 1 : u <= 1) ? 900 : 750);
+          u += Math.max(-vmax, Math.min(vmax, ecart * Math.min(1, dt / 90)));
+          if (Math.abs(c.v - u) < .002) u = c.v;
+        }
+        rendre();
+        raf = u !== c.v ? requestAnimationFrame(boucle) : 0;
       };
-      const reveille = () => { if (!raf) raf = requestAnimationFrame(boucle); };
+      const reveille = () => { if (!raf) { tPrec = performance.now(); raf = requestAnimationFrame(boucle); } };
       addEventListener('scroll', reveille, { passive: true });
       addEventListener('resize', () => setTimeout(trace, 130));
       surCible.push(() => setTimeout(trace, 650));
