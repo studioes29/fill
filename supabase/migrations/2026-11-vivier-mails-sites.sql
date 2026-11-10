@@ -1,0 +1,6 @@
+-- 10 nov 2026 : relevé automatique, chaque nuit, des adresses mail publiées sur les sites des entreprises du vivier.
+-- 1 h 10 : page d'accueil de 80 entreprises jamais relevées ; 1 h 25 : page contact ou mentions si l'accueil ne donne rien ;
+-- 1 h 45 : écriture de la première adresse plausible (domaine du site ou messagerie grand public), jamais par-dessus une adresse existante,
+-- avec la page source notée dans « detail ». Premier passage fait à la main le 10 nov : 92 adresses sur 199 sites.
+-- Déjà appliquée sur le projet nfnbseonwgmtouxsaajd (migration « vivier_mails_sites ») ; fonctions : vivier_choix_mail,
+-- vivier_mails_lancer, vivier_mails_contacts, vivier_mails_relever ; table de suivi : vivier_scan.
