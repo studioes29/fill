@@ -80,12 +80,12 @@ const piecesJointes = (pj: unknown) => (Array.isArray(pj) ? pj : []).map((p: any
 async function envoyer(d: any) {
   const stop = await lienStop(d.email);
   const sig = SIGNATURE[d.marque] ?? SIGNATURE.studio;
-  const pied = d.type === "prospection" ? `\n\nVous ne souhaitez plus recevoir de message de ma part ? Répondez simplement « stop », ou : ${stop}` : "";
+  const pied = d.type === "prospection" ? `\n\nVous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou : ${stop}` : "";
   const texte = `${d.corps.trim()}\n\n${sig}${pied}`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
 <div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#141414;max-width:640px;padding:20px 18px 28px">${lierUrls(echap(d.corps.trim())).replace(/\n/g, "<br>")}
 ${signatureHtml(d.marque)}
-${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de ma part ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
+${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
 </div></body></html>`;
   const corps: any = {
     sender: { name: "Ewen Soupault", email: EXPEDITEUR },
