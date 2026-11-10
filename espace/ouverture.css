@@ -1,0 +1,21 @@
+/* Écran d'ouverture de l'Espace Fill (repris du site public, où il n'est plus joué) : une fois par session, passable d'un appui. */
+html.intro,html.intro body{background:#E9E1FF;overflow:hidden}
+html.intro body>*:not(.intro-e){visibility:hidden}
+.intro-e{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:clamp(18px,3vh,30px);padding:24px;background:#E9E1FF;overflow:hidden;cursor:pointer;transition:transform .8s cubic-bezier(.76,0,.24,1),border-radius .8s cubic-bezier(.76,0,.24,1)}
+.intro-e.sort{transform:translateY(-104%);border-radius:0 0 46% 46% / 0 0 140px 140px}
+.intro-m{position:absolute;left:50%;top:50%;height:150vh;aspect-ratio:610/720;background:#B8A4FF;opacity:0;-webkit-mask:url(../assets/ll.svg) center/contain no-repeat;mask:url(../assets/ll.svg) center/contain no-repeat;transform:translate(-50%,-50%) rotate(-22deg) scale(.62);transition:transform 2.6s cubic-bezier(.16,1,.3,1),opacity 1s ease}
+.intro-e.go .intro-m{opacity:.5;transform:translate(-46%,-50%) rotate(-6deg) scale(1)}
+.intro-l{position:relative;width:min(58vw,400px)}
+.intro-l svg{display:block;width:100%;height:auto;overflow:visible}
+.intro-l .lg-fi{fill:#1A1A1A;opacity:0;transform:translateY(40px);transition:opacity .5s ease .05s,transform .8s cubic-bezier(.34,1.4,.5,1) .05s}
+.intro-l .lg-ll path{stroke-dasharray:1 2;stroke-dashoffset:1}
+.intro-l .lg-l1{stroke:#B8A4FF}
+.intro-l .lg-l2{stroke:#FF8A6B}
+.intro-e.go .intro-l .lg-fi{opacity:1;transform:none}
+.intro-e.go .intro-l .lg-l1{animation:intro-logo .45s cubic-bezier(.55,0,.6,1) .3s forwards}
+.intro-e.go .intro-l .lg-l2{animation:intro-logo .65s cubic-bezier(.2,0,.15,1) .68s forwards}
+@keyframes intro-logo{to{stroke-dashoffset:0}}
+.intro-t{position:relative;margin:0;font-family:"Bricolage Grotesque","Arial Black",sans-serif;font-weight:600;font-size:clamp(17px,1.6vw,21px);letter-spacing:-.015em;color:#1A1A1A;opacity:0;transform:translateY(12px);transition:opacity .5s ease .85s,transform .7s cubic-bezier(.16,1,.3,1) .85s}
+.intro-t i{font-family:Urbanist,"Avenir Next","Helvetica Neue",sans-serif;font-weight:300}
+.intro-e.go .intro-t{opacity:1;transform:none}
+.intro-e.sort .intro-l,.intro-e.sort .intro-t{opacity:0;transform:translateY(-30px);transition:opacity .4s,transform .7s cubic-bezier(.65,0,.35,1)}
