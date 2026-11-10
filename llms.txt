@@ -1,6 +1,6 @@
 # Fill
 
-> Fill est un service de communication externalisé pour les communes, les collectivités et les PME, partout en France. Il tient la communication courante d'une structure qui n'a pas de service communication, dont le service manque de temps, ou dont la personne chargée de la communication est absente. Fill est un service de Studio ES (studioes.fr), créé par Ewen Soupault, qui pratique la communication territoriale depuis 2020, en Bretagne.
+> Fill est un service de communication externalisé pour les communes, les collectivités et les PME, partout en France. Il tient la communication courante d'une structure qui n'a pas de service communication, dont le service manque de temps, ou dont la personne chargée de la communication est absente. Fill est un service de Studio ES (studioes.fr), studio basé en Bretagne qui pratique la communication territoriale depuis 2020.
 
 Ce que Fill réalise : actualités et agenda du site, publications sur les réseaux sociaux, newsletters, affiches et visuels, pages du bulletin municipal, communiqués de presse, reportages photo (formules Régulier et Soutenu). Pas de vidéo. Le travail se fait à distance ; chaque demande est déposée, suivie et validée dans un espace client en ligne, sans rien publier sans accord écrit.
 
@@ -22,6 +22,9 @@ Ce que Fill réalise : actualités et agenda du site, publications sur les rése
 - [Relais](https://fill.studioes.fr/relais/): remplacement pendant une absence ou une vacance de poste
 - [Fonctionnement](https://fill.studioes.fr/fonctionnement/): demandes, délais, validations, espace client
 - [Estimer son besoin](https://fill.studioes.fr/diagnostic/): cinq questions pour une formule recommandée
+- [Simulateur de prix](https://fill.studioes.fr/simulateur/): composer son mois et voir le prix mensuel et le coût de la première année
+- [Votre trimestre](https://fill.studioes.fr/calendrier/): les temps forts des trois prochains mois et les supports à prévoir
+- [Guide : la communication communale pendant une absence](https://fill.studioes.fr/guide/): ce qu'il faut préparer, ce qui doit continuer, les solutions possibles, liste de contrôle
 - [Questions fréquentes](https://fill.studioes.fr/questions/)
 - [Conditions générales](https://fill.studioes.fr/conditions/)
 - [Contact et rendez-vous](https://fill.studioes.fr/contact/): contact@studioes.fr, 06 51 22 21 07

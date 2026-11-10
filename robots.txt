@@ -1,6 +1,5 @@
 User-agent: *
-Disallow: /assets/pj/
 Allow: /
-Disallow: /espace/
+Disallow: /assets/mail/
 
 Sitemap: https://fill.studioes.fr/sitemap.xml

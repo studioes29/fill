@@ -626,8 +626,9 @@ html:not(.js) .passage-s,.passage.fixe .passage-s{position:relative;height:auto;
 .duo .sec-t h2{font-size:clamp(36px,4.6vw,68px)}
 @media (min-width:980px){.duo>.sec-t{position:sticky;top:96px;align-self:start}}
 .prose{display:grid;gap:14px;max-width:44em;font-size:16.5px;line-height:1.62}
-.prose h3{margin-top:16px;font-family:var(--d);font-weight:650;font-size:24px;letter-spacing:-0.02em}
+.prose h2,.prose h3{margin-top:16px;line-height:1.2;font-family:var(--d);font-weight:650;font-size:24px;letter-spacing:-0.02em}
 .prose ul{display:grid;gap:8px}
+.prose ol{display:grid;gap:8px;padding-left:1.4em;list-style:decimal}
 .prose ul li{position:relative;padding-left:20px}
 .prose ul li::before{content:"";position:absolute;left:0;top:.72em;width:10px;height:2px;background:var(--encre)}
 .prose a{border-bottom:1px solid currentColor}
