@@ -61,6 +61,7 @@ Limite : les états au survol, au focus et les pseudo-éléments (`::placeholder
 | `donnees/etat.js`, `donnees/actions.js` | état de l'application, démonstration, actions des écrans (déposer, confirmer, livrer, commander, inviter…) |
 | `donnees/demo.js` | données et images de la démonstration (`?demo`) |
 | `routeur.js` | navigation par `#route` |
+| `gestes.js`, `transfert.js` | modules ajoutés par-dessus les écrans, sans toucher aux composants. `transfert.js` : le lien `?mail=<identifiant>` des réponses de l'adresse de transfert ouvre la nouvelle demande pré-remplie (lecture de `mail_recu`, saisie gardée), puis `mail_rattacher` joint les pièces du mail à l'envoi. Contrôle : `node tests/transfert.mjs` (Supabase simulé) |
 | `pages/` | écrans : Connexion, Ouverture, NouveauMotDePasse, Accueil, Demandes, NouvelleDemande, Fiche, Unites, Calendrier, Production, Pilotage, Equipe, Comptes |
 | `ui/` | éléments communs : Icone, Logo, Toasts, Visite, Fete, Bobine (jauge d'unités), FilEtat, CarteDemande, CommandeUnites, bon de commande, Volet, Visionneuse, Livrable… |
 | `App.js` | coquille : menu, barre mobile, notifications, choix de l'écran |
@@ -73,7 +74,7 @@ Limite : les états au survol, au focus et les pseudo-éléments (`::placeholder
 | Connexion, NouveauMotDePasse | `seConnecter`, `motDePasseOublie`, `changerMotDePasse`, `verifierLienEmail` | Supabase Auth (mot de passe, lien e-mail) |
 | Ouverture | `creerCompte` | `creer_compte`, fonction `alerte` |
 | Visite | `fermerVisite` | `marquer_visite` |
-| NouvelleDemande | `deposerDemande`, `modifierDemande` | `deposer_demande`, `modifier_demande`, piece_jointe (insert), stockage `fichiers`, fonction `notifier` |
+| NouvelleDemande | `deposerDemande`, `modifierDemande` | `deposer_demande`, `modifier_demande`, piece_jointe (insert), stockage `fichiers`, fonction `notifier` ; depuis un lien `?mail=` : lecture de mail_recu, `mail_rattacher` (`transfert.js`) |
 | Fiche | `confirmerDemande`, `repondreAccord`, `agir`, `livrerVersion`, `relancerAtelier`, `ecrireMessage` | `confirmer_demande`, `donner_accord`, `changer_statut`, version_livrable et message (insert), stockage `fichiers`, fonctions `atelier` et `notifier` |
 | Unites, CommandeUnites | `commanderUnites`, `envoyerBonCommande`, `annulerCommande`, `payerOuverture` | `commander_unites`, `deposer_bon_commande`, `annuler_commande`, fonctions `paiement` et `alerte`, stockage `fichiers` |
 | Production | `confirmerDemande` | `confirmer_demande`, fonction `notifier` |

@@ -61,3 +61,4 @@ pages/Equipe.js
 pages/Comptes.js
 App.js
 gestes.js
+transfert.js
