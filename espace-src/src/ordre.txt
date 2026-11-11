@@ -60,3 +60,4 @@ pages/Pilotage.js
 pages/Equipe.js
 pages/Comptes.js
 App.js
+gestes.js
