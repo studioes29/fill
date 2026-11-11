@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       o.type === "collectivite" ? "Je vous appelle sous 24 h ouvrées pour caler avec vous le volume d’unités, puis je vous envoie le devis et le bon de commande. Déposez le bon signé dans votre espace : vos unités sont créditées dès sa validation, et la production de vos demandes démarre." : "Vos unités sont créditées dès le premier règlement, à faire en ligne depuis l’accueil de votre espace, et la production de vos demandes démarre. Je vous appelle aussi pour caler le volume avec vous."
     ],
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
-    apres: ["Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."]
+    apres: ["Pour que vos supports portent vos couleurs dès la première demande, répondez à ce message avec votre logo et votre charte graphique si vous en avez une. Sans réponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."]
   });
   const [r] = await Promise.all([
     envoyer({ to: [{ email: pourFill }], replyTo: { email: p.email, name: p.nom }, subject: `Nouvelle inscription : ${o.nom}`, htmlContent: html }),

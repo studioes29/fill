@@ -1,6 +1,7 @@
 import { CLE_PUBLIABLE, CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { issue } from '../_partage/regles/cycle.ts';
+import { DUREE_JOURS, empreinte, lienPage, nouveauJeton } from '../_partage/regles/relecture.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 var extrait = (t, n = 280) => t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
@@ -152,7 +153,26 @@ Deno.serve(async (req) => {
         };
         const v = versClient[d.statut];
         if (!v) return new Response("Rien à signaler", { status: 409, headers: cors });
-        mails.push({ a: destClient(v.qui), sujet: `${h.type === "relance" ? "Rappel : " : ""}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        const prefixe = h.type === "relance" ? "Rappel : " : "";
+        let direct = null;
+        if (d.statut === "a_valider" && referent) {
+          // le référent relit et valide depuis un lien personnel, sans se connecter ; sans la table, le mail habituel part
+          const jeton = nouveauJeton();
+          const { error: errLien } = await admin.rpc("relecture_creer", { p_demande: d.id, p_usage: "referent", p_nom: referent.nom, p_fonction: null, p_email: referent.email, p_empreinte: await empreinte(jeton), p_par: referent.id, p_parent: null, p_jours: DUREE_JOURS });
+          if (!errLien) direct = lienPage(SITE, jeton);
+        }
+        if (direct) {
+          mails.push({
+            a: [{ email: referent.email, name: referent.nom }],
+            sujet: `${prefixe}${v.sujet}`,
+            titre: v.titre,
+            texte: ["Relisez-la sans vous connecter : « D’accord » si tout est bon, « À corriger » sinon. Deux allers-retours sont inclus."],
+            bouton: { libelle: v.bouton, lien: direct },
+            apres: [`Ce lien vous est personnel et reste valable ${DUREE_JOURS} jours. Depuis la même page, vous pouvez aussi faire relire la version par un élu, un associé ou un collègue, sans lui créer de compte.`]
+          });
+          const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
+          if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
       }
     } else return new Response("Événement inconnu", { status: 400, headers: cors });
   }
@@ -164,7 +184,7 @@ Deno.serve(async (req) => {
       to: m.a,
       replyTo: m.repondreA ?? { email: "contact@studioes.fr", name: "Ewen Soupault, Fill" },
       subject: `${essai ? "[Test] " : ""}${m.sujet}`,
-      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton })
+      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton, apres: m.apres })
     })
   }));
   const res = await Promise.all(envois);

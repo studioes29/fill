@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://*.supabase.co; media-src 'self' https://*.supabase.co; connect-src https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#F8F5F2" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Version à relire · Fill</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./relecture.css" />
+  </head>
+  <body>
+    <a class="evite" href="#contenu">Aller à la version</a>
+    <header class="tete">
+      <a class="marque" href="https://fill.studioes.fr" aria-label="Fill, site public"><img src="../fill.svg" alt="Fill" width="64" height="34" /></a>
+      <span class="client" id="client"></span>
+    </header>
+    <main id="contenu" tabindex="-1">
+      <p class="attente" id="attente" role="status">Ouverture de la version…</p>
+    </main>
+    <noscript><p class="attente">Cette page a besoin de JavaScript pour afficher la version à relire.</p></noscript>
+    <script type="module" src="./relecture.js"></script>
+  </body>
+</html>
