@@ -89,7 +89,7 @@ const relecture = (plus = {}) => vue({ mode: 'relecture', referent: 'Yann Le Gal
 for (const largeur of [390, 1280]) {
   await test(`démonstration à ${largeur} px : le bilan s'affiche, sans erreur ni défaut d'accessibilité, sans rien envoyer`, async () => {
     const { page, ctx, erreurs, appels } = await ouvrir(`${base}?demo`, { largeur });
-    assert.match(await page.textContent('h1'), /^du \d.* au \d.* \d{4}$/);
+    assert.match(await page.textContent('h1'), /^Bilan du \d.* au \d.* \d{4}$/);
     assert.equal(await page.textContent('#client'), 'Commune de Saint-Ivenec');
     assert.equal(await page.locator('.chiffre').count(), 3);
     assert.deepEqual(await page.locator('.chiffre b').allTextContents(), ['4', '10', '3 sur 4']);
@@ -113,7 +113,7 @@ for (const largeur of [390, 1280]) {
 await test('lien de partage : le jeton part en POST, dans le corps ; chiffres, unités, délais et liste datée s’affichent', async () => {
   const { page, ctx, appels, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }) });
   assert.deepEqual(appels.map((a) => [a.methode, a.action, a.j, a.r, /A{43}/.test(a.adresse)]), [['POST', 'lire', JETON, undefined, false]]);
-  assert.equal(await page.textContent('h1'), 'du 12 octobre au 11 novembre 2026');
+  assert.equal(await page.textContent('h1'), 'Bilan du 12 octobre au 11 novembre 2026');
   assert.equal(await page.title(), 'Bilan du 12 octobre au 11 novembre 2026 · Fill');
   assert.deepEqual(await page.locator('.chiffre').allTextContents(), ['2 demandes livrées', '8 unités utilisées sur 13', '1 sur 2 livrées à la date annoncée']);
   assert.deepEqual(await page.locator('.parts li').allTextContents(), ['Utilisées8', 'Reportées sur la période suivanteà utiliser avant le 11 décembre3', 'Expiréesreport de la période précédente, non utilisé2']);

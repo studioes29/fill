@@ -1,22 +1,21 @@
 /* Page de bilan par lien : ce que Fill a livré sur une période, lisible telle quelle par un élu ou un dirigeant.
-   Mêmes repères que la page de relecture (lavande pour les collectivités, corail pour les entreprises),
-   pensée d'abord pour un téléphone. */
+   Même charte que la page de relecture : des feuilles blanches sans décor, lavande pour les collectivités,
+   corail pour les entreprises, pensée d'abord pour un téléphone. */
 @font-face { font-family: "Bricolage Grotesque"; font-weight: 200 800; font-display: swap; src: url(../assets/br-Cre6nC2_.woff2) format("woff2"); unicode-range: U+00??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+20AC, U+2122, U+2212; }
 @font-face { font-family: "Bricolage Grotesque"; font-weight: 200 800; font-display: swap; src: url(../assets/br-ext-IcJDqblK.woff2) format("woff2"); unicode-range: U+100-130, U+132-151, U+154-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+1E00-1E9F, U+A720-A7FF; }
 @font-face { font-family: "Inter Tight"; font-weight: 100 900; font-display: swap; src: url(../assets/it-DX-nOvPD.woff2) format("woff2"); unicode-range: U+00??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+20AC, U+2122, U+2212; }
 @font-face { font-family: "Inter Tight"; font-weight: 100 900; font-display: swap; src: url(../assets/it-ext-B4u9PlvR.woff2) format("woff2"); unicode-range: U+100-130, U+132-151, U+154-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+1E00-1E9F, U+A720-A7FF; }
 
 :root {
-  --c-f: #7052b3; --c: #b8a4ff; --c-c: #e9e1ff; --c-t: #5b3f9c;
+  --c-f: #7052b3; --c: #b8a4ff;
   --encre: #1a1a1a; --sable: #f8f5f2; --blanc: #fff; --creux: #efeae4;
-  --ligne: #1a1a1a1a; --ligne2: #1a1a1a33; --mu: #1a1a1ac7; --fa: #1a1a1aab; --gris: #8a847d;
-  --bon: #2c7a57; --bon-c: #dcf0e5; --alerte: #8a5a05; --alerte-c: #fbefd2; --danger: #b3392b; --danger-c: #fbe1dc;
+  --ligne: #1a1a1a1f; --ligne2: #1a1a1a33; --mu: #1a1a1ac7; --fa: #1a1a1aab; --gris: #8a847d;
+  --bon: #2c7a57; --bon-c: #dcf0e5; --alerte: #8a5a05; --alerte-c: #fbefd2; --danger: #b3392b;
   --d: "Bricolage Grotesque", "Arial Black", sans-serif;
   --f: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
-  --e: cubic-bezier(0.16, 1, 0.3, 1);
   color-scheme: light;
 }
-:root[data-cible="e"] { --c-f: #b95543; --c: #ff8a6b; --c-c: #ffe0d5; --c-t: #9a4232; }
+:root[data-cible="e"] { --c-f: #b95543; --c: #ff8a6b; }
 *, :before, :after { box-sizing: border-box; }
 html { background: var(--sable); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { margin: 0; color: var(--encre); font: 400 17px/1.55 var(--f); letter-spacing: -0.006em; -webkit-font-smoothing: antialiased; }
@@ -30,37 +29,36 @@ a { color: inherit; }
 .evite { position: absolute; left: 12px; top: -60px; z-index: 5; background: var(--encre); color: var(--sable); padding: 10px 16px; border-radius: 999px; text-decoration: none; }
 .evite:focus { top: 12px; }
 
-.tete { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 720px; margin: 0 auto; padding: 18px 20px 6px; }
+.tete { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 680px; margin: 0 auto; padding: 16px 20px 0; }
 .marque { display: block; line-height: 0; }
-.marque svg { display: block; width: 69px; height: 36px; overflow: visible; }
+.marque svg { display: block; width: 61px; height: 32px; overflow: visible; }
 .client { font-size: 14.5px; color: var(--mu); text-align: right; }
 
-main { max-width: 720px; margin: 0 auto; padding: 14px 20px 72px; }
-main.avec-barre { padding-bottom: 190px; }
+main { max-width: 680px; margin: 0 auto; padding: 22px 20px 72px; }
+main.avec-barre { padding-bottom: 170px; }
 main:focus { outline: none; }
 .attente { padding: 60px 0; text-align: center; color: var(--mu); }
 
-.sur { display: inline-block; margin-bottom: 12px; padding: 5px 12px; border-radius: 999px; background: var(--c-c); color: var(--c-t); font-size: 13.5px; font-weight: 600; }
-h1 { font: 700 clamp(28px, 7.4vw, 40px) / 1.08 var(--d); letter-spacing: -0.02em; text-wrap: balance; }
-h1::first-letter { text-transform: uppercase; }
-.contexte { margin-top: 12px; color: var(--mu); max-width: 46ch; }
+h1 { font: 700 clamp(26px, 6.8vw, 36px) / 1.1 var(--d); letter-spacing: -0.02em; text-wrap: balance; }
+.contexte { margin-top: 10px; color: var(--mu); }
 
 /* relecture par Fill, avant envoi */
-.avant { margin-bottom: 22px; padding: 16px 18px; border-radius: 18px; background: var(--alerte-c); color: var(--encre); }
+.avant { margin-bottom: 22px; padding: 14px 18px; border-radius: 16px; background: var(--alerte-c); color: var(--encre); }
 .avant b { display: block; color: var(--alerte); }
 .avant.fait { background: var(--bon-c); }
 .avant.fait b { color: #1d5a3f; }
 
 /* les trois chiffres */
-.chiffres { display: grid; gap: 10px; margin-top: 26px; }
-.chiffre { display: flex; align-items: baseline; gap: 14px; padding: 16px 18px; border-radius: 18px; background: var(--blanc); box-shadow: 0 1px 2px #1a1a1a0a, 0 14px 34px -22px #1a1a1a47; }
+/* des feuilles blanches, sans décor */
+.chiffres { display: grid; gap: 10px; margin-top: 22px; }
+.chiffre { display: flex; align-items: baseline; gap: 14px; padding: 16px 18px; border: 1px solid var(--ligne); border-radius: 16px; background: var(--blanc); }
 .chiffre b { flex: none; min-width: 2.2ch; font: 700 38px/1 var(--d); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .chiffre span { color: var(--mu); line-height: 1.3; }
 
-section { margin-top: 38px; }
-h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px; text-wrap: balance; }
+section { margin-top: 36px; }
+h2 { font: 700 22px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 12px; text-wrap: balance; }
 .note { margin-top: 12px; font-size: 15px; color: var(--mu); max-width: 60ch; }
-.bloc { padding: 18px; border-radius: 22px; background: var(--blanc); box-shadow: 0 1px 2px #1a1a1a0a, 0 14px 34px -22px #1a1a1a47; }
+.bloc { padding: 18px; border: 1px solid var(--ligne); border-radius: 16px; background: var(--blanc); }
 
 /* unités : une barre fine, et la liste qui donne chaque part en clair */
 .barre-unites { display: flex; gap: 2px; height: 8px; margin-bottom: 16px; }
@@ -82,7 +80,7 @@ h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px
 
 /* ce qui a été livré */
 .livres { display: grid; gap: 10px; }
-.livre { display: grid; gap: 4px; padding: 16px 18px; border-radius: 18px; background: var(--blanc); }
+.livre { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--ligne); border-radius: 16px; background: var(--blanc); }
 .livre .quand { font-size: 14px; color: var(--mu); font-weight: 600; }
 .livre h3 { font: 700 18.5px/1.2 var(--d); letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .livre .quoi { font-size: 15px; color: var(--mu); overflow-wrap: anywhere; }
@@ -98,11 +96,9 @@ h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px
 .encours span + span { font-size: 14.5px; color: var(--mu); }
 
 /* la période qui commence : trois suggestions */
-.suite { padding: 22px 18px; border-radius: 26px; background: var(--c-c); }
 .suite h2 { margin-bottom: 8px; }
-.suite .solde { max-width: 52ch; }
-.suggestions { display: grid; gap: 12px; margin-top: 18px; }
-.suggestion { display: grid; gap: 8px; padding: 18px; border-radius: 18px; background: var(--blanc); }
+.suggestions { display: grid; gap: 10px; margin-top: 16px; }
+.suggestion { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--ligne); border-radius: 16px; background: var(--blanc); }
 .suggestion header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .suggestion h3 { font: 700 20px/1.15 var(--d); letter-spacing: -0.012em; overflow-wrap: anywhere; }
 .suggestion .cout { flex: none; padding: 3px 10px; border-radius: 999px; background: var(--creux); font-size: 13.5px; font-weight: 600; white-space: nowrap; }
@@ -113,21 +109,22 @@ h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px
 .garder input { width: 22px; height: 22px; margin: 0; accent-color: var(--c-f); flex: none; }
 .suggestion:has(.garder input:not(:checked)) { background: var(--creux); }
 .suggestion:has(.garder input:not(:checked)) h3 { text-decoration: line-through; }
-.suite .note { color: var(--encre); }
 
-.bt { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 10px 1.6em; border: 0; border-radius: 999px; background: var(--encre); color: var(--sable); font-weight: 600; font-size: 16.5px; text-decoration: none; cursor: pointer; transition: transform 0.3s var(--e), opacity 0.2s; -webkit-tap-highlight-color: transparent; }
-.bt:active { transform: scale(0.97); }
+.bt { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 10px 1.5em; border: 0; border-radius: 999px; background: var(--encre); color: var(--sable); font-weight: 600; font-size: 16.5px; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.bt:active { opacity: 0.85; }
+.bt.sm { min-height: 46px; font-size: 15.5px; }
 .bt.cl { background: var(--blanc); color: var(--encre); box-shadow: inset 0 0 0 1.5px var(--ligne2); }
 .bt[disabled] { opacity: 0.4; pointer-events: none; }
 
-.barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; background: #f8f5f2f2; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--ligne); padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); }
-.barre .dans { max-width: 680px; margin: 0 auto; display: grid; gap: 10px; }
+/* l'accord de Fill, toujours sous le pouce */
+.barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--sable); border-top: 1px solid var(--ligne); padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); }
+.barre .dans { max-width: 640px; margin: 0 auto; display: grid; gap: 10px; }
 .barre .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .barre .choix.seul { grid-template-columns: 1fr; }
 .barre .question { font-weight: 600; }
 .erreur { color: var(--danger); font-weight: 600; font-size: 15px; }
 
-.etat { margin-top: 30px; padding: 28px 22px; border-radius: 22px; background: var(--blanc); display: grid; gap: 10px; justify-items: start; }
+.etat { margin-top: 26px; display: grid; gap: 10px; justify-items: start; }
 .etat h2 { font: 700 26px/1.15 var(--d); letter-spacing: -0.015em; margin: 0; }
 .etat p { color: var(--mu); max-width: 46ch; }
 .etat .bt { margin-top: 8px; }
@@ -135,7 +132,6 @@ h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px
 .pied { margin-top: 38px; font-size: 13.5px; color: var(--fa); max-width: 62ch; }
 
 @media (min-width: 620px) {
-  main { padding-top: 26px; }
   .chiffres { grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .chiffre { display: grid; gap: 10px; align-content: start; padding: 20px; }
   .chiffre b { font-size: 42px; }
@@ -143,14 +139,11 @@ h2 { font: 700 23px/1.15 var(--d); letter-spacing: -0.015em; margin-bottom: 14px
   .livre .quand { grid-row: 1 / span 4; padding-top: 3px; }
   .livre > :not(.quand) { grid-column: 2; }
   .encours li { flex-direction: row; gap: 16px; align-items: baseline; }
-  .suite { padding: 28px; }
   .barre .choix { max-width: 520px; margin-left: auto; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media print {
   html { background: #fff; }
   .evite, .barre, .suggestion .bt, .avant { display: none !important; }
   main { padding-bottom: 0; }
-  .chiffre, .bloc, .livre, .suggestion { box-shadow: none; border: 1px solid var(--ligne2); }
   section, .livre, .suggestion { break-inside: avoid; }
 }

@@ -150,7 +150,7 @@ const blocSuite = (d, relecture) => {
       h(`header`, {}, h(`h3`, { id: `s-${i}` }, x.titre), h(`span`, { class: `cout` }, unites(x.unites))),
       h(`p`, {}, `${x.libelle}. ${x.pourquoi ?? ``}`.trim()),
       x.limite ? h(`p`, { class: `limite` }, passee(x) ? `Le délai de ce sujet est passé : il était à déposer avant le ${jourLong(x.limite)}.` : `À déposer au plus tard le ${jourLong(x.limite)}.`) : null,
-      relecture || passee(x) ? null : h(`a`, { class: `bt`, href: lienLancer(x), id: `l-${i}`, "aria-labelledby": `l-${i} s-${i}` }, `Lancer`))))) : null,
+      relecture || passee(x) ? null : h(`a`, { class: `bt sm`, href: lienLancer(x), id: `l-${i}`, "aria-labelledby": `l-${i} s-${i}` }, `Lancer`))))) : null,
     sug.some((x) => !passee(x)) && !relecture ? h(`p`, { class: `note` }, `« Lancer » ouvre la demande déjà remplie dans votre espace. Rien n’est engagé tant qu’elle n’est pas envoyée.`) : null);
 };
 
@@ -169,8 +169,7 @@ const afficher = (r) => {
         : r.en_cours_d_envoi ? [h(`b`, {}, `Envoi à vérifier`), `L’envoi a commencé sans confirmation du service d’envoi. Il n’est pas retenté tant qu’il n’est pas libéré.`]
         : r.approuve_le ? [h(`b`, {}, `Accord enregistré`), `Le mail part${r.referent ? ` à ${r.referent}` : ``} au prochain passage, un jour ouvré entre 8 h et 20 h.`]
         : [h(`b`, {}, `Relecture avant envoi`), `Ce bilan n’est pas encore parti. ${r.referent ? `${r.referent} le reçoit` : `Le référent le reçoit`} après votre accord, avec les suggestions que vous gardez.`]) : null,
-    h(`span`, { class: `sur` }, `Bilan de période`),
-    h(`h1`, {}, periode(d.debut, d.fin)),
+    h(`h1`, {}, `Bilan ${periode(d.debut, d.fin)}`),
     h(`p`, { class: `contexte` }, `Ce que Fill a livré pour ${d.organisation.nom} sur cette période d’abonnement.`),
     h(`ul`, { class: `chiffres`, "aria-label": `En trois chiffres` }, troisChiffres(d).map(([valeur, libelle]) => h(`li`, { class: `chiffre` }, h(`b`, {}, valeur), ` `, h(`span`, {}, libelle)))),
     blocLivre(d), blocTypes(d), blocDelais(d), blocUnites(d), blocEnCours(d), blocSuite(d, relecture && !parti && !r.approuve_le),
