@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       o.type === "collectivite" ? "Je vous appelle sous 24 h ouvr\xE9es pour caler avec vous le volume d\u2019unit\xE9s, puis je vous envoie le devis et le bon de commande. D\xE9posez le bon sign\xE9 dans votre espace : vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s sa validation, et la production de vos demandes d\xE9marre." : "Vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s le premier r\xE8glement, \xE0 faire en ligne depuis l\u2019accueil de votre espace, et la production de vos demandes d\xE9marre. Je vous appelle aussi pour caler le volume avec vous."
     ],
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
-    apres: ["Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez simplement \xE0 ce message."]
+    apres: ["Pour que vos supports portent vos couleurs d\xE8s la premi\xE8re demande, r\xE9pondez \xE0 ce message avec votre logo et votre charte graphique si vous en avez une. Sans r\xE9ponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez simplement \xE0 ce message."]
   });
   const [r] = await Promise.all([
     envoyer({ to: [{ email: pourFill }], replyTo: { email: p.email, name: p.nom }, subject: `Nouvelle inscription : ${o.nom}`, htmlContent: html }),

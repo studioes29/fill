@@ -3,7 +3,8 @@
 //
 //   cd supabase && npm i --no-save @electric-sql/pglite && node tests/relecture.test.mjs
 //
-// Le schéma réduit reprend les colonnes réelles relevées dans la base le 11 novembre 2026.
+// Le schéma réduit reprend les colonnes et les contraintes réelles relevées dans la base le 11 novembre 2026
+// (dont la contrainte sur historique.type, que la migration élargit).
 import { PGlite } from '@electric-sql/pglite';
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
@@ -27,8 +28,8 @@ await db.exec(`
   create table profil (id uuid primary key default gen_random_uuid(), nom text, email text, role text, organisation_id uuid, actif boolean default true, suppleant_jusqu_au date, creee timestamptz default now());
   create table demande (id uuid primary key default gen_random_uuid(), organisation_id uuid, auteur_id uuid, titre text, statut text, corrections integer default 0, parution date, heure text, maj timestamptz default now());
   create table version_livrable (id uuid primary key default gen_random_uuid(), demande_id uuid, organisation_id uuid, numero integer, note text, fichiers jsonb, creee timestamptz default now());
-  create table message (id uuid primary key default gen_random_uuid(), demande_id uuid, organisation_id uuid, auteur_id uuid, texte text, systeme boolean default false, creee timestamptz default now());
-  create table historique (id bigserial primary key, demande_id uuid, organisation_id uuid, statut text, type text, detail text, par uuid, date timestamptz default now());
+  create table message (id uuid primary key default gen_random_uuid(), demande_id uuid not null, organisation_id uuid not null, auteur_id uuid, texte text not null check (length(texte) between 1 and 8000), systeme boolean default false, creee timestamptz default now());
+  create table historique (id bigserial primary key, demande_id uuid not null, organisation_id uuid not null, statut text not null, type text default 'statut' constraint historique_type_check check (type = any (array['statut', 'modification', 'relance', 'pilote'])), detail text, par uuid, date timestamptz default now());
   create table journal (id bigserial primary key, organisation_id uuid, action text, cible text, detail jsonb);
   create function journaliser(org uuid, act text, cib text, det jsonb) returns void language sql as $$ insert into journal (organisation_id, action, cible, detail) values (org, act, cib, det) $$;
   create function est_equipe() returns boolean language sql stable security definer as $$ select coalesce((select role in ('admin','producteur') from profil where id = auth.uid() and actif), false) $$;

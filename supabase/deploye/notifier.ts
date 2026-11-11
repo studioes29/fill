@@ -75,6 +75,16 @@ var issue = (lignes) => {
   return pub && fic ? "mixte" : pub ? "publication" : "fichiers";
 };
 
+// supabase/functions/_partage/regles/relecture.ts
+var DUREE_JOURS = 7;
+var b64url = (octets) => btoa(String.fromCharCode(...octets)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+var nouveauJeton = () => b64url(crypto.getRandomValues(new Uint8Array(32)));
+var empreinte = async (jeton) => {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(jeton)));
+  return [...new Uint8Array(h)].map((o) => o.toString(16).padStart(2, "0")).join("");
+};
+var lienPage = (site, jeton) => `${String(site).replace(/\/$/, "")}/relecture/#j=${jeton}`;
+
 // supabase/functions/notifier/index.ts
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -227,7 +237,25 @@ Deno.serve(async (req) => {
         };
         const v = versClient[d.statut];
         if (!v) return new Response("Rien \xE0 signaler", { status: 409, headers: cors });
-        mails.push({ a: destClient(v.qui), sujet: `${h.type === "relance" ? "Rappel : " : ""}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        const prefixe = h.type === "relance" ? "Rappel : " : "";
+        let direct = null;
+        if (d.statut === "a_valider" && referent) {
+          const jeton = nouveauJeton();
+          const { error: errLien } = await admin.rpc("relecture_creer", { p_demande: d.id, p_usage: "referent", p_nom: referent.nom, p_fonction: null, p_email: referent.email, p_empreinte: await empreinte(jeton), p_par: referent.id, p_parent: null, p_jours: DUREE_JOURS });
+          if (!errLien) direct = lienPage(SITE, jeton);
+        }
+        if (direct) {
+          mails.push({
+            a: [{ email: referent.email, name: referent.nom }],
+            sujet: `${prefixe}${v.sujet}`,
+            titre: v.titre,
+            texte: ["Relisez-la sans vous connecter : \xAB D\u2019accord \xBB si tout est bon, \xAB \xC0 corriger \xBB sinon. Deux allers-retours sont inclus."],
+            bouton: { libelle: v.bouton, lien: direct },
+            apres: [`Ce lien vous est personnel et reste valable ${DUREE_JOURS} jours. Depuis la m\xEAme page, vous pouvez aussi faire relire la version par un \xE9lu, un associ\xE9 ou un coll\xE8gue, sans lui cr\xE9er de compte.`]
+          });
+          const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
+          if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
       }
     } else return new Response("\xC9v\xE9nement inconnu", { status: 400, headers: cors });
   }
@@ -239,7 +267,7 @@ Deno.serve(async (req) => {
       to: m.a,
       replyTo: m.repondreA ?? { email: "contact@studioes.fr", name: "Ewen Soupault, Fill" },
       subject: `${essai ? "[Test] " : ""}${m.sujet}`,
-      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton })
+      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton, apres: m.apres })
     })
   }));
   const res = await Promise.all(envois);

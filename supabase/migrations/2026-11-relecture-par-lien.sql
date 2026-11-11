@@ -7,7 +7,7 @@
 --
 -- Le jeton n'est jamais enregistré : la base ne garde que son empreinte (SHA-256).
 -- Toutes les écritures passent par les trois fonctions ci-dessous, réservées au serveur (fonction « relecture »).
--- Aucune table existante n'est modifiée.
+-- Une seule table existante est touchée : la contrainte sur historique.type accepte en plus « lien ».
 
 create table if not exists public.lien_relecture (
   id              uuid primary key default gen_random_uuid(),
@@ -40,6 +40,11 @@ create unique index if not exists lien_relecture_une_delegation
   where usage = 'delegation' and reponse is null and revoque_le is null;
 
 alter table public.lien_relecture enable row level security;
+
+-- une décision prise depuis un lien s''inscrit dans l''historique avec le type « lien »
+alter table public.historique drop constraint if exists historique_type_check;
+alter table public.historique add constraint historique_type_check
+  check (type = any (array['statut'::text, 'modification'::text, 'relance'::text, 'pilote'::text, 'lien'::text]));
 
 -- lecture : l''équipe Fill et les comptes de l''organisation ; jamais l''empreinte
 revoke all on public.lien_relecture from anon, authenticated;
