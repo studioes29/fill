@@ -1783,7 +1783,7 @@ function Fiche(e, t) {
                 })),
                   W(
                     o,
-                    B(t).type === `modification` || B(t).type === `relance`
+                    B(t).type === `modification` || B(t).type === `relance` || B(t).type === `lien`
                       ? (B(t).detail ?? `Modifiée`)
                       : LIBELLES_STATUT[B(t).statut],
                   ),
@@ -1793,7 +1793,7 @@ function Fiche(e, t) {
                 () => fe(B(t).date),
                 () => _e(B(t).par),
                 () =>
-                  B(t).detail && B(t).type !== `modification` && B(t).type !== `relance`
+                  B(t).detail && B(t).type !== `modification` && B(t).type !== `relance` && B(t).type !== `lien`
                     ? ` · ${B(t).detail.toLowerCase()}`
                     : ``,
               ],

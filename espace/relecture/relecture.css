@@ -32,7 +32,8 @@ a { color: inherit; }
 .evite:focus { top: 12px; }
 
 .tete { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 720px; margin: 0 auto; padding: 18px 20px 6px; }
-.marque img { width: 64px; height: 34px; }
+.marque { display: block; line-height: 0; }
+.marque svg { display: block; width: 69px; height: 36px; overflow: visible; }
 .client { font-size: 14.5px; color: var(--mu); text-align: right; }
 
 main { max-width: 720px; margin: 0 auto; padding: 14px 20px 190px; }

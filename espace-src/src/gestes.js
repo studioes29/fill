@@ -1,4 +1,4 @@
-// Module gestes : deux gestes ajoutés par-dessus les écrans, sans toucher aux composants.
+// Module gestes : gestes ajoutés par-dessus les écrans, sans toucher aux composants.
 // 1. Une fiche s'ouvre depuis sa carte et s'y replie (transitions de vue du navigateur, quand il les connaît).
 // 2. Un bouton d'envoi ou de validation montre que l'action est en cours, puis une coche quand elle a abouti.
 // Tout est facultatif : mouvement réduit, navigateur ancien ou erreur, et l'Espace se comporte comme avant.
@@ -65,4 +65,16 @@
     },
     true,
   );
+})();
+
+// 3. De retour sur l'onglet, l'Espace relit ses données : une version validée par lien ou un message arrivé
+//    entre-temps apparaissent sans recharger la page. Mode réel seulement, au plus une fois par minute.
+(() => {
+  if (typeof document > `u` || !MODE_REEL) return;
+  let dernier = Date.now();
+  document.addEventListener(`visibilitychange`, () => {
+    if (document.hidden || !etat.moiId || Date.now() - dernier < 60000) return;
+    dernier = Date.now();
+    recharger().catch(() => null);
+  });
 })();

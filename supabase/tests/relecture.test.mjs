@@ -111,8 +111,10 @@ await test('la délégation décide : la trace dit qui a validé et par déléga
   assert.deepEqual([r.decision, r.statut, r.par], [true, 'validee', s.r]);
   const h = await un(`select detail, par from historique where demande_id = $1 and statut = 'validee'`, [s.d]);
   assert.equal(h.detail, 'Validée par Anne Kerbrat (adjointe à la culture), par délégation');
-  const inv = await un(`select detail from historique where demande_id = $1 and statut = 'a_valider' and type = 'lien'`, [s.d]);
-  assert.equal(inv.detail, 'Validation confiée à Anne Kerbrat (adjointe à la culture)');
+  const inv = await un(`select texte, systeme from message where demande_id = $1`, [s.d]);
+  assert.deepEqual([inv.texte, inv.systeme], ['Yann Le Gall confie la validation à Anne Kerbrat (adjointe à la culture).', true]);
+  // l'historique ne reçoit que le changement de statut : le délai de rappel du pilote n'est pas relancé
+  assert.equal((await un(`select count(*)::int as n from historique where demande_id = $1`, [s.d])).n, 1);
 });
 
 await test('un avis ne décide rien : il s’ajoute aux échanges et la demande reste à valider', async () => {
@@ -121,7 +123,9 @@ await test('un avis ne décide rien : il s’ajoute aux échanges et la demande 
   const r = await repondre(a.e, 'correction', 'Le logo du partenaire manque.');
   assert.deepEqual([r.decision, r.statut], [false, 'a_valider']);
   assert.deepEqual(await demande(s.d), { statut: 'a_valider', corrections: 0 });
-  const m = await un(`select texte, systeme, auteur_id from message where demande_id = $1`, [s.d]);
+  const m = await un(`select texte, systeme, auteur_id from message where demande_id = $1 order by creee desc, texte limit 1`, [s.d]);
+  assert.equal((await un(`select count(*)::int as n from message where demande_id = $1`, [s.d])).n, 2);
+  assert.equal((await un(`select count(*)::int as n from historique where demande_id = $1`, [s.d])).n, 0);
   assert.equal(m.texte, 'Avis de Paul Morvan : à corriger. « Le logo du partenaire manque. »');
   assert.deepEqual([m.systeme, m.auteur_id], [true, null]);
 });

@@ -90,12 +90,15 @@ begin
           p_par, p_parent, p_empreinte, now() + make_interval(days => greatest(1, least(coalesce(p_jours, 7), 30))))
   returning id into nouveau;
 
+  -- l'invitation s'inscrit dans les échanges de la demande ; l'historique ne garde que les changements de statut
+  -- (une ligne de plus au statut « à valider » relancerait le délai de rappel du pilote)
   if p_usage <> 'referent' then
-    insert into historique (demande_id, organisation_id, statut, type, detail, par)
-    values (d.id, d.organisation_id, d.statut, 'lien',
-            case p_usage when 'avis' then 'Avis demandé à ' else 'Validation confiée à ' end
-              || trim(p_nom) || coalesce(' (' || nullif(trim(coalesce(p_fonction, '')), '') || ')', ''),
-            p_par);
+    insert into message (demande_id, organisation_id, auteur_id, texte, systeme)
+    values (d.id, d.organisation_id, null,
+            coalesce((select nom from profil where id = p_par), 'Le référent')
+              || case p_usage when 'avis' then ' demande l''avis de ' else ' confie la validation à ' end
+              || trim(p_nom) || coalesce(' (' || nullif(trim(coalesce(p_fonction, '')), '') || ')', '') || '.',
+            true);
   end if;
   return nouveau;
 end $function$;
@@ -169,9 +172,6 @@ begin
     values (d.id, d.organisation_id, null,
             'Avis de ' || qui || ' : ' || case p_reponse when 'accord' then 'd''accord' else 'à corriger' end
               || coalesce('. « ' || rem || ' »', '.'), true);
-    insert into historique (demande_id, organisation_id, statut, type, detail, par)
-    values (d.id, d.organisation_id, d.statut, 'lien',
-            'Avis de ' || qui || ' : ' || case p_reponse when 'accord' then 'd''accord' else 'à corriger' end, null);
     return jsonb_build_object('usage', l.usage, 'decision', false, 'demande', d.id, 'statut', d.statut, 'par', l.cree_par);
   end if;
 
