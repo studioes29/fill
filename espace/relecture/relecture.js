@@ -42,7 +42,7 @@ const appeler = async (corps) => {
 const typeDe = (f) => f.type ?? (/\.(mp4|mov)$/i.test(f.nom ?? ``) ? `video` : /\.pdf$/i.test(f.nom ?? ``) ? `pdf` : `visuel`);
 const image = (src, alt) => h(`figure`, { class: `image` }, h(`img`, { src, alt, loading: `lazy`, decoding: `async` }));
 
-const livrable = (f, n) => {
+const livrable = (f, n, titre) => {
   const type = typeDe(f), nom = TYPES[type] ?? `Fichier`, c = f.contenu, corps = h(`div`, { class: `corps` });
   const images = [...(Array.isArray(f.srcs) ? f.srcs : []), ...(f.src && type !== `pdf` && type !== `video` ? [f.src] : [])];
   if (type === `video` && f.src) corps.append(h(`video`, { src: f.src, controls: true, playsinline: true, preload: `metadata` }));
@@ -60,7 +60,8 @@ const livrable = (f, n) => {
   if (f.legende) corps.append(h(`div`, { class: `legende` }, h(`small`, {}, type === `post` || type === `story` ? `Texte de la publication` : `Légende`), h(`p`, {}, f.legende)));
   if (type === `pdf` && f.src) corps.append(h(`a`, { class: `bt cl`, href: f.src, target: `_blank`, rel: `noopener` }, `Ouvrir le document`));
   if (!corps.childNodes.length) corps.append(h(`p`, { class: `absent` }, `Ce fichier ne peut pas être affiché ici.`));
-  return h(`li`, {}, h(`article`, { class: `livrable` }, h(`header`, {}, h(`b`, {}, nom), h(`span`, {}, f.nom ?? ``)), corps));
+  // plusieurs contenus : un volet par contenu ; un seul : affiché tel quel
+  return h(`li`, {}, titre ? h(`details`, { class: `livrable`, open: n === 1 }, h(`summary`, {}, titre), corps) : h(`article`, { class: `livrable` }, corps));
 };
 
 // ---------- états sans réponse possible
@@ -92,24 +93,24 @@ const afficher = (d) => {
 
   const decide = d.usage !== `avis`;
   const contexte = d.usage === `avis` ? `${d.demandeur ?? d.organisation} vous demande votre avis. La décision lui revient.`
-    : d.usage === `delegation` ? `${d.demandeur ?? d.organisation} vous confie la validation de cette version. Votre réponse lance la suite.`
-    : `Relisez la version ci-dessous. Votre réponse lance la suite.`;
+    : d.usage === `delegation` ? `${d.demandeur ?? d.organisation} vous confie la validation. Votre réponse lance la suite.`
+    : null;
   const v = d.version, fichiers = v.fichiers ?? [];
-  poser(main, 
-    h(`span`, { class: `sur` }, `Version ${v.numero} à relire`),
+  const noms = fichiers.map((f) => TYPES[typeDe(f)] ?? `Fichier`);
+  const titres = noms.map((nom, i) => (fichiers.length < 2 ? null : noms.filter((x) => x === nom).length > 1 ? `${nom} ${noms.slice(0, i + 1).filter((x) => x === nom).length}` : nom));
+  poser(main,
     h(`h1`, {}, d.demande.titre),
-    h(`p`, { class: `contexte` }, contexte),
-    d.demande.parution ? h(`p`, { class: `reperes` }, `Parution prévue ${date(d.demande.parution)}${heure(d.demande.heure)}.`) : null,
-    v.note ? h(`div`, { class: `mot` }, h(`b`, {}, `Mot de Fill`), h(`p`, {}, v.note)) : null,
-    h(`ul`, { class: `livrables` }, fichiers.length ? fichiers.map((f, i) => livrable(f, i + 1)) : h(`li`, {}, h(`p`, { class: `absent` }, `Cette version ne contient pas de fichier à afficher.`))),
+    h(`p`, { class: `reperes` }, [`Version ${v.numero}`, d.demande.parution ? `parution ${date(d.demande.parution)}${heure(d.demande.heure)}` : null].filter(Boolean).join(` · `)),
+    contexte ? h(`p`, { class: `contexte` }, contexte) : null,
+    v.note ? h(`p`, { class: `mot` }, h(`b`, {}, `Fill : `), v.note) : null,
+    h(`ul`, { class: `livrables` }, fichiers.length ? fichiers.map((f, i) => livrable(f, i + 1, titres[i])) : h(`li`, {}, h(`p`, { class: `absent` }, `Cette version ne contient pas de fichier à afficher.`))),
     d.usage === `referent` ? autres(d) : null,
-    h(`p`, { class: `pied` }, `Ce lien vous est personnel. Il reste valable jusqu’au ${date(d.expire)}.`),
   );
-  barre(d, decide);
+  barre(d, decide, fichiers.length);
 };
 
 // barre de réponse, toujours visible en bas d'écran
-const barre = (d, decide) => {
+const barre = (d, decide, nombre = 1) => {
   document.querySelector(`.barre`)?.remove();
   const dans = h(`div`, { class: `dans` }), zone = h(`div`, { class: `barre`, role: `region`, "aria-label": `Votre réponse` }, dans);
   const erreur = h(`p`, { class: `erreur`, role: `alert`, hidden: true });
@@ -133,7 +134,7 @@ const barre = (d, decide) => {
   };
   const confirmer = () => {
     const oui = h(`button`, { class: `bt`, type: `button`, onclick: () => envoyer(`accord`, null, oui) }, `Oui, valider`);
-    poser(dans, h(`p`, { class: `question`, id: `q-valider` }, `Valider cette version ?`), h(`div`, { class: `choix`, role: `group`, "aria-labelledby": `q-valider` }, h(`button`, { class: `bt cl`, type: `button`, onclick: depart }, `Retour`), oui), erreur);
+    poser(dans, h(`p`, { class: `question`, id: `q-valider` }, nombre > 1 ? `Valider les ${nombre} contenus de cette version ?` : `Valider cette version ?`), h(`div`, { class: `choix`, role: `group`, "aria-labelledby": `q-valider` }, h(`button`, { class: `bt cl`, type: `button`, onclick: depart }, `Retour`), oui), erreur);
     oui.focus();
   };
   const correction = () => {
@@ -166,17 +167,15 @@ const autres = (d) => {
   peindre();
 
   const nom = h(`input`, { class: `saisie`, id: `i-nom`, autocomplete: `off`, maxlength: `120` });
-  const fonction = h(`input`, { class: `saisie`, id: `i-fonction`, autocomplete: `off`, maxlength: `120` });
   const email = h(`input`, { class: `saisie`, id: `i-email`, type: `email`, inputmode: `email`, autocomplete: `off`, autocapitalize: `none`, maxlength: `254` });
   const radio = (v, titre, detail, coche) => h(`label`, { class: `radio` }, h(`input`, { type: `radio`, name: `usage`, value: v, checked: coche }), h(`span`, {}, h(`b`, {}, titre), h(`small`, {}, detail)));
-  const bouton = h(`button`, { class: `bt`, type: `button` }, `Envoyer le lien`);
+  const bouton = h(`button`, { class: `bt sm`, type: `button` }, `Envoyer le lien`);
   const form = h(`div`, { class: `form` },
     h(`label`, { class: `champ`, for: `i-nom` }, h(`span`, {}, `Nom`), nom),
-    h(`label`, { class: `champ`, for: `i-fonction` }, h(`span`, {}, `Fonction `, h(`small`, {}, `(facultatif)`)), fonction),
     h(`label`, { class: `champ`, for: `i-email` }, h(`span`, {}, `Adresse e-mail`), email),
-    h(`fieldset`, { class: `radios` }, h(`legend`, {}, `Ce que vous attendez`),
-      radio(`avis`, `Son avis`, `Sa réponse vous revient, vous décidez ensuite.`, true),
-      radio(`delegation`, `Sa validation`, `Sa réponse lance la suite, à votre place.`, false)),
+    h(`fieldset`, { class: `radios` }, h(`legend`, { class: `sr` }, `Ce que vous attendez`),
+      radio(`avis`, `Pour avis`, `Vous décidez ensuite.`, true),
+      radio(`delegation`, `Pour validation`, `Sa réponse vaut la vôtre.`, false)),
     bouton, msg);
   bouton.addEventListener(`click`, async () => {
     const usage = form.querySelector(`input[name=usage]:checked`)?.value;
@@ -184,10 +183,10 @@ const autres = (d) => {
     if (!EMAIL.test(email.value.trim())) return (dire(`Cette adresse e-mail n’est pas valide.`), email.focus());
     dire(); bouton.disabled = true;
     try {
-      const r = await appeler({ action: `inviter`, usage, nom: nom.value, fonction: fonction.value, email: email.value });
-      invitations = [...invitations, { id: r.lien, usage: r.usage, nom: r.nom, fonction: fonction.value.trim() || null, reponse: null, ouvert: true }];
+      const r = await appeler({ action: `inviter`, usage, nom: nom.value, email: email.value });
+      invitations = [...invitations, { id: r.lien, usage: r.usage, nom: r.nom, fonction: null, reponse: null, ouvert: true }];
       peindre();
-      nom.value = fonction.value = email.value = ``;
+      nom.value = email.value = ``;
     } catch (e) { dire(e.message); }
     bouton.disabled = false;
   });

@@ -71,6 +71,7 @@ for (const largeur of [390, 1280]) {
     assert.equal(await page.evaluate(() => /\bnull\b|undefined/.test(document.body.innerText)), false, 'un « null » ou « undefined » est affiché');
     assert.equal(await page.locator('.livrable').count(), 2);
     assert.equal(await page.locator('.barre .bt').count(), 2);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelector('main').children].map((e) => e.className || e.tagName.toLowerCase())), ['h1', 'reperes', 'mot', 'livrables', 'autres']);
     await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'la page déborde en largeur');
     await page.screenshot({ path: join(captures, `relecture-${largeur}.png`), fullPage: false });
@@ -87,6 +88,7 @@ await test('valider demande une confirmation, puis envoie « accord » avec le j
   await page.getByRole('button', { name: 'D’accord' }).click();
   assert.equal(appels.length, 1, 'un seul toucher ne doit rien décider');
   assert.deepEqual(await accessibilite(page), []);
+  assert.match(await page.textContent('.barre .question'), /Valider les 2 contenus de cette version/);
   await page.getByRole('button', { name: 'Oui, valider' }).click();
   await page.waitForSelector('.etat.fait');
   assert.deepEqual(appels[1], { action: 'repondre', reponse: 'accord', remarque: null, j: JETON });
@@ -101,6 +103,9 @@ await test('un texte venu de la base n’est jamais interprété comme du HTML',
   const { page, ctx } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }) });
   assert.equal(await page.textContent('.livrable h3'), '<img src=x onerror=alert(1)>Titre');
   assert.equal(await page.locator('.livrable h3 img').count(), 0);
+  // plusieurs contenus : un volet par contenu, le premier ouvert
+  assert.deepEqual(await page.locator('details.livrable').evaluateAll((l) => l.map((x) => x.open)), [true, false]);
+  await page.locator('details.livrable summary').nth(1).click();
   assert.equal(await page.getByRole('link', { name: 'Ouvrir le document' }).getAttribute('rel'), 'noopener');
   await ctx.close();
 });
@@ -128,6 +133,7 @@ await test('une correction exige une remarque ; le refus du serveur s’affiche 
 await test('un avis part sans confirmation et n’annonce aucune décision', async () => {
   const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue('avis', { nom: 'Anne Kerbrat' }) } : { body: { ok: true, decision: false, statut: 'a_valider', usage: 'avis' } }) });
   assert.match(await page.textContent('.contexte'), /Yann Le Gall vous demande votre avis/);
+  assert.equal(await page.locator('article.livrable, details.livrable').count(), 2);
   assert.equal(await page.locator('.autres').count(), 0, 'seul le référent peut inviter');
   await page.getByRole('button', { name: 'D’accord' }).click();
   await page.waitForSelector('.etat.fait');
@@ -146,11 +152,11 @@ await test('le référent fait relire : saisie contrôlée, invitation ajoutée,
   await page.getByRole('button', { name: 'Envoyer le lien' }).click();
   assert.match(await page.textContent('.autres .erreur'), /adresse/);
   await page.getByLabel('Adresse e-mail').fill('anne@exemple.fr');
-  await page.getByLabel(/Sa validation/).check();
+  await page.getByLabel(/Pour validation/).check();
   assert.deepEqual(await accessibilite(page), []);
   await page.getByRole('button', { name: 'Envoyer le lien' }).click();
   await page.waitForSelector('.invite');
-  assert.deepEqual(appels[1], { action: 'inviter', usage: 'delegation', nom: 'Anne Kerbrat', fonction: '', email: 'anne@exemple.fr', j: JETON });
+  assert.deepEqual(appels[1], { action: 'inviter', usage: 'delegation', nom: 'Anne Kerbrat', email: 'anne@exemple.fr', j: JETON });
   assert.match(await page.textContent('.invite'), /Anne Kerbrat.*En attente.*Validation confiée/s);
   await page.screenshot({ path: join(captures, 'relecture-invitation.png'), fullPage: true });
   await page.getByRole('button', { name: /Retirer l’invitation de Anne Kerbrat/ }).click();
