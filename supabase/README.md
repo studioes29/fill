@@ -22,6 +22,7 @@ Toutes sont déployées sans vérification du jeton JWT par Supabase (`verify_jw
 | `notifier` | E-mails de suivi de l'Espace Fill (dépôt, statut, message, premier jet, crédit d'unités, accès aux comptes) | l'Espace, `pilote`, `stripe-webhook` | clé secrète ou session active | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `alerte` | Alerte à Fill à l'ouverture d'un compte (et mail de bienvenue) ou au dépôt d'un bon de commande | l'Espace | session de l'utilisateur | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `relecture` | Relecture par lien : relire et valider un livrable sans compte (page `espace/relecture/`), demander un avis ou confier la validation | la page de relecture (jeton du lien, en POST seulement), l'Espace (action `creer`) | jeton de 256 bits dont la base ne garde que l'empreinte ; session d'un référent pour `creer` | clés Supabase, `BREVO_API_KEY`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
+| `reception` | Adresse de transfert : reçoit de Brevo les mails envoyés à `nom-de-la-structure@demandes.studioes.fr`. Le mail d'un membre reconnu devient une demande déposée (règles de `deposer_demande`), sinon réponse courte et lien vers la demande pré-remplie. Action d'administration `webhook` : vérifie ou crée le webhook chez Brevo | Brevo (webhook « inbound ») ; Fill pour l'action `webhook` | secret `RECEPTION_CLE` (dans l'adresse du webhook ou en en-tête) ; clé secrète ou jeton `verifier_jeton_pilote` pour `webhook` | clés Supabase, `BREVO_API_KEY`, `RECEPTION_CLE`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL`, `DOMAINE_RECEPTION` et `RECEPTION_ORIGINE` (facultatifs) |
 | `inviter` | Invitation d'un collègue par le référent (compte, profil, e-mail) | l'Espace (écran Équipe) | session d'un référent actif | clés Supabase, `SITE_URL` |
 | `paiement` | Session de paiement Stripe : premier mois d'une entreprise, commande d'unités | l'Espace | session de l'utilisateur | clés Supabase, `STRIPE_SECRET_KEY`, `SITE_URL` |
 | `mensualite` | Lien de paiement personnel des mensualités (période anniversaire), alerte de règlement et récapitulatif des mensualités en attente | lien envoyé au client, `stripe-webhook`, `traiter_echeances` (base) | public pour le lien ; clé secrète ou jeton pilote pour le reste | clés Supabase, `STRIPE_SECRET_KEY`, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
@@ -40,6 +41,7 @@ Clés Supabase : `CLE_SECRETE` et `CLE_PUBLIABLE` si elles sont posées dans les
 - `cles.ts` : lecture des clés, adresse de l'Espace (`SITE`) et en-têtes CORS ;
 - `courriel.ts` : gabarit HTML des e-mails de Fill (`alerte`, `notifier`) ;
 - `offre.json` et `regles/offre.ts` : l'offre publiée (formules, catalogue, délais) ;
+- `regles/reception.ts` : analyse d'un mail entrant (mails automatiques, découpe entre la consigne du client et le message transféré, supports demandés, date, pièces jointes, textes des réponses) ; `regles/transfert.ts` : l'adresse de transfert et les deux phrases qui la montrent (`alerte`, `notifier`) ;
 - `regles/` : calendrier et jours ouvrés, estimation, charge, pilote, registre des unités, cycle des demandes. L'Espace en a sa propre copie dans `espace-src/src/regles/` : une règle modifiée d'un côté doit l'être de l'autre.
 
 Une réserve sur ces modules : esbuild retire les commentaires et les types en assemblant, ils ne sont donc pas revenus. Les noms suffixés d'un chiffre (`EQUIPE2`, `html2`, `o2`) sont ceux que l'assemblage avait donnés ; les laisser tels quels garantit un fichier identique.
@@ -52,6 +54,22 @@ Une réserve sur ces modules : esbuild retire les commentaires et les types en a
 4. Copier `.assemblees/<fonction>.ts` dans `deploye/` et faire un commit.
 
 Changer un module commun touche toutes les fonctions qui l'importent : elles sont toutes à redéployer.
+
+## Adresse de transfert (branche `lot-adresse-transfert`, pas encore en service)
+
+Chaque organisation a une adresse `organisation.alias_mail@demandes.studioes.fr`, générée depuis son nom. Un mail écrit ou transféré à cette adresse par un référent ou un contributeur actif, reconnu à son adresse d'expéditeur, suit ce chemin :
+
+1. `reception` écarte les mails automatiques et les boucles, puis `mail_ouvrir` (base) dit qui écrit et pour quelle structure ;
+2. `regles/reception.ts` sépare la consigne du client du message transféré. Dépôt direct seulement si l'origine du mail est prouvée (en-tête `Authentication-Results` aligné sur le domaine de l'expéditeur) et si le client demande, par une consigne de publication, un support courant à une unité (réseaux sociaux, actualité du site, agenda), sans réserve. `mail_deposer` applique alors les règles de `deposer_demande` et revérifie le garde-fou (prestations courantes à une unité, un exemplaire, trois au plus) ;
+3. dans tous les autres cas, rien n'est déposé : le mail attend dans `mail_recu`, le client reçoit une réponse courte avec un lien `…/espace/?mail=<id>` vers la nouvelle demande pré-remplie (module `espace-src/src/transfert.js`), et Fill reçoit une alerte. À l'envoi, `mail_rattacher` joint les pièces du mail à la demande.
+
+Réglages : `RECEPTION_CLE` (secret du webhook, 24 caractères au moins, obligatoire), `DOMAINE_RECEPTION` (défaut `demandes.studioes.fr`), `RECEPTION_ORIGINE=adresse` pour accepter le dépôt direct sur la seule foi de l'adresse d'expéditeur quand aucun contrôle d'origine n'échoue (défaut : preuve exigée).
+
+Mise en service, dans l'ordre : enregistrements MX du sous-domaine (10 `inbound1.sendinblue.com`, 20 `inbound2.sendinblue.com`), secret `RECEPTION_CLE`, migration `migrations/2026-11-adresse-de-transfert.sql`, déploiement de `reception` (`verify_jwt: false`), action `{"action":"webhook","creer":true}`, fusion (publie l'Espace), essai réel, puis déploiement de `notifier` et `alerte`, qui montrent l'adresse aux clients. Après chaque déploiement, copier `.assemblees/<fonction>.ts` dans `deploye/`.
+
+Suivi : `select recu, expediteur, sujet, issue, motif, demande_id from mail_recu order by recu desc`.
+
+Tests : `node tests/reception.test.mjs` (base embarquée, 43 tests : migration, règles en base, analyse de mails réalistes de `tests/mails-exemples.mjs`, déroulé complet, fonction assemblée) et `node ../espace-src/tests/transfert.mjs` (lien pré-rempli dans un navigateur, 6 contrôles).
 
 ## Historique
 
