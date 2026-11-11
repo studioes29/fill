@@ -719,12 +719,24 @@
         await attends(240, j);
       }
     };
+    // l'état de la demande, comme dans l'espace client : le fil se tend et la perle avance à chaque étape
+    const fe = $('#fe', demo), FE = [['attente', 'Confirmation sous 24 h', 0], ['lav', 'En production', .5], ['cor', 'À relire et valider', .75], ['bon', 'Publiée', 1]];
+    let feP = 0, feR = 0;
+    const majFe = n => {
+      if (!fe) return; const [cl, lib, p] = FE[n], perle = $('.perle', fe), l = $('.lib', fe), de = feP, t0 = performance.now();
+      fe.className = 'fe ' + cl; fe.style.setProperty('--p', p);
+      if (l.textContent !== lib) { l.textContent = lib; if (!RM) l.animate([{ opacity: 0, transform: 'translateY(.4em)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' }); }
+      const place = v => { const x = 2 + 42 * v; perle.setAttribute('cx', x.toFixed(2)); perle.setAttribute('cy', (8 + Math.sin(((x - 2) / 14) * Math.PI) * -4.5).toFixed(2)); };
+      cancelAnimationFrame(feR); feP = p; if (RM) { place(p); return; }
+      const pas = t => { const q = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - q, 3); place(de + (p - de) * e); if (q < 1) feR = requestAnimationFrame(pas); };
+      feR = requestAnimationFrame(pas);
+    };
     const SEQ = [tape, boucle, valide, publie];
     const DUREE = [2200, 6900, 2600, 0];
     const va = async (n, parUtil) => {
       const j = ++jeton; k = n;
       bts.forEach((b, i) => { b.setAttribute('aria-selected', String(i === n)); b.tabIndex = i === n ? 0 : -1; b.classList.toggle('fait', i <= n); });
-      majDesc(n);
+      majDesc(n); majFe(n);
       etats.style.setProperty('--p', (n / (bts.length - 1)).toFixed(3));
       nettoie(); montreCanaux(n === 0);
       if (parUtil) { manuel = true; compte('etat-demande', true); }

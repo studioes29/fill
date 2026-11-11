@@ -2315,3 +2315,17 @@ em.rl{justify-self:start;display:inline-flex;align-items:center;padding:5px 11px
 html[data-cible=e] :is(.ton-f,.passage){--mu:#fff;--fa:#fff;--nmu:#fff}
 html[data-cible=e] #passage .passage-t .lead{color:#fff}
 .hd.sombre .nav a{opacity:1}
+
+/* ---------- l'état de la demande, tel qu'il s'affiche dans l'espace client : le même fil, la même perle ---------- */
+.fe-w{display:flex;align-items:center;gap:12px;margin:0;padding:8px 16px 8px 14px;border-radius:999px;background:rgba(255,255,255,.72);font-size:13.5px;line-height:1.2;color:var(--fa);white-space:nowrap;max-width:100%}
+.fe-o{font-family:var(--sf);font-style:italic}
+.fe{--f:#A39B92;--t:var(--mu);display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--t);transition:color .5s}
+.fe svg{flex:none;width:46px;height:16px;overflow:visible}
+.fe path{fill:none;stroke-width:3px;stroke-linecap:round}
+.fe .fond{stroke:var(--ln2);stroke-dasharray:.015 .055}
+.fe .tendu{stroke:var(--f);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--p,0));transition:stroke-dashoffset .9s var(--e),stroke .5s}
+.fe .perle{fill:var(--f);stroke:#fff;stroke-width:1.6px;transition:fill .5s}
+.fe.lav{--f:var(--lav-f);--t:var(--lav-f)}.fe.cor{--f:var(--cor);--t:#9A4232}.fe.bon{--f:#2C7A57;--t:#2C7A57}
+.fe .lib{display:inline-block}
+@media (max-width:420px){.fe-o{display:none}}
+@media (prefers-reduced-motion:reduce){.fe .tendu{transition:none}}
