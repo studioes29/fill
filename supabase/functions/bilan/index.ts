@@ -14,7 +14,7 @@
 // Secrets : clés Supabase, BREVO_API_KEY, ALERTE_EMAIL, EXPEDITEUR_EMAIL, SITE_URL.
 import { CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
-import { lienBilan, lienRelecture, mailBloque, mailMensuel, mailRelecture, plageOuverte, suggerer } from '../_partage/regles/bilan.ts';
+import { lienBilan, lienRelecture, mailAnomalies, mailBloque, mailMensuel, mailRelecture, plageOuverte, suggerer } from '../_partage/regles/bilan.ts';
 import { JETON, empreinte, nouveauJeton } from '../_partage/regles/relecture.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -54,23 +54,29 @@ Deno.serve(async (req) => {
     }
   };
 
+  const aujourdhui = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
   // envoi du mail mensuel d'un bilan prêt : réservé dans la base avant de partir, confirmé après
   const envoyerBilan = async (id) => {
     const jeton = nouveauJeton();
-    const { data: r, error } = await admin.rpc("bilan_reserver_envoi", { p_bilan: id, p_empreinte: await empreinte(jeton) });
+    const { data: r, error } = await admin.rpc("bilan_reserver_envoi", { p_bilan: id, p_empreinte: await empreinte(jeton), p_jour: aujourdhui() });
     if (error) return { id, etat: "erreur", detail: motif(error) };
     if (!r) return { id, etat: "sans_objet" };
     if (r.erreur) return { id, etat: r.erreur, organisation: r.organisation?.nom };
     const issue = await envoyer(r.organisation.essai, [{ email: r.referent.email, name: r.referent.nom }], mailMensuel({ donnees: r.donnees, lien: lienBilan(SITE, jeton), site: SITE }));
     if (issue === "parti") {
-      await admin.rpc("bilan_confirmer_envoi", { p_bilan: id, p_a: r.referent.email });
-      return { id, etat: "envoye", organisation: r.organisation.nom, a: r.referent.nom };
+      // le mail est parti : l'enregistrer, en deux essais ; sinon Fill est prévenu, le lien du client en dépend
+      for (let essai = 0; essai < 2; essai++) {
+        const { data: ok, error: errC } = await admin.rpc("bilan_confirmer_envoi", { p_bilan: id, p_a: r.referent.email });
+        if (!errC && ok) return { id, etat: "envoye", organisation: r.organisation.nom, a: r.referent.nom };
+      }
+      await envoyer(r.organisation.essai, [{ email: pourFill }], mailBloque({ organisation: r.organisation.nom, periode: r.donnees.periode, id, a: r.referent.email, confirme: true }));
+      return { id, etat: "a_confirmer", organisation: r.organisation.nom, a: r.referent.nom };
     }
     if (issue === "refuse") {
       await admin.rpc("bilan_liberer_envoi", { p_bilan: id });
       return { id, etat: "refuse", organisation: r.organisation.nom };
     }
-    await envoyer(r.organisation.essai, [{ email: pourFill }], mailBloque({ organisation: r.organisation.nom, periode: r.donnees.periode }));
+    await envoyer(r.organisation.essai, [{ email: pourFill }], mailBloque({ organisation: r.organisation.nom, periode: r.donnees.periode, id, a: r.referent.email }));
     return { id, etat: "bloque", organisation: r.organisation.nom };
   };
 
@@ -79,25 +85,21 @@ Deno.serve(async (req) => {
     const autorise = Boolean(CLE_SECRETE) && jeton.length >= 32 && (jeton === CLE_SECRETE || (await admin.rpc("verifier_jeton_pilote", { p: jeton })).data === true);
     if (!autorise) return new Response("Réservé au serveur", { status: 401 });
     const simuler = s.simuler === true;
-    const jour = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
+    const jour = aujourdhui();
     const suivi = { jour, simulation: simuler, prepares: [], relectures: [], envois: [], en_attente: 0, bloques: [], erreurs: [] };
     if (!simuler && !plageOuverte()) return json({ ...suivi, hors_plage: true });
 
     // 1. figer le bilan des périodes closes
     const { data: candidats, error: errC } = await admin.rpc("bilan_candidats", { p_jour: jour });
     if (errC) return refus(motif(errC), 500);
-    const { data: fer } = await admin.from("fermeture").select("debut, fin");
     for (const c of candidats ?? []) {
-      const [{ data: d, error: errD }, { data: ds }, { data: lignes }] = await Promise.all([
+      const [{ data: d, error: errD }, { data: ctx, error: errX }] = await Promise.all([
         admin.rpc("bilan_calculer", { p_org: c.organisation, p_periode: c.periode }),
-        admin.from("demande").select("id, titre, statut, parution, creee").eq("organisation_id", c.organisation),
-        admin.from("demande_ligne").select("demande_id, prestation, quantite").eq("organisation_id", c.organisation),
+        admin.rpc("bilan_contexte", { p_org: c.organisation, p_jour: jour }),
       ]);
-      if (errD || !d) { suivi.erreurs.push({ organisation: c.organisation, detail: motif(errD) }); continue; }
-      const suggestions = suggerer({
-        organisation: d.organisation, jour, suivante: d.suivante, fermetures: fer ?? [],
-        demandes: (ds ?? []).map((x) => ({ ...x, lignes: (lignes ?? []).filter((l) => l.demande_id === x.id) })),
-      });
+      // sans les demandes du client, les suggestions seraient fausses : on réessaie au passage suivant
+      if (errD || errX || !d || !ctx) { suivi.erreurs.push({ organisation: d?.organisation?.nom ?? c.organisation, detail: motif(errD ?? errX) }); continue; }
+      const suggestions = suggerer({ organisation: d.organisation, jour, suivante: d.suivante, fermetures: ctx.fermetures, demandes: ctx.demandes });
       if (simuler) { suivi.prepares.push({ organisation: d.organisation.nom, periode: c.periode, donnees: { ...d, suggestions } }); continue; }
       const { data: p, error: errP } = await admin.rpc("bilan_preparer", { p_org: c.organisation, p_periode: c.periode, p_suggestions: suggestions });
       if (errP) suivi.erreurs.push({ organisation: d.organisation.nom, detail: motif(errP) });
@@ -115,17 +117,27 @@ Deno.serve(async (req) => {
       const { data: r } = await admin.rpc("bilan_ouvrir_relecture", { p_bilan: id, p_empreinte: await empreinte(jr) });
       if (!r) continue;
       const issue = await envoyer(r.organisation.essai, [{ email: pourFill }], mailRelecture({ donnees: r.donnees, lien: lienRelecture(SITE, jr), referent: r.referent }));
-      if (issue === "refuse") await admin.rpc("bilan_fermer_relecture", { p_bilan: id });
+      // message interne : un doublon ne gêne pas, un lien perdu bloquerait le bilan. Sans réponse claire, on le refait.
+      if (issue !== "parti") await admin.rpc("bilan_fermer_relecture", { p_bilan: id });
       suivi.relectures.push({ id, organisation: r.organisation.nom, etat: issue });
     }
 
     // 3. les bilans prêts : un seul mail au référent
     for (const id of file.prets) {
       const e = await envoyerBilan(id);
-      if (e.etat === "bloque") suivi.bloques.push(id);
+      if (e.etat === "bloque" || e.etat === "a_confirmer") suivi.bloques.push(id);
       suivi.envois.push(e);
     }
     suivi.en_attente = file.en_attente;
+
+    // 4. ce qui n'a pas abouti : un seul message à Fill, personne ne lit la réponse de la tâche planifiée
+    const LIBELLES = { refuse: "le service d’envoi a refusé le mail (adresse du référent à vérifier)", sans_referent: "aucun référent actif : le mail ne peut pas partir", erreur: "l’envoi n’a pas pu être préparé" };
+    const anomalies = [
+      ...suivi.erreurs.map((x) => `${x.organisation} : le bilan n’a pas pu être calculé (${x.detail})`),
+      ...suivi.relectures.filter((x) => x.etat !== "parti").map((x) => `${x.organisation} : le lien de relecture n’est pas parti, il sera renvoyé`),
+      ...suivi.envois.filter((x) => LIBELLES[x.etat]).map((x) => `${x.organisation ?? x.id} : ${LIBELLES[x.etat]}`),
+    ];
+    if (anomalies.length) await envoyer(false, [{ email: pourFill }], mailAnomalies(anomalies));
     return json(suivi);
   }
 
@@ -157,6 +169,8 @@ Deno.serve(async (req) => {
     if (r.etat === "envoye") return json({ ok: true, envoye: true, a: r.a });
     if (r.etat === "sans_referent") return refus("Cette organisation n’a pas de référent actif : le mail ne peut pas partir.");
     if (r.etat === "bloque") return refus("Le service d’envoi n’a pas répondu clairement : l’envoi n’est pas retenté. Un message vous indique quoi vérifier.", 502);
+    if (r.etat === "a_confirmer") return refus("Le mail est parti, mais son envoi n’a pas pu être enregistré. Un message vous indique quoi faire.", 502);
+    if (r.etat === "refuse") return refus("L’accord est enregistré, mais le service d’envoi a refusé le mail (adresse du référent à vérifier). Un nouvel essai aura lieu au prochain passage.", 502);
     return json({ ok: true, envoye: false, motif: "report" });
   }
 

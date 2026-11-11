@@ -132,6 +132,10 @@ const blocEnCours = (d) => (d.en_cours ?? []).length
 const lienLancer = (s) =>
   `../${demo != null ? `?demo` : ``}#nouvelle?titre=${encodeURIComponent(s.titre)}${s.date ? `&parution=${iso(s.date)}` : ``}&qte=${Object.entries(s.qte ?? {}).map(([id, n]) => `${encodeURIComponent(id)}:${+n}`).join(`,`)}`;
 
+// une suggestion dont la date limite de dépôt est passée ne se lance plus (la page reste ouverte des mois)
+const aujourdhui = () => { const j = new Date(); return `${j.getFullYear()}-${String(j.getMonth() + 1).padStart(2, `0`)}-${String(j.getDate()).padStart(2, `0`)}`; };
+const passee = (x) => Boolean(x.limite) && iso(x.limite) < aujourdhui();
+
 const blocSuite = (d, relecture) => {
   const s = d.suivante, sug = d.suggestions ?? [];
   if (!s) return null;
@@ -139,15 +143,15 @@ const blocSuite = (d, relecture) => {
   return h(`section`, { class: `suite`, "aria-labelledby": `t-suite` },
     h(`h2`, { id: `t-suite` }, `Pour la période qui commence`),
     h(`p`, { class: `solde` }, s.disponible > 0
-      ? `${periode(s.debut, s.fin).replace(/^d/, `D`)}, vous disposez de ${unites(s.disponible)}${report}.${sug.length ? ` ${sug.length > 1 ? `${sug.length} sujets y tiennent` : `Un sujet y tient`}.` : ``}`
-      : `${periode(s.debut, s.fin).replace(/^d/, `D`)}. Les unités de cette période ne sont pas encore créditées.`),
+      ? `${periode(s.debut, s.fin).replace(/^d/, `D`)}, vous disposez de ${unites(s.disponible)}${report}.${s.creditee === false ? ` Les unités de votre formule s’y ajoutent dès le règlement de la période.` : ``}${sug.length ? ` ${sug.length > 1 ? `${sug.length} sujets y tiennent` : `Un sujet y tient`}.` : ``}`
+      : `${periode(s.debut, s.fin).replace(/^d/, `D`)}. ${s.creditee === false ? `Les unités de cette période ne sont pas encore créditées : elles le seront dès son règlement.` : `Les unités de cette période sont déjà engagées.`}`),
     sug.length ? h(`ul`, { class: `suggestions` }, sug.map((x, i) => h(`li`, {}, h(`article`, { class: `suggestion`, "data-cle": x.cle },
       relecture ? h(`label`, { class: `garder` }, h(`input`, { type: `checkbox`, checked: true, value: x.cle }), `Garder cette suggestion`) : null,
       h(`header`, {}, h(`h3`, { id: `s-${i}` }, x.titre), h(`span`, { class: `cout` }, unites(x.unites))),
       h(`p`, {}, `${x.libelle}. ${x.pourquoi ?? ``}`.trim()),
-      x.limite ? h(`p`, { class: `limite` }, `À déposer au plus tard le ${jourLong(x.limite)}.`) : null,
-      relecture ? null : h(`a`, { class: `bt`, href: lienLancer(x), id: `l-${i}`, "aria-labelledby": `l-${i} s-${i}` }, `Lancer`))))) : null,
-    sug.length && !relecture ? h(`p`, { class: `note` }, `« Lancer » ouvre la demande déjà remplie dans votre espace. Rien n’est engagé tant qu’elle n’est pas envoyée.`) : null);
+      x.limite ? h(`p`, { class: `limite` }, passee(x) ? `Le délai de ce sujet est passé : il était à déposer avant le ${jourLong(x.limite)}.` : `À déposer au plus tard le ${jourLong(x.limite)}.`) : null,
+      relecture || passee(x) ? null : h(`a`, { class: `bt`, href: lienLancer(x), id: `l-${i}`, "aria-labelledby": `l-${i} s-${i}` }, `Lancer`))))) : null,
+    sug.some((x) => !passee(x)) && !relecture ? h(`p`, { class: `note` }, `« Lancer » ouvre la demande déjà remplie dans votre espace. Rien n’est engagé tant qu’elle n’est pas envoyée.`) : null);
 };
 
 // ---------- page ouverte
@@ -239,7 +243,7 @@ const repondreDemo = async (corps) => {
         { numero: 44, titre: `Collecte des encombrants`, date: ouvre(jour(-3)), unites: 1, annoncee: ouvre(jour(-5)), remise: ouvre(jour(-5)), retard_jours: 0, lignes: [{ nom: `Publication réseaux sociaux`, quantite: 1 }] },
       ],
       en_cours: [{ titre: `Agenda des animations`, statut: `production`, livraison: apres(jour(0), 2) }],
-      suivante: { periode: jour(0).slice(0, 7), debut: jour(0), fin: finSuivante, disponible: 12, report: 2 },
+      suivante: { periode: jour(0).slice(0, 7), debut: jour(0), fin: finSuivante, creditee: true, en_attente: 0, disponible: 12, report: 2 },
       suggestions: [
         { cle: `h-1`, source: `historique`, titre: `Programme des animations de fin d’année`, date: jour(22), qte: { flyer: 1, post: 1 }, libelle: `Programme recto verso et publication`, unites: 6, limite: ouvre(jour(13)), pourquoi: `Vous l’aviez demandé l’an passé, pour le ${jourMois(jour(22))}.` },
         { cle: `c-1`, source: `calendrier`, titre: `Lettre aux habitants`, date: jour(16), qte: { news: 1 }, libelle: `Newsletter`, unites: 3, limite: ouvre(jour(7)), pourquoi: `Repère du calendrier type : autour du ${jourMois(jour(16))}.` },

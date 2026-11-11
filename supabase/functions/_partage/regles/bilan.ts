@@ -14,8 +14,10 @@ import { formule, OFFRE, ORDRE_FORMULES, prestation } from './offre.ts';
 export const NOMBRE = 3;
 // un temps fort placé jusqu'à deux semaines après la fin de la période se prépare pendant celle-ci
 export const MARGE_JOURS = 14;
-// même règle que le bloc « À anticiper » de l'Espace : même titre à moins de 60 jours
+// déjà demandé : même titre, et la demande est encore en cours, ou date de moins de 60 jours (parution, sinon dépôt),
+// comme dans le bloc « À anticiper » de l'Espace
 export const DEJA_DEMANDE_JOURS = 60;
+const TERMINEES = ["livree", "annulee"];
 
 const deux = (n) => String(n).padStart(2, "0");
 const valide = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s)) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
@@ -89,7 +91,7 @@ export const suggerer = ({ organisation, jour, suivante, demandes = [], fermetur
   const actives = demandes.filter((d) => d.statut !== "annulee");
   const repere = (d) => d.parution ?? String(d.creee ?? "").slice(0, 10);
   const deja = (titre, date, sauf) =>
-    actives.some((d) => d !== sauf && cleTitre(d.titre) === cleTitre(titre) && valide(repere(d)) && ecartJours(repere(d), date) <= DEJA_DEMANDE_JOURS);
+    actives.some((d) => d !== sauf && cleTitre(d.titre) === cleTitre(titre) && (!TERMINEES.includes(d.statut) || (valide(repere(d)) && ecartJours(repere(d), date) <= DEJA_DEMANDE_JOURS)));
   const candidats = [];
   const ajouter = (c, qteBrute) => {
     const qte = lignesPermises(qteBrute, organisation.formule);
@@ -184,11 +186,14 @@ export const mailMensuel = ({ donnees: d, lien, site }) => {
   const periode = libellePeriode(d.debut, d.fin);
   const sug = d.suggestions ?? [], s = d.suivante;
   const apres = [];
+  const report = s && s.report > 0 ? `, dont ${s.report} ${pluriel(s.report, "reportée")} à utiliser avant le ${jourMois(s.fin)}` : "";
+  // tant que le quota de la période n'est pas crédité (mensualité en attente), seul le report est disponible
+  const attente = s && s.creditee === false ? " Les unités de votre formule s’y ajoutent dès le règlement de la période." : "";
   if (sug.length) {
     apres.push(
-      `<span style="${NORMAL}"><b style="color:#1A1A1A">Pour la période qui commence</b>, ${sug.length > 1 ? `${sug.length} sujets tiennent` : "un sujet tient"} dans vos ${unites(s.disponible)} ${pluriel(s.disponible, "disponible")}${
-        s.report > 0 ? `, dont ${s.report} ${pluriel(s.report, "reportée")} à utiliser avant le ${jourMois(s.fin)}` : ""
-      }.</span>`,
+      `<span style="${NORMAL}"><b style="color:#1A1A1A">Pour la période qui commence</b>, ${sug.length > 1 ? `${sug.length} sujets tiennent` : "un sujet tient"} dans ${
+        s.disponible >= 2 ? `vos ${s.disponible} unités disponibles` : "votre unité disponible"
+      }${report}.${attente}</span>`,
     );
     for (const x of sug)
       apres.push(
@@ -198,9 +203,7 @@ export const mailMensuel = ({ donnees: d, lien, site }) => {
       );
     apres.push("« Lancer » ouvre la demande déjà remplie dans votre espace. Rien n’est engagé tant qu’elle n’est pas envoyée.");
   } else if (s && s.disponible > 0) {
-    apres.push(
-      `<span style="${NORMAL}">Pour la période qui commence, vous disposez de ${unites(s.disponible)}${s.report > 0 ? `, dont ${s.report} ${pluriel(s.report, "reportée")} à utiliser avant le ${jourMois(s.fin)}` : ""}.</span>`,
-    );
+    apres.push(`<span style="${NORMAL}">Pour la période qui commence, vous disposez de ${unites(s.disponible)}${report}.${attente}</span>`);
   }
   apres.push("Le bilan s’ouvre sans compte ni mot de passe&nbsp;: ce lien se transmet tel quel.");
   return {
@@ -230,13 +233,26 @@ export const mailRelecture = ({ donnees: d, lien, referent }) => {
   };
 };
 
-// alerte à Fill : un envoi dont l'issue est inconnue n'est jamais retenté seul
-export const mailBloque = ({ organisation, periode }) => ({
+// alerte à Fill : un envoi dont l'issue est inconnue n'est jamais retenté seul.
+// confirme : le service d'envoi a accepté le mail, mais la base n'a pas pu l'enregistrer.
+export const mailBloque = ({ organisation, periode, id, a, confirme = false }) => ({
   sujet: `Bilan à vérifier : ${organisation}`,
   titre: `Envoi du bilan à vérifier : ${echap(organisation)}`,
   texte: [
-    `Le mail mensuel de la période ${periode} est parti vers le service d’envoi sans réponse claire. Pour ne jamais l’envoyer deux fois, il n’est pas retenté.`,
-    "Vérifiez dans le journal du service d’envoi s’il est arrivé. S’il n’est pas parti, libérez l’envoi (bilan_liberer_envoi) : il repartira au passage suivant.",
+    confirme
+      ? `Le mail mensuel de la période ${periode} est parti à ${echap(a)}, mais son envoi n’a pas pu être enregistré : tant qu’il ne l’est pas, le lien du bilan ne s’ouvre pas chez votre client.`
+      : `Le mail mensuel de la période ${periode} est parti vers le service d’envoi sans réponse claire. Pour ne jamais l’envoyer deux fois, il n’est pas retenté.`,
+    confirme
+      ? `À faire : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code>`
+      : `Vérifiez dans le journal du service d’envoi s’il est arrivé à ${echap(a)}. S’il est arrivé : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code> S’il n’est pas parti : <code>select bilan_liberer_envoi('${id}');</code> et il repartira au passage suivant.`,
   ],
+  bouton: null,
+});
+
+// résumé à Fill des anomalies d'un passage : un seul message, tant qu'il reste quelque chose à corriger
+export const mailAnomalies = (lignes) => ({
+  sujet: `Mail mensuel : ${lignes.length} ${pluriel(lignes.length, "point")} à vérifier`,
+  titre: "Mail mensuel : à vérifier",
+  texte: [...lignes.map(echap), "Un nouvel essai a lieu à chaque passage. Ce message revient tant qu’un point reste à corriger."],
   bouton: null,
 });

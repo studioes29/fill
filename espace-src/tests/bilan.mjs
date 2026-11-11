@@ -35,9 +35,11 @@ let passes = 0;
 const test = async (nom, f) => { try { await f(); passes++; console.log(`ok   ${nom}`); } catch (e) { console.log(`ÉCHEC ${nom}\n     ${e.message.split('\n').slice(0, 14).join('\n     ')}`); process.exitCode = 1; } };
 const nav = await chromium.launch({ executablePath: process.env.CHROME ?? '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 
-// ouvre la page ; « api » simule la fonction serveur et reçoit le corps de chaque requête
-const ouvrir = async (adresse, { largeur = 390, api, attendre = 'h1, .etat' } = {}) => {
-  const ctx = await nav.newContext({ viewport: { width: largeur, height: 844 }, deviceScaleFactor: 2, bypassCSP: false });
+// ouvre la page ; « api » simule la fonction serveur et reçoit le corps de chaque requête.
+// « maintenant » fixe la date du navigateur (les minuteries tournent) : les données d'essai sont de novembre 2026.
+const ouvrir = async (adresse, { largeur = 390, api, attendre = 'h1, .etat', maintenant = '2026-11-12T09:00:00+01:00' } = {}) => {
+  const ctx = await nav.newContext({ viewport: { width: largeur, height: 844 }, deviceScaleFactor: 2, bypassCSP: false, timezoneId: 'Europe/Paris' });
+  if (maintenant) await ctx.clock.setFixedTime(new Date(maintenant));
   await ctx.addInitScript({ content: axe });
   const page = await ctx.newPage();
   const erreurs = [], appels = [];
@@ -74,7 +76,7 @@ const donnees = (plus = {}) => ({
     { numero: 8, titre: 'Affiche du marché d’automne', date: '2026-10-23', unites: 4, annoncee: '2026-10-20', remise: '2026-10-22', retard_jours: 2, lignes: [{ nom: 'Affiche en création', quantite: 1 }] },
   ],
   en_cours: [],
-  suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', disponible: 13, report: 3 },
+  suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: true, en_attente: 0, disponible: 13, report: 3 },
   suggestions: [
     { cle: 'c-2026-11-28-aff', source: 'calendrier', titre: 'Téléthon & marché', date: '2026-11-28', qte: { affiche: 1, post: 2 }, libelle: 'Affiche et deux publications', unites: 6, limite: '2026-11-19', pourquoi: 'Repère du calendrier type : autour du 28 novembre.' },
     { cle: 'h-12', source: 'historique', titre: 'Portrait du nouveau boulanger', date: null, qte: { post: 1 }, libelle: 'Publication réseaux sociaux', unites: 1, limite: null, pourquoi: 'Vous l’aviez demandé l’an passé à la même période.' },
@@ -155,12 +157,25 @@ await test('cas limites : rien de livré, pas de période suivante, une entrepri
   assert.deepEqual(erreurs, []);
   await ctx.close();
   // unités pas encore créditées (entreprise en attente de règlement) : aucune suggestion, et la page le dit
-  const b = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', disponible: 0, report: 0 }, suggestions: [], en_cours: [{ titre: 'Agenda de novembre', statut: 'production', livraison: '2026-11-13' }, { titre: 'Bulletin', statut: 'confirmee', livraison: null }] }) }) });
-  assert.match(await b.page.textContent('.suite .solde'), /ne sont pas encore créditées/);
+  const b = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: false, en_attente: 0, disponible: 0, report: 0 }, suggestions: [], en_cours: [{ titre: 'Agenda de novembre', statut: 'production', livraison: '2026-11-13' }, { titre: 'Bulletin', statut: 'confirmee', livraison: null }] }) }) });
+  assert.match(await b.page.textContent('.suite .solde'), /ne sont pas encore créditées : elles le seront dès son règlement\./);
   assert.deepEqual(await b.page.locator('.encours li').allTextContents(), ['Agenda de novembreversion prévue le 13 novembre', 'Bulletin']);
   assert.deepEqual(await sansDefaut(b.page), { parasite: false, deborde: false });
   assert.deepEqual(await accessibilite(b.page), []);
   await b.ctx.close();
+  // report seul en attendant le règlement ; tout est engagé ; une suggestion dont le délai est passé ne se lance plus
+  const s = (plus) => ({ periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: true, en_attente: 0, disponible: 13, report: 3, ...plus });
+  const c = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: s({ creditee: false, disponible: 1, report: 1 }), suggestions: [donnees().suggestions[1]] }) }) });
+  assert.match(await c.page.textContent('.suite .solde'), /vous disposez de 1 unité, dont 1 reportée à utiliser avant le 11 décembre\. Les unités de votre formule s’y ajoutent dès le règlement de la période\. Un sujet y tient\./);
+  await c.ctx.close();
+  const d = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: s({ disponible: 0, report: 0 }), suggestions: [] }) }) });
+  assert.match(await d.page.textContent('.suite .solde'), /sont déjà engagées\./);
+  await d.ctx.close();
+  const e = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }), maintenant: '2026-11-20T09:00:00+01:00' });
+  assert.equal(await e.page.locator('.suggestion a.bt').count(), 1, 'seule la suggestion sans date limite se lance encore');
+  assert.match(await e.page.textContent('.suggestion .limite'), /Le délai de ce sujet est passé : il était à déposer avant le jeudi 19 novembre\./);
+  assert.deepEqual(await accessibilite(e.page), []);
+  await e.ctx.close();
 });
 
 await test('relecture par Fill : rien ne part sans confirmation ; l’accord envoie le jeton de relecture et les suggestions retirées', async () => {
@@ -230,7 +245,7 @@ await test('liens fermés : chaque état s’explique en clair ; sans jeton, rie
 
 await test('Espace : « Lancer » ouvre la nouvelle demande pré-remplie (titre, prestations, parution), puis l’adresse redevient #nouvelle', async () => {
   const lien = `${origine}/espace/?demo#nouvelle?titre=T%C3%A9l%C3%A9thon%20%26%20march%C3%A9&parution=2027-11-28&qte=affiche:1,post:2,inconnue:4,actu:0`;
-  const { page, ctx, erreurs } = await ouvrir(lien, { largeur: 1280, attendre: 'input, textarea' });
+  const { page, ctx, erreurs } = await ouvrir(lien, { largeur: 1280, attendre: 'input, textarea', maintenant: null });
   await page.waitForFunction(() => [...document.querySelectorAll('input')].some((i) => i.value === 'Téléthon & marché'));
   assert.equal(await page.evaluate(() => location.hash), '#nouvelle');
   const texte = await page.evaluate(() => document.body.innerText);
@@ -244,7 +259,7 @@ await test('Espace : « Lancer » ouvre la nouvelle demande pré-remplie (titre,
   await ctx.close();
   // un lien incomplet ou trafiqué ne pré-remplit rien et ne casse rien
   for (const mauvais of ['#nouvelle?titre=&qte=post:1', '#nouvelle?titre=Sujet&qte=inconnue:3', '#nouvelle?titre=%3Cscript%3Ealert(1)%3C/script%3E&qte=post:999']) {
-    const b = await ouvrir(`${origine}/espace/?demo${mauvais}`, { largeur: 1280, attendre: 'input, textarea' });
+    const b = await ouvrir(`${origine}/espace/?demo${mauvais}`, { largeur: 1280, attendre: 'input, textarea', maintenant: null });
     assert.equal(await b.page.evaluate(() => location.hash), '#nouvelle');
     assert.equal(await b.page.evaluate(() => [...document.querySelectorAll('input')].some((i) => i.value === 'Sujet')), false);
     assert.equal(await b.page.locator('script:not([src])').count(), 0);
@@ -254,7 +269,7 @@ await test('Espace : « Lancer » ouvre la nouvelle demande pré-remplie (titre,
 });
 
 await test('depuis la page de bilan en démonstration, « Lancer » arrive dans l’Espace de démonstration, demande pré-remplie', async () => {
-  const { page, ctx } = await ouvrir(`${base}?demo`, { largeur: 390 });
+  const { page, ctx } = await ouvrir(`${base}?demo`, { largeur: 390, maintenant: null });
   const titre = await page.textContent('.suggestion h3');
   await page.locator('.suggestion a.bt').first().click();
   await page.waitForFunction((t) => [...document.querySelectorAll('input')].some((i) => i.value === t), titre);

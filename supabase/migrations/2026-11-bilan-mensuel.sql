@@ -6,6 +6,7 @@
 --
 --   bilan_candidats      les périodes closes qui attendent leur bilan ;
 --   bilan_calculer       les chiffres, lus dans le registre, l'historique et les demandes ;
+--   bilan_contexte       les demandes récentes et les fermetures, pour les règles de suggestion ;
 --   bilan_preparer       fige le bilan (chiffres + suggestions fournies par les règles du serveur) ;
 --   bilan_lire           ce que la page espace/bilan/ affiche pour un jeton (partage ou relecture avant envoi) ;
 --   bilan_ouvrir_relecture, bilan_fermer_relecture   le lien de relecture envoyé à Fill avant l'envoi au client ;
@@ -65,7 +66,9 @@ $function$;
 
 -- Les périodes closes qui attendent leur bilan : organisation active, période précédente clôturée (le report et
 -- l''expiration sont au registre), abonnement actif sur cette période (un quota y a été crédité), terminée depuis
--- dix jours au plus, et pas encore de bilan. Réservé au serveur.
+-- dix jours au plus, et pas encore de bilan. Tant que le quota de la période qui commence n''est pas crédité
+-- (entreprise dont la mensualité n''est pas encore réglée), le bilan attend, quatre jours au plus : les suggestions
+-- se chiffrent sur des unités réellement disponibles. Réservé au serveur.
 create or replace function public.bilan_candidats(p_jour date default null) returns jsonb
 language plpgsql stable security definer set search_path to 'public'
 as $function$
@@ -81,6 +84,8 @@ begin
     if not exists (select 1 from cloture where organisation_id = o.id and periode = prec) then continue; end if;
     if not exists (select 1 from registre where organisation_id = o.id and periode = prec and type = 'credit') then continue; end if;
     if exists (select 1 from bilan where organisation_id = o.id and periode = prec) then continue; end if;
+    if jour - fin_prec <= 4 and (o.fin is null or o.fin >= debut_periode_org(o.id, cur))
+       and not exists (select 1 from registre where organisation_id = o.id and periode = cur and type = 'credit') then continue; end if;
     r := r || jsonb_build_array(jsonb_build_object('organisation', o.id, 'periode', prec));
   end loop;
   return r;
@@ -96,7 +101,7 @@ create or replace function public.bilan_calculer(p_org uuid, p_periode text) ret
 language plpgsql stable security definer set search_path to 'public'
 as $function$
 declare o organisation; deb date; fin_ date; suiv text; deb_suiv date; u record; s record;
-  reportees int; livre jsonb; livrables jsonb; en_cours jsonb; a_la_date int; avec_date int; nb int;
+  reportees int; livre jsonb; livrables jsonb; en_cours jsonb; a_la_date int; avec_date int; nb int; attente int; dispo int;
   validations int; validation_jours numeric; suivante jsonb := null;
 begin
   if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
@@ -167,16 +172,21 @@ begin
     from demande
    where organisation_id = p_org and statut not in ('livree', 'annulee') and (creee at time zone 'Europe/Paris')::date <= fin_;
 
-  -- la période qui commence : ce qui reste à utiliser, report compris (il expire à la fin de cette période)
+  -- la période qui commence : ce qui reste à utiliser, report compris (il expire à la fin de cette période).
+  -- Comme dans l''Espace, les demandes déposées qui attendent leur confirmation sont déjà déduites.
   if o.statut = 'active' and (o.fin is null or o.fin >= deb_suiv) then
     select coalesce(sum(unites) filter (where type in ('credit', 'report', 'ajustement')), 0)::int as total,
            coalesce(sum(unites) filter (where type = 'report'), 0)::int as report,
-           coalesce(sum(unites) filter (where type = 'debit' and etat in ('reserve', 'consomme')), 0)::int as engage
+           coalesce(sum(unites) filter (where type = 'debit' and etat in ('reserve', 'consomme')), 0)::int as engage,
+           coalesce(bool_or(type = 'credit'), false) as creditee
       into s from registre where organisation_id = p_org and periode = suiv;
+    select coalesce(sum(unites), 0)::int into attente
+      from demande where organisation_id = p_org and statut in ('deposee', 'accord_requis');
+    dispo := greatest(0, s.total - s.engage - attente);
     suivante := jsonb_build_object(
       'periode', suiv, 'debut', deb_suiv, 'fin', fin_periode_org(p_org, suiv),
-      'disponible', greatest(0, s.total - s.engage),
-      'report', greatest(0, least(s.report - s.engage, s.total - s.engage)));
+      'creditee', s.creditee, 'en_attente', attente, 'disponible', dispo,
+      'report', greatest(0, least(s.report - s.engage, dispo)));
   end if;
 
   return jsonb_build_object(
@@ -194,6 +204,27 @@ begin
     'livre', livre,
     'en_cours', en_cours,
     'suivante', suivante);
+end $function$;
+
+-- Ce dont les règles de suggestion ont besoin : les demandes de l''organisation sur quinze mois (pour « déjà demandé »
+-- et « même période l''an passé »), celles qui sont encore en cours, et les fermetures de Fill. Réservé au serveur.
+create or replace function public.bilan_contexte(p_org uuid, p_jour date default null) returns jsonb
+language plpgsql stable security definer set search_path to 'public'
+as $function$
+declare depuis date := coalesce(p_jour, (now() at time zone 'Europe/Paris')::date) - interval '15 months';
+begin
+  if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
+  return jsonb_build_object(
+    'demandes', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', d.id, 'titre', d.titre, 'statut', d.statut, 'parution', d.parution, 'creee', d.creee,
+               'lignes', coalesce((select jsonb_agg(jsonb_build_object('prestation', l.prestation, 'quantite', l.quantite))
+                                     from demande_ligne l where l.demande_id = d.id), '[]'::jsonb))
+             order by d.creee)
+        from demande d
+       where d.organisation_id = p_org
+         and (d.creee >= depuis or d.parution >= depuis or d.statut not in ('livree', 'annulee'))), '[]'::jsonb),
+    'fermetures', coalesce((select jsonb_agg(jsonb_build_object('debut', debut, 'fin', fin)) from fermeture), '[]'::jsonb));
 end $function$;
 
 -- Fige le bilan d''une période : les chiffres de bilan_calculer et les suggestions produites par les règles du serveur.
@@ -300,6 +331,7 @@ begin
   select * into b from bilan where empreinte_relecture = p_empreinte_relecture for update;
   if b.id is null then raise exception 'Lien inconnu'; end if;
   if b.envoye_le is not null or b.envoi_reserve_le is not null then raise exception 'Ce bilan est déjà parti'; end if;
+  if b.revoque_le is not null then raise exception 'Ce bilan a été retiré'; end if;
   update bilan
      set approuve_le = coalesce(approuve_le, now()),
          donnees = jsonb_set(donnees, '{suggestions}', coalesce((
@@ -333,12 +365,13 @@ begin
 end $function$;
 
 -- Réserve l''envoi d''un bilan : une seule réservation aboutit, même si deux appels se croisent. Le jeton de partage
--- est créé à ce moment (son empreinte seulement). Renvoie de quoi écrire le mail, ou null si le bilan n''est pas à envoyer.
--- Réservé au serveur.
-create or replace function public.bilan_reserver_envoi(p_bilan uuid, p_empreinte text) returns jsonb
+-- est créé à ce moment (son empreinte seulement). Une suggestion dont la date limite de dépôt est passée entre le
+-- calcul et l''envoi (relecture tardive) est retirée : le client ne reçoit rien qu''il ne puisse plus tenir.
+-- Renvoie de quoi écrire le mail, ou null si le bilan n''est pas à envoyer. Réservé au serveur.
+create or replace function public.bilan_reserver_envoi(p_bilan uuid, p_empreinte text, p_jour date default null) returns jsonb
 language plpgsql security definer set search_path to 'public'
 as $function$
-declare b bilan; o organisation; ref record; auto boolean;
+declare b bilan; o organisation; ref record; auto boolean; d jsonb; jour date := coalesce(p_jour, (now() at time zone 'Europe/Paris')::date);
 begin
   if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
   select coalesce(pilote_bilan, false) into auto from parametre limit 1;
@@ -349,9 +382,15 @@ begin
   select id, nom, email into ref from profil
    where organisation_id = b.organisation_id and role = 'referent' and actif order by creee limit 1;
   if ref.email is null then return jsonb_build_object('erreur', 'sans_referent', 'organisation', jsonb_build_object('id', o.id, 'nom', o.nom)); end if;
-  update bilan set envoi_reserve_le = now(), empreinte = p_empreinte where id = b.id;
+  update bilan
+     set envoi_reserve_le = now(), empreinte = p_empreinte,
+         donnees = jsonb_set(donnees, '{suggestions}', coalesce((
+           select jsonb_agg(x order by n) from jsonb_array_elements(donnees->'suggestions') with ordinality t(x, n)
+            where x->>'limite' is null or (x->>'limite')::date >= jour), '[]'::jsonb))
+   where id = b.id
+  returning donnees into d;
   return jsonb_build_object(
-    'id', b.id, 'donnees', b.donnees,
+    'id', b.id, 'donnees', d,
     'organisation', jsonb_build_object('id', o.id, 'nom', o.nom, 'essai', o.essai),
     'referent', jsonb_build_object('nom', ref.nom, 'email', ref.email));
 end $function$;
@@ -406,7 +445,8 @@ revoke all on function public.bilan_fermer_relecture(uuid) from public, anon, au
 revoke all on function public.bilan_lire(text) from public, anon, authenticated;
 revoke all on function public.bilan_approuver(text, text[]) from public, anon, authenticated;
 revoke all on function public.bilan_a_envoyer() from public, anon, authenticated;
-revoke all on function public.bilan_reserver_envoi(uuid, text) from public, anon, authenticated;
+revoke all on function public.bilan_reserver_envoi(uuid, text, date) from public, anon, authenticated;
+revoke all on function public.bilan_contexte(uuid, date) from public, anon, authenticated;
 revoke all on function public.bilan_confirmer_envoi(uuid, text) from public, anon, authenticated;
 revoke all on function public.bilan_liberer_envoi(uuid) from public, anon, authenticated;
 revoke all on function public.bilan_revoquer(uuid) from public, anon;
@@ -419,7 +459,8 @@ grant execute on function public.bilan_fermer_relecture(uuid) to service_role;
 grant execute on function public.bilan_lire(text) to service_role;
 grant execute on function public.bilan_approuver(text, text[]) to service_role;
 grant execute on function public.bilan_a_envoyer() to service_role;
-grant execute on function public.bilan_reserver_envoi(uuid, text) to service_role;
+grant execute on function public.bilan_reserver_envoi(uuid, text, date) to service_role;
+grant execute on function public.bilan_contexte(uuid, date) to service_role;
 grant execute on function public.bilan_confirmer_envoi(uuid, text) to service_role;
 grant execute on function public.bilan_liberer_envoi(uuid) to service_role;
 grant execute on function public.bilan_revoquer(uuid) to authenticated, service_role;

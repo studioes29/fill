@@ -195,7 +195,7 @@ const cloturer = (s, periode = '2026-10') => db.query(`select cloturer_test($1, 
 const preparer = async (s, suggestions = [], periode = '2026-10') => (await un(`select bilan_preparer($1, $2, $3::jsonb) as v`, [s.o, periode, JSON.stringify(suggestions)])).v;
 const lire = async (e) => (await un(`select bilan_lire($1) as v`, [e])).v;
 const file = async () => (await un(`select bilan_a_envoyer() as v`)).v;
-const reserver = async (id) => { const e = E(++n); return { e, r: (await un(`select bilan_reserver_envoi($1, $2) as v`, [id, e])).v }; };
+const reserver = async (id, jour = '2026-11-12') => { const e = E(++n); return { e, r: (await un(`select bilan_reserver_envoi($1, $2, $3) as v`, [id, e, jour])).v }; };
 const sug = (cle, unites, titre = 'Marché de Noël') => ({ cle, source: 'calendrier', titre, date: '2026-12-06', qte: { affiche: 1 }, libelle: 'Affiche', unites, limite: '2026-11-26', pourquoi: 'Repère.' });
 
 // période type : 10 unités de quota et 2 de report ; trois demandes livrées, une en production
@@ -224,7 +224,7 @@ await test('chiffres d’une période : demandes livrées, livrables par type, l
   assert.deepEqual(b.unites, { quota: e.quota, report: e.report, ajustements: 0, total: 12, utilisees: e.reserve + e.consomme, reservees: 1, reportees: 1, expirees: 0 });
   assert.equal(b.unites.utilisees + b.unites.reportees + b.unites.expirees, b.unites.total);
   // la période qui commence : le report écrit par la clôture, pas encore de quota crédité
-  assert.deepEqual([b.suivante.periode, iso(b.suivante.debut), iso(b.suivante.fin), b.suivante.disponible, b.suivante.report], ['2026-11', '2026-11-12', '2026-12-11', 1, 1]);
+  assert.deepEqual(b.suivante, { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: false, en_attente: 0, disponible: 1, report: 1 });
   assert.equal(/heure|minute|audience|vue/i.test(JSON.stringify(Object.keys(b))), false);
 });
 
@@ -236,7 +236,21 @@ await test('un report non utilisé expire, et le bilan le dit', async () => {
   await credit(s, '2026-11', 10);
   const b = await calculer(s);
   assert.deepEqual([b.unites.total, b.unites.utilisees, b.unites.expirees, b.unites.reportees], [13, 1, 2, 10]);
-  assert.deepEqual([b.suivante.disponible, b.suivante.report], [20, 10]);
+  assert.deepEqual([b.suivante.disponible, b.suivante.report, b.suivante.creditee], [20, 10, true]);
+});
+
+await test('unités disponibles de la période qui commence : comme dans l’Espace, les demandes déposées en attente sont déjà déduites', async () => {
+  const s = await organisation();
+  await credit(s, '2026-10', 10); await cloturer(s); await credit(s, '2026-11', 10);       // 10 reportées + 10 créditées
+  await demande(s, 'Agenda de décembre', { unites: 6, etat: null, etapes: [['deposee', '2026-11-12 08:00']], creee: '2026-11-12 08:00' });
+  await demande(s, 'Bulletin : accord demandé', { unites: 5, etat: null, etapes: [['accord_requis', '2026-11-12 08:30']], creee: '2026-11-12 08:20' });
+  await demande(s, 'Affiche confirmée', { unites: 4, etat: 'reserve', periode: '2026-11', etapes: [['confirmee', '2026-11-12 08:40']], creee: '2026-11-12 08:35' });
+  const b = await calculer(s);
+  assert.deepEqual([b.suivante.en_attente, b.suivante.disponible, b.suivante.report], [11, 5, 5]);
+  await refuse(() => preparer(s, [sug('c-1', 6)]), /dépassent les unités disponibles \(6 pour 5\)/);
+  // tout est engagé ou en attente : plus rien à suggérer
+  await demande(s, 'Flyer du marché', { unites: 5, etat: null, etapes: [['deposee', '2026-11-12 09:00']], creee: '2026-11-12 09:00' });
+  assert.deepEqual([(await calculer(s)).suivante.disponible, (await calculer(s)).suivante.report], [0, 0]);
 });
 
 await test('un retard de Fill apparaît tel quel, en jours ouvrés ; une demande sans date annoncée n’entre pas dans le calcul', async () => {
@@ -281,6 +295,14 @@ await test('candidats : période close et clôturée, abonnement actif, dix jour
   const candidats = async (jour) => (await un(`select bilan_candidats($1) as v`, [jour])).v.filter((c) => c.organisation === s.o);
   assert.deepEqual(await candidats('2026-11-12'), [], 'pas avant la clôture');
   await cloturer(s);
+  // le quota de la période qui commence n'est pas encore crédité (mensualité en attente) : le bilan attend, quatre jours au plus
+  assert.deepEqual(await candidats('2026-11-12'), []);
+  assert.deepEqual(await candidats('2026-11-15'), []);
+  assert.deepEqual(await candidats('2026-11-16'), [{ organisation: s.o, periode: '2026-10' }]);
+  await db.query(`update organisation set fin = '2026-11-11' where id = $1`, [s.o]);
+  assert.deepEqual(await candidats('2026-11-12'), [{ organisation: s.o, periode: '2026-10' }], 'abonnement terminé : rien à attendre');
+  await db.query(`update organisation set fin = null where id = $1`, [s.o]);
+  await credit(s, '2026-11', 10);
   assert.deepEqual(await candidats('2026-11-12'), [{ organisation: s.o, periode: '2026-10' }]);
   assert.deepEqual(await candidats('2026-11-11'), [], 'la période précédente du 11 novembre est celle de septembre');
   assert.deepEqual(await candidats('2026-11-21'), [{ organisation: s.o, periode: '2026-10' }]);
@@ -355,6 +377,37 @@ await test('sans réglage automatique, rien ne part sans l’accord de Fill ; le
   f = await file();
   assert.ok(f.prets.includes(id) && !f.a_relire.includes(id));
   await refuse(() => db.query(`select bilan_approuver($1, $2)`, [E(999999), []]), /Lien inconnu/);
+});
+
+await test('relecture tardive : une suggestion dont la date limite est passée ne part pas ; un bilan retiré ne s’approuve pas', async () => {
+  const s = await scene(); await cloturer(s); await credit(s, '2026-11', 10);
+  const { id } = await preparer(s, [{ ...sug('c-1', 3, 'Lettre de fin d’année'), limite: '2026-11-12' }, { ...sug('c-2', 4, 'Téléthon'), limite: '2026-11-19' }, { ...sug('h-3', 1, 'Portrait'), limite: null }]);
+  const jr = E(++n);
+  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, jr]);
+  await db.query(`select bilan_approuver($1, '{}')`, [jr]);
+  const a = await reserver(id, '2026-11-13');
+  assert.deepEqual(a.r.donnees.suggestions.map((x) => x.cle), ['c-2', 'h-3']);
+  assert.deepEqual((await un(`select donnees from bilan where id = $1`, [id])).donnees.suggestions.map((x) => x.cle), ['c-2', 'h-3'], 'la page montrera ce que le mail a annoncé');
+  const t = await scene(); await cloturer(t);
+  const autre = (await preparer(t)).id, jr2 = E(++n);
+  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [autre, jr2]);
+  await db.query(`update bilan set revoque_le = now() where id = $1`, [autre]);
+  await refuse(() => db.query(`select bilan_approuver($1, '{}')`, [jr2]), /a été retiré/);
+});
+
+await test('contexte des suggestions : demandes de quinze mois avec leurs prestations, demandes encore en cours, fermetures', async () => {
+  const s = await organisation();
+  const recente = await demande(s, 'Marché de Noël', { lignes: { affiche: 1, post: 2 }, parution: '2025-12-06', creee: '2025-11-20 10:00', etapes: parcours('2025-11-27 10:00', '2025-11-28 10:00', '2025-12-01 10:00') });
+  await demande(s, 'Ancienne et livrée', { creee: '2025-06-01 10:00', etapes: parcours('2025-06-03 10:00', '2025-06-04 10:00', '2025-06-05 10:00') });
+  await demande(s, 'Ancienne, toujours en cours', { creee: '2025-06-01 10:00', etapes: [['production', '2025-06-03 10:00']] });
+  await demande(s, 'Ancienne, parution récente', { creee: '2025-06-01 10:00', parution: '2025-12-20', etapes: parcours('2025-06-03 10:00', '2025-06-04 10:00', '2025-12-21 10:00') });
+  await db.query(`insert into fermeture (debut, fin, motif) values ('2026-12-24', '2026-12-31', 'Congés')`);
+  const c = (await un(`select bilan_contexte($1, '2026-11-12') as v`, [s.o])).v;
+  assert.deepEqual(c.demandes.map((d) => d.titre).sort(), ['Ancienne, parution récente', 'Ancienne, toujours en cours', 'Marché de Noël']);
+  const m = c.demandes.find((d) => d.id === recente);
+  assert.deepEqual([m.statut, m.parution, m.creee.slice(0, 10), [...m.lignes].sort((a, b) => a.prestation.localeCompare(b.prestation))], ['livree', '2025-12-06', '2025-11-20', [{ prestation: 'affiche', quantite: 1 }, { prestation: 'post', quantite: 2 }]]);
+  assert.deepEqual(c.fermetures, [{ debut: '2026-12-24', fin: '2026-12-31' }]);
+  await db.exec(`delete from fermeture`);
 });
 
 await test('un bilan ne part jamais deux fois : une seule réservation, confirmation unique, libération seulement avant l’envoi', async () => {
@@ -438,13 +491,14 @@ await test('les fonctions sont réservées au serveur', async () => {
   await refuse(() => file(), /Réservé au serveur/);
   await refuse(() => reserver(id), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_candidats()`), /Réservé au serveur/);
+  await refuse(() => db.query(`select bilan_contexte($1)`, [s.o]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_confirmer_envoi($1, 'x@y.fr')`, [id]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_liberer_envoi($1)`, [id]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, E(5)]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_fermer_relecture($1)`, [id]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_approuver($1, '{}')`, [E(5)]), /Réservé au serveur/);
   await db.exec(`set role authenticated`);
-  for (const q of [`select bilan_calculer('${s.o}', '2026-10')`, `select bilan_lire('${E(1)}')`, `select bilan_a_envoyer()`, `select bilan_reserver_envoi('${id}', '${E(6)}')`, `select bilan_candidats()`])
+  for (const q of [`select bilan_calculer('${s.o}', '2026-10')`, `select bilan_lire('${E(1)}')`, `select bilan_a_envoyer()`, `select bilan_reserver_envoi('${id}', '${E(6)}')`, `select bilan_candidats()`, `select bilan_contexte('${s.o}')`])
     await refuse(() => db.query(q), /permission denied/);
   await serveur();
 });
@@ -547,7 +601,13 @@ await test('un sujet déjà demandé n’est pas suggéré, sauf si la demande a
   const deja = { id: 'x', titre: 'téléthon', statut: 'production', parution: null, creee: '2026-11-05T09:00:00Z', lignes: [] };
   assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [deja] }).some((x) => x.titre === 'Téléthon'), false);
   assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [{ ...deja, statut: 'annulee' }] }).some((x) => x.titre === 'Téléthon'), true);
-  assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [{ ...deja, creee: '2026-08-01T09:00:00Z' }] }).some((x) => x.titre === 'Téléthon'), true, 'au-delà de 60 jours, ce n’est plus le même sujet');
+  assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [{ ...deja, statut: 'livree', creee: '2026-08-01T09:00:00Z' }] }).some((x) => x.titre === 'Téléthon'), true, 'livrée il y a plus de 60 jours : ce n’est plus le même sujet');
+  assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [{ ...deja, creee: '2026-08-01T09:00:00Z' }] }).some((x) => x.titre === 'Téléthon'), false, 'encore en cours : déjà demandé, quelle que soit sa date');
+  // le bulletin de l'an passé, déjà recommandé cette année sans date de parution et encore en production
+  const bulletin = ancienne('Bulletin d’hiver', { creee: '2025-11-25T10:00:00Z', lignes: [{ prestation: 'bulletin', quantite: 8 }] });
+  const enCours = { id: 'z', titre: 'Bulletin d’hiver', statut: 'production', parution: null, creee: '2026-09-01T09:00:00Z', lignes: [] };
+  assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [bulletin] }).some((x) => x.titre === 'Bulletin d’hiver'), true);
+  assert.equal(proposer({ suivante: { ...novembre, disponible: 22 }, demandes: [bulletin, enCours] }).some((x) => x.titre === 'Bulletin d’hiver'), false);
   // demandé l'an passé et déjà redemandé cette année : ni l'historique ni le calendrier ne le reproposent
   const lettre = ancienne('Lettre de fin d’année', { parution: '2025-11-24', lignes: [{ prestation: 'news', quantite: 1 }] });
   const cetteAnnee = { id: 'y', titre: 'Lettre de fin d’année', statut: 'deposee', parution: '2026-11-23', creee: '2026-11-10T09:00:00Z', lignes: [] };
@@ -623,6 +683,9 @@ await test('mail mensuel : trois chiffres, le lien du bilan, une ligne et un lie
   assert.equal(sans.apres.join('\n').includes('Lancer'), false);
   const fin = R.mailMensuel({ donnees: donnees({ suggestions: [], suivante: null }), lien: 'x', site: 'y' });
   assert.equal(fin.apres.length, 1);
+  // une seule unité, quota pas encore crédité : accords et mention du règlement
+  const une = R.mailMensuel({ donnees: donnees({ suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: false, disponible: 1, report: 1 }, suggestions: proposer({ suivante: { ...novembre, disponible: 1 }, demandes: [ancienne('Portrait du nouveau boulanger')] }) }), lien: 'x', site: 'y' });
+  assert.ok(une.apres[0].includes('un sujet tient dans votre unité disponible, dont 1 reportée à utiliser avant le 11 décembre. Les unités de votre formule s’y ajoutent dès le règlement de la période.'), une.apres[0]);
   // aucune demande avec date annoncée : le troisième chiffre devient le report
   assert.equal(R.troisChiffres(donnees({ delais: { a_la_date: 0, total: 0, sans_date: 3 } }))[2].libelle, 'unité reportée sur la période suivante');
 });
@@ -632,7 +695,12 @@ await test('mails internes : relecture avant envoi, envoi à vérifier', async (
   assert.equal(m.sujet, 'Bilan à relire : Commune de <Saint-Ivenec>, du 12 octobre au 11 novembre 2026');
   assert.ok(m.texte.join(' ').includes('Rien ne part à Yann Le Gall sans votre accord') && m.titre.includes('&lt;Saint-Ivenec&gt;'));
   assert.deepEqual(m.bouton, { libelle: 'Relire et envoyer', lien: 'https://fill.studioes.fr/espace/bilan/#r=abc' });
-  assert.match(R.mailBloque({ organisation: 'Commune de Lanvern', periode: '2026-10' }).texte.join(' '), /il n’est pas retenté/);
+  const b = R.mailBloque({ organisation: 'Commune de Lanvern', periode: '2026-10', id: 'abc', a: 'yann@exemple.fr' }).texte.join(' ');
+  assert.ok(/il n’est pas retenté/.test(b) && b.includes("select bilan_confirmer_envoi('abc', 'yann@exemple.fr');") && b.includes("select bilan_liberer_envoi('abc');"));
+  const c = R.mailBloque({ organisation: 'Commune de Lanvern', periode: '2026-10', id: 'abc', a: 'yann@exemple.fr', confirme: true }).texte.join(' ');
+  assert.ok(/n’a pas pu être enregistré/.test(c) && c.includes("select bilan_confirmer_envoi('abc', 'yann@exemple.fr');") && !c.includes('bilan_liberer_envoi'));
+  const d = R.mailAnomalies(['Commune de <Lanvern> : aucun référent actif']);
+  assert.deepEqual([d.sujet, d.texte[0]], ['Mail mensuel : 1 point à vérifier', 'Commune de &lt;Lanvern&gt; : aucun référent actif']);
 });
 
 // ---------- fonction serveur « bilan » : la vraie fonction, assemblée comme au déploiement, sur la base embarquée.
@@ -640,6 +708,7 @@ await test('mails internes : relecture avant envoi, envoi à vérifier', async (
 // d'envoi sont simulés : aucun mail ne part, chaque appel au service d'envoi est gardé dans « mails ».
 
 const CLE = 'k'.repeat(40);
+const pannes = new Set();                       // fonctions de la base qui répondent par une erreur
 const mails = [];
 let brevo = () => 201;                          // statut que répond le service d'envoi (ou une exception)
 const vraiFetch = globalThis.fetch;
@@ -658,6 +727,7 @@ globalThis.Deno = { env: { get: (k) => env[k] }, serve: (h) => { handler = h; } 
 globalThis.__sb = () => ({
   rpc: async (nom, params = {}) => {
     const cles = Object.keys(params);
+    if (pannes.has(nom)) return { data: null, error: { code: '57014', message: 'canceling statement due to statement timeout' } };
     try {
       const r = await db.query(`select ${nom}(${cles.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as v`, cles.map((k) => params[k]));
       return { data: r.rows[0].v, error: null };
@@ -698,7 +768,7 @@ const jetonDe = (html, lettre) => (html.match(new RegExp(`/bilan/#${lettre}=([A-
 const depart = async (quand = JEUDI) => {
   await serveur();
   await db.exec(`delete from bilan; update organisation set statut = 'resiliee'; update parametre set pilote_bilan = false;`);
-  mails.length = 0; brevo = () => 201; horloge(quand);
+  mails.length = 0; brevo = () => 201; horloge(quand); pannes.clear();
   const s = await scene(); await cloturer(s); await credit(s, '2026-11', 10);
   return s;
 };
@@ -789,8 +859,12 @@ await test('fonction : un refus du service d’envoi libère le bilan, qui repar
   assert.equal((await un(`select count(*)::int as n from bilan where envoi_reserve_le is not null or empreinte is not null`)).n, 0);
   brevo = () => 201;
   assert.deepEqual((await quotidien()).d.envois.map((e) => e.etat), ['envoye']);
-  assert.deepEqual(mails.map((m) => m.statut), [400, 201]);
+  // le refus est signalé à Fill dans le résumé du passage (ici refusé lui aussi, le service étant en panne)
+  assert.deepEqual(mails.map((m) => [m.a, m.statut]), [['yann@exemple.fr', 400], ['fill@exemple.fr', 400], ['yann@exemple.fr', 201]]);
+  assert.equal(mails[1].sujet, 'Mail mensuel : 1 point à vérifier');
+  assert.ok(mails[1].html.includes('Commune de Saint-Ivenec : le service d’envoi a refusé le mail'));
   assert.equal((await quotidien()).d.envois.length, 0);
+  assert.equal(mails.length, 3, 'plus rien à signaler');
   // réponse incertaine (erreur du service, coupure) : jamais retenté, Fill est prévenu une fois
   for (const incertain of [500, 'panne']) {
     await depart();
@@ -823,6 +897,61 @@ await test('fonction : un accord donné hors plage part au passage suivant ; san
   env.BREVO_API_KEY = 'cle-brevo';
   assert.deepEqual((await quotidien()).d.relectures.map((r) => r.etat), ['parti']);
   assert.equal(mails.length, 1);
+});
+
+await test('fonction : un lien de relecture sans réponse claire du service d’envoi est refait au passage suivant, jamais perdu', async () => {
+  await depart();
+  brevo = () => 'panne';
+  const a = (await quotidien()).d;
+  assert.deepEqual(a.relectures.map((r) => r.etat), ['inconnu']);
+  const premier = jetonDe(mails[0].html, 'r');
+  brevo = () => 201;
+  const b = (await quotidien()).d;
+  assert.deepEqual([b.prepares.length, b.relectures.map((r) => r.etat)], [0, ['parti']]);
+  const second = jetonDe(mails.at(-1).html, 'r');
+  assert.ok(second && second !== premier);
+  assert.equal((await appeler({ action: 'lire', r: premier })).statut, 404, 'le premier lien ne vaut plus rien');
+  assert.equal((await appeler({ action: 'lire', r: second })).d.etat, 'ouvert');
+});
+
+await test('fonction : le mail est parti mais la base ne l’enregistre pas : Fill est prévenu, rien ne repart', async () => {
+  await depart();
+  await db.query(`update parametre set pilote_bilan = true`);
+  pannes.add('bilan_confirmer_envoi');
+  const a = (await quotidien()).d;
+  assert.deepEqual([a.envois.map((e) => e.etat), a.bloques.length], [['a_confirmer'], 1]);
+  assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['yann@exemple.fr', 'Votre mois avec Fill : du 12 octobre au 11 novembre 2026'], ['fill@exemple.fr', 'Bilan à vérifier : Commune de Saint-Ivenec']]);
+  assert.match(mails[1].html, /select bilan_confirmer_envoi\('[0-9a-f-]{36}', 'yann@exemple\.fr'\);/);
+  pannes.clear();
+  const b = (await quotidien()).d;
+  assert.deepEqual([b.envois.length, b.bloques.length, mails.length], [0, 1, 2]);
+});
+
+await test('fonction : une panne de lecture ne fige rien (pas de suggestions faussées) ; Fill reçoit le résumé, le passage suivant reprend', async () => {
+  const s = await depart();
+  pannes.add('bilan_contexte');
+  const a = (await quotidien()).d;
+  assert.deepEqual([a.prepares.length, a.erreurs.length, a.erreurs[0].organisation], [0, 1, 'Commune de Saint-Ivenec']);
+  assert.equal((await un(`select count(*)::int as n from bilan where organisation_id = $1`, [s.o])).n, 0);
+  assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['fill@exemple.fr', 'Mail mensuel : 1 point à vérifier']]);
+  pannes.clear();
+  assert.equal((await quotidien()).d.prepares.length, 1);
+});
+
+await test('fonction : accord donné le lendemain, la suggestion dont la date limite est passée n’est plus dans le mail ; sujet en cours non proposé', async () => {
+  const s = await depart();
+  await demande(s, 'Téléthon', { unites: 6, etat: 'reserve', periode: '2026-11', etapes: [['confirmee', '2026-09-02 10:00']], creee: '2026-09-01 09:00' });
+  const a = (await quotidien()).d;                                  // jeudi 12 : la lettre du 22 est à déposer le jour même
+  const jr = jetonDe(mails[0].html, 'r');
+  const avant = (await appeler({ action: 'lire', r: jr })).d.donnees.suggestions.map((x) => [x.titre, x.limite]);
+  assert.deepEqual(avant, [['Lettre de fin d’année', '2026-11-12'], ['Horaires des fêtes', '2026-12-10']], 'le Téléthon, déjà en cours depuis septembre, n’est pas proposé');
+  assert.equal(a.prepares[0].suggestions, 2);
+  horloge(VENDREDI);
+  assert.equal((await appeler({ action: 'approuver', r: jr })).d.envoye, true);
+  const html = mails.at(-1).html;
+  assert.equal(html.includes('Lettre de fin d’année'), false);
+  assert.equal((html.match(/Lancer cette demande/g) ?? []).length, 1);
+  assert.ok(html.includes('un sujet tient dans vos 5 unités disponibles'), 'le solde tient compte des 6 unités déjà réservées');
 });
 
 globalThis.Date = VraieDate; globalThis.fetch = vraiFetch;
