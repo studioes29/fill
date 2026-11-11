@@ -65,6 +65,10 @@ summary::-webkit-details-marker { display: none; }
 summary::after { content: ""; flex: none; width: 9px; height: 9px; margin-right: 3px; border-right: 2px solid var(--encre); border-bottom: 2px solid var(--encre); transform: translateY(-3px) rotate(45deg); }
 details[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
 details.livrable[open] > summary { border-bottom: 1px solid var(--ligne); }
+summary .pastille { margin-left: auto; }
+summary .pastille:empty { display: none; }
+.choix-c { display: grid; gap: 10px; padding: 14px 18px 18px; border-top: 1px solid var(--ligne); }
+.choix-c .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 .autres { margin-top: 10px; border: 1px solid var(--ligne); border-radius: 16px; }
 .autres .form { display: grid; gap: 12px; padding: 4px 18px 18px; }
@@ -81,7 +85,7 @@ details.livrable[open] > summary { border-bottom: 1px solid var(--ligne); }
 .invite p { font-size: 15px; }
 .invite p small { display: block; color: var(--mu); font-size: 14px; }
 .pastille { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--creux); }
-.pastille.bon { background: var(--bon-c); color: var(--bon); }
+.pastille.bon { background: var(--bon-c); color: #1d6345; }
 .pastille.att { background: var(--alerte-c); color: var(--alerte); }
 
 .bt { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 10px 1.5em; border: 0; border-radius: 999px; background: var(--encre); color: var(--sable); font-weight: 600; font-size: 16.5px; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }

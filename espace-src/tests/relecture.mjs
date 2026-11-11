@@ -82,21 +82,100 @@ for (const largeur of [390, 1280]) {
   });
 }
 
-await test('valider demande une confirmation, puis envoie « accord » avec le jeton, en POST', async () => {
-  const { page, ctx, appels, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue() } : { body: { ok: true, decision: true, statut: 'validee', usage: 'referent' } }) });
+const seul = (usage = 'referent', plus = {}) => { const v = vue(usage, plus); return { ...v, version: { ...v.version, fichiers: [v.version.fichiers[0]] } }; };
+
+await test('un seul contenu : valider demande une confirmation, puis envoie « accord » avec le jeton, en POST', async () => {
+  const { page, ctx, appels, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: seul() } : { body: { ok: true, decision: true, statut: 'validee', usage: 'referent' } }) });
   assert.equal(await page.textContent('h1'), 'Newsletter de décembre');
+  assert.equal(await page.locator('details.livrable').count(), 0, 'un seul contenu : pas de volet');
   await page.getByRole('button', { name: 'D’accord' }).click();
   assert.equal(appels.length, 1, 'un seul toucher ne doit rien décider');
+  assert.match(await page.textContent('.barre .question'), /Valider cette version \?/);
   assert.deepEqual(await accessibilite(page), []);
-  assert.match(await page.textContent('.barre .question'), /Valider les 2 contenus de cette version/);
   await page.getByRole('button', { name: 'Oui, valider' }).click();
   await page.waitForSelector('.etat.fait');
   assert.deepEqual(appels[1], { action: 'repondre', reponse: 'accord', remarque: null, j: JETON });
   assert.match(await page.textContent('.etat h2'), /Version validée/);
   assert.equal(await page.locator('.barre').count(), 0);
   assert.deepEqual(erreurs, []);
-  await page.screenshot({ path: join(captures, 'relecture-validee.png') });
   await ctx.close();
+});
+
+await test('un seul contenu : une correction exige une remarque ; le refus du serveur s’affiche et la saisie reste', async () => {
+  let n = 0;
+  const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: seul() } : ++n === 1 ? { status: 409, body: { erreur: 'Cette version n’attend plus de réponse' } } : { body: { ok: true, decision: true, statut: 'correction', usage: 'referent' } }) });
+  await page.getByRole('button', { name: 'À corriger' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  assert.match(await page.textContent('.barre .erreur'), /Indiquez ce qui est à corriger/);
+  assert.equal(appels.length, 1);
+  await page.getByLabel('Ce qui est à corriger').fill('La date est le 12, pas le 13.');
+  assert.deepEqual(await accessibilite(page), []);
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.waitForFunction(() => /n’attend plus/.test(document.querySelector('.barre .erreur')?.textContent ?? ''));
+  assert.equal(await page.getByLabel('Ce qui est à corriger').inputValue(), 'La date est le 12, pas le 13.');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.waitForSelector('.etat.fait');
+  assert.match(await page.textContent('.etat h2'), /Corrections transmises/);
+  assert.equal(appels[2].remarque, 'La date est le 12, pas le 13.');
+  await ctx.close();
+});
+
+await test('deux contenus : chacun reçoit sa réponse, un seul envoi les réunit', async () => {
+  const { page, ctx, appels, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue() } : { body: { ok: true, decision: true, statut: 'correction', usage: 'referent' } }) });
+  const volet = (i) => page.locator('details.livrable').nth(i);
+  assert.equal(await page.getByRole('button', { name: 'Envoyer', exact: true }).isDisabled(), true);
+  assert.match(await page.textContent('.barre .aide'), /il en reste 2/);
+  await volet(0).getByRole('button', { name: 'D’accord' }).click();
+  assert.match(await page.textContent('.barre .aide'), /il en reste 1/);
+  await volet(1).locator('summary').click();
+  await volet(1).getByRole('button', { name: 'À corriger' }).click();
+  assert.equal(await page.getByRole('button', { name: 'Envoyer', exact: true }).isDisabled(), true, 'une correction sans texte ne part pas');
+  await page.getByLabel('Ce qui est à corriger : Document').fill('La date est le 12, pas le 13.');
+  assert.deepEqual(await page.locator('details.livrable > summary .pastille').allTextContents(), ['D’accord', 'À corriger']);
+  assert.deepEqual(await accessibilite(page), []);
+  await page.screenshot({ path: join(captures, 'relecture-deux-contenus.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Envoyer', exact: true }).click();
+  assert.match(await page.textContent('.barre .question'), /Valider 1 contenu et demander la correction de 1 contenu \?/);
+  assert.equal(appels.length, 1, 'rien ne part avant la confirmation');
+  await page.getByRole('button', { name: 'Oui, envoyer' }).click();
+  await page.waitForSelector('.etat.fait');
+  assert.deepEqual(appels[1], { action: 'repondre', reponse: 'correction', remarque: 'Page du site : d’accord\nDocument : à corriger. La date est le 12, pas le 13.', j: JETON });
+  assert.match(await page.textContent('.etat'), /Réponse transmise.*Ce que vous avez validé ne change pas/s);
+  assert.deepEqual(erreurs, []);
+  await ctx.close();
+});
+
+await test('deux contenus : « Tout valider » demande une confirmation, puis envoie « accord »', async () => {
+  const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue() } : { body: { ok: true, decision: true, statut: 'validee', usage: 'referent' } }) });
+  await page.getByRole('button', { name: 'Tout valider' }).click();
+  assert.match(await page.textContent('.barre .question'), /Valider les 2 contenus \?/);
+  assert.equal(appels.length, 1);
+  await page.getByRole('button', { name: 'Retour' }).click();
+  assert.deepEqual(await page.locator('details.livrable > summary .pastille').allTextContents(), ['D’accord', 'D’accord']);
+  await page.getByRole('button', { name: 'Envoyer', exact: true }).click();
+  await page.getByRole('button', { name: 'Oui, envoyer' }).click();
+  await page.waitForSelector('.etat.fait');
+  assert.deepEqual(appels[1], { action: 'repondre', reponse: 'accord', remarque: null, j: JETON });
+  assert.match(await page.textContent('.etat h2'), /Version validée/);
+  await ctx.close();
+});
+
+await test('un avis n’annonce aucune décision, avec un contenu comme avec plusieurs', async () => {
+  const a = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: seul('avis', { nom: 'Anne Kerbrat' }) } : { body: { ok: true, decision: false, statut: 'a_valider', usage: 'avis' } }) });
+  assert.match(await a.page.textContent('.contexte'), /Yann Le Gall vous demande votre avis/);
+  assert.equal(await a.page.locator('.autres').count(), 0, 'seul le référent peut inviter');
+  await a.page.getByRole('button', { name: 'D’accord' }).click();
+  await a.page.waitForSelector('.etat.fait');
+  assert.match(await a.page.textContent('.etat h2'), /Avis transmis/);
+  assert.equal(a.appels.length, 2);
+  await a.ctx.close();
+  const b = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue('avis', { nom: 'Anne Kerbrat' }) } : { body: { ok: true, decision: false, statut: 'a_valider', usage: 'avis' } }) });
+  await b.page.getByRole('button', { name: 'Tout est bon' }).click();
+  assert.match(await b.page.textContent('.barre .question'), /Envoyer votre avis \?/);
+  await b.page.getByRole('button', { name: 'Oui, envoyer' }).click();
+  await b.page.waitForSelector('.etat.fait');
+  assert.match(await b.page.textContent('.etat h2'), /Avis transmis/);
+  await b.ctx.close();
 });
 
 await test('un texte venu de la base n’est jamais interprété comme du HTML', async () => {
@@ -110,37 +189,7 @@ await test('un texte venu de la base n’est jamais interprété comme du HTML',
   await ctx.close();
 });
 
-await test('une correction exige une remarque ; le refus du serveur s’affiche et la saisie reste', async () => {
-  let n = 0;
-  const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue() } : ++n === 1 ? { status: 409, body: { erreur: 'Cette version n’attend plus de réponse' } } : { body: { ok: true, decision: true, statut: 'correction', usage: 'referent' } }) });
-  await page.getByRole('button', { name: 'À corriger' }).click();
-  await page.getByRole('button', { name: 'Envoyer' }).click();
-  assert.match(await page.textContent('.barre .erreur'), /Indiquez ce qui est à corriger/);
-  assert.equal(appels.length, 1);
-  await page.getByLabel('Ce qui est à corriger').fill('La date est le 12, pas le 13.');
-  assert.deepEqual(await accessibilite(page), []);
-  await page.screenshot({ path: join(captures, 'relecture-correction.png') });
-  await page.getByRole('button', { name: 'Envoyer' }).click();
-  await page.waitForFunction(() => /n’attend plus/.test(document.querySelector('.barre .erreur')?.textContent ?? ''));
-  assert.equal(await page.getByLabel('Ce qui est à corriger').inputValue(), 'La date est le 12, pas le 13.');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
-  await page.waitForSelector('.etat.fait');
-  assert.match(await page.textContent('.etat h2'), /Corrections transmises/);
-  assert.equal(appels[2].remarque, 'La date est le 12, pas le 13.');
-  await ctx.close();
-});
 
-await test('un avis part sans confirmation et n’annonce aucune décision', async () => {
-  const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue('avis', { nom: 'Anne Kerbrat' }) } : { body: { ok: true, decision: false, statut: 'a_valider', usage: 'avis' } }) });
-  assert.match(await page.textContent('.contexte'), /Yann Le Gall vous demande votre avis/);
-  assert.equal(await page.locator('article.livrable, details.livrable').count(), 2);
-  assert.equal(await page.locator('.autres').count(), 0, 'seul le référent peut inviter');
-  await page.getByRole('button', { name: 'D’accord' }).click();
-  await page.waitForSelector('.etat.fait');
-  assert.match(await page.textContent('.etat h2'), /Avis transmis/);
-  assert.equal(appels.length, 2);
-  await ctx.close();
-});
 
 await test('le référent fait relire : saisie contrôlée, invitation ajoutée, puis retirée', async () => {
   const { page, ctx, appels } = await ouvrir(`${base}#j=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: vue() } : c.action === 'inviter' ? { body: { ok: true, lien: 'l1', nom: 'Anne Kerbrat', usage: c.usage } } : { body: { ok: true } }) });

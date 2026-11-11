@@ -42,7 +42,7 @@ const appeler = async (corps) => {
 const typeDe = (f) => f.type ?? (/\.(mp4|mov)$/i.test(f.nom ?? ``) ? `video` : /\.pdf$/i.test(f.nom ?? ``) ? `pdf` : `visuel`);
 const image = (src, alt) => h(`figure`, { class: `image` }, h(`img`, { src, alt, loading: `lazy`, decoding: `async` }));
 
-const livrable = (f, n, titre) => {
+const livrable = (f, n, titre, choix) => {
   const type = typeDe(f), nom = TYPES[type] ?? `Fichier`, c = f.contenu, corps = h(`div`, { class: `corps` });
   const images = [...(Array.isArray(f.srcs) ? f.srcs : []), ...(f.src && type !== `pdf` && type !== `video` ? [f.src] : [])];
   if (type === `video` && f.src) corps.append(h(`video`, { src: f.src, controls: true, playsinline: true, preload: `metadata` }));
@@ -61,7 +61,7 @@ const livrable = (f, n, titre) => {
   if (type === `pdf` && f.src) corps.append(h(`a`, { class: `bt cl`, href: f.src, target: `_blank`, rel: `noopener` }, `Ouvrir le document`));
   if (!corps.childNodes.length) corps.append(h(`p`, { class: `absent` }, `Ce fichier ne peut pas être affiché ici.`));
   // plusieurs contenus : un volet par contenu ; un seul : affiché tel quel
-  return h(`li`, {}, titre ? h(`details`, { class: `livrable`, open: n === 1 }, h(`summary`, {}, titre), corps) : h(`article`, { class: `livrable` }, corps));
+  return h(`li`, {}, titre ? h(`details`, { class: `livrable`, open: n === 1 }, h(`summary`, {}, h(`span`, {}, titre), h(`span`, { class: `pastille` })), corps, choix) : h(`article`, { class: `livrable` }, corps));
 };
 
 // ---------- états sans réponse possible
@@ -98,15 +98,18 @@ const afficher = (d) => {
   const v = d.version, fichiers = v.fichiers ?? [];
   const noms = fichiers.map((f) => TYPES[typeDe(f)] ?? `Fichier`);
   const titres = noms.map((nom, i) => (fichiers.length < 2 ? null : noms.filter((x) => x === nom).length > 1 ? `${nom} ${noms.slice(0, i + 1).filter((x) => x === nom).length}` : nom));
+  // plusieurs contenus : une réponse par contenu, envoyée en une fois
+  const multi = fichiers.length > 1 ? { reponses: fichiers.map(() => ({ r: null, texte: `` })), peintres: [], maj: () => {} } : null;
   poser(main,
     h(`h1`, {}, d.demande.titre),
     h(`p`, { class: `reperes` }, [`Version ${v.numero}`, d.demande.parution ? `parution ${date(d.demande.parution)}${heure(d.demande.heure)}` : null].filter(Boolean).join(` · `)),
     contexte ? h(`p`, { class: `contexte` }, contexte) : null,
     v.note ? h(`p`, { class: `mot` }, h(`b`, {}, `Fill : `), v.note) : null,
-    h(`ul`, { class: `livrables` }, fichiers.length ? fichiers.map((f, i) => livrable(f, i + 1, titres[i])) : h(`li`, {}, h(`p`, { class: `absent` }, `Cette version ne contient pas de fichier à afficher.`))),
+    h(`ul`, { class: `livrables` }, fichiers.length ? fichiers.map((f, i) => livrable(f, i + 1, titres[i], multi ? choixContenu(i, titres[i], multi, d, decide) : null)) : h(`li`, {}, h(`p`, { class: `absent` }, `Cette version ne contient pas de fichier à afficher.`))),
     d.usage === `referent` ? autres(d) : null,
   );
-  barre(d, decide, fichiers.length);
+  if (multi) barreMulti(d, decide, multi, titres);
+  else barre(d, decide);
 };
 
 // barre de réponse, toujours visible en bas d'écran
@@ -145,6 +148,72 @@ const barre = (d, decide, nombre = 1) => {
       h(`p`, { class: `aide`, id: `aide-rem` }, decide ? `Deux allers-retours sont inclus. Il vous en reste ${restantes}.` : `Votre remarque est transmise à ${d.demandeur ?? `votre interlocuteur`}.`),
       h(`div`, { class: `choix` }, h(`button`, { class: `bt cl`, type: `button`, onclick: depart }, `Retour`), ok), erreur);
     champ.focus();
+  };
+  depart();
+  document.body.append(zone);
+};
+
+// ---------- plusieurs contenus : chacun reçoit sa réponse, le tout part en une fois
+
+const pret = (e) => e.r === `accord` || (e.r === `correction` && e.texte.trim().length >= 3);
+
+const choixContenu = (i, titre, m, d, decide) => {
+  const zone = h(`div`, { class: `choix-c` }), e = m.reponses[i];
+  const bloque = decide && (d.demande.corrections_restantes ?? 2) < 1;
+  const peindre = () => {
+    const non = h(`button`, { class: `bt sm${e.r === `correction` ? `` : ` cl`}`, type: `button`, "aria-pressed": String(e.r === `correction`), disabled: bloque, onclick: () => { e.r = `correction`; peindre(); m.maj(); zone.querySelector(`textarea`)?.focus(); } }, `À corriger`);
+    const oui = h(`button`, { class: `bt sm${e.r === `accord` ? `` : ` cl`}`, type: `button`, "aria-pressed": String(e.r === `accord`), onclick: () => { e.r = `accord`; peindre(); m.maj(); } }, `D’accord`);
+    const champ = e.r === `correction` ? h(`textarea`, { class: `saisie`, maxlength: `1500`, "aria-label": `Ce qui est à corriger : ${titre}`, oninput: (ev) => { e.texte = ev.target.value; m.maj(); } }) : null;
+    if (champ) champ.value = e.texte;
+    poser(zone, h(`div`, { class: `choix`, role: `group`, "aria-label": `Votre réponse : ${titre}` }, non, oui), champ);
+  };
+  m.peintres[i] = peindre;
+  peindre();
+  return zone;
+};
+
+const barreMulti = (d, decide, m, titres) => {
+  document.querySelector(`.barre`)?.remove();
+  const dans = h(`div`, { class: `dans` }), zone = h(`div`, { class: `barre`, role: `region`, "aria-label": `Votre réponse` }, dans);
+  const erreur = h(`p`, { class: `erreur`, role: `alert`, hidden: true });
+  const dire = (t) => { erreur.textContent = t ?? ``; erreur.hidden = !t; };
+  const pluriel = (n) => `${n} contenu${n > 1 ? `s` : ``}`;
+  let confirme = false;
+
+  const envoyer = async (bouton) => {
+    dire(); bouton.disabled = true;
+    const aCorriger = m.reponses.some((e) => e.r === `correction`);
+    const remarque = aCorriger ? m.reponses.map((e, i) => `${titres[i]} : ${e.r === `accord` ? `d’accord` : `à corriger. ${e.texte.trim()}`}`).join(`\n`) : null;
+    try {
+      const r = await appeler({ action: `repondre`, reponse: aCorriger ? `correction` : `accord`, remarque });
+      if (!r.decision) etat(`Avis transmis.`, `${d.demandeur ?? `Votre interlocuteur`} le reçoit par e-mail et décide. Vous pouvez fermer cette page.`, null, true);
+      else if (!aCorriger) etat(`Version validée.`, `Fill prend la suite. Vous pouvez fermer cette page.`, null, true);
+      else etat(`Réponse transmise.`, `Fill reprend ce qui est à corriger et vous remet une nouvelle version. Ce que vous avez validé ne change pas.`, null, true);
+    } catch (e) { bouton.disabled = false; dire(e.message); }
+  };
+  const depart = () => {
+    confirme = false;
+    const reste = m.reponses.filter((e) => !pret(e)).length;
+    const tout = h(`button`, { class: `bt cl`, type: `button`, onclick: () => { m.reponses.forEach((e) => { e.r = `accord`; }); m.peintres.forEach((f) => f()); m.maj(); confirmer(); } }, decide ? `Tout valider` : `Tout est bon`);
+    const env = h(`button`, { class: `bt`, type: `button`, disabled: reste > 0, onclick: () => confirmer() }, `Envoyer`);
+    poser(dans, h(`p`, { class: `aide` }, reste ? `Une réponse par contenu : il en reste ${reste}.` : `Votre réponse est prête.`), h(`div`, { class: `choix` }, tout, env), erreur);
+  };
+  const confirmer = () => {
+    confirme = true;
+    const ok = m.reponses.filter((e) => e.r === `accord`).length, ko = m.reponses.length - ok;
+    const question = !decide ? `Envoyer votre avis ?` : !ko ? `Valider les ${pluriel(ok)} ?` : !ok ? `Demander la correction des ${pluriel(ko)} ?` : `Valider ${pluriel(ok)} et demander la correction de ${pluriel(ko)} ?`;
+    const oui = h(`button`, { class: `bt`, type: `button`, onclick: () => envoyer(oui) }, `Oui, envoyer`);
+    poser(dans, h(`p`, { class: `question`, id: `q-envoyer` }, question), h(`div`, { class: `choix`, role: `group`, "aria-labelledby": `q-envoyer` }, h(`button`, { class: `bt cl`, type: `button`, onclick: depart }, `Retour`), oui), erreur);
+    oui.focus();
+  };
+  // à chaque réponse : la pastille du volet, puis la barre
+  m.maj = () => {
+    document.querySelectorAll(`details.livrable > summary .pastille`).forEach((p, i) => {
+      const e = m.reponses[i];
+      p.textContent = e.r === `accord` ? `D’accord` : e.r === `correction` ? `À corriger` : ``;
+      p.className = `pastille${e.r === `accord` ? ` bon` : e.r === `correction` ? ` att` : ``}`;
+    });
+    if (!confirme) depart();
   };
   depart();
   document.body.append(zone);
