@@ -10,10 +10,12 @@
 // Module sans dépendance au serveur : testé tel quel (tests/reception.test.mjs).
 import { DOMAINE_DEFAUT } from './transfert.ts';
 
+// mails : traités par appel du webhook ; pieces : pièces jointes reprises par mail ; octetsPiece : au-delà, la pièce
+// n'est pas reprise
 export const LIMITES = {
-  mails: 25,                        // mails traités par appel du webhook
-  pieces: 8,                        // pièces jointes reprises par mail
-  octetsPiece: 15 * 1024 * 1024,    // au-delà, la pièce n'est pas reprise
+  mails: 25,
+  pieces: 8,
+  octetsPiece: 15 * 1024 * 1024,
   octetsTotal: 30 * 1024 * 1024,
   brief: 6000,
   texte: 60000,
@@ -24,7 +26,7 @@ export const LIMITES = {
 export const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/;
 
 // texte comparable : sans casse ni accents, apostrophes droites
-export const plat = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’‘`´]/g, "'");
+export const plat = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\u2019\u2018`\u00b4]/g, "'");
 // texte que la base accepte : sans caractère nul ni moitié d'émoji laissée par une coupe
 export const sain = (t) => String(t ?? "").replace(/\u0000/g, "").replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, "");
 const propre = (t, max) => sain(String(t ?? "").replace(/\s+/g, " ").trim().slice(0, max)).trim();
@@ -59,8 +61,8 @@ export const htmlVersTexte = (html) =>
 const lignesNettes = (t) =>
   String(t ?? "")
     .replace(/\r\n?/g, "\n")
-    .replace(/[   ]/g, " ")
-    .replace(/[​-‍﻿]/g, "")
+    .replace(/[\u00a0\u2007\u202f]/g, " ")
+    .replace(/[\u200b-\u200d\ufeff]/g, "")
     .split("\n")
     .map((l) => l.replace(/\s+$/, ""))
     .join("\n")
@@ -377,7 +379,7 @@ export const trierPieces = (pieces = []) => {
 
 // nom de fichier rangé dans le stockage, comme le fait l'Espace
 export const cheminPiece = (organisation, dossier, nom, horodatage) =>
-  `${organisation}/${dossier}/${horodatage}-${String(nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(0, 100)}`;
+  `${organisation}/${dossier}/${horodatage}-${String(nom).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.\-]+/g, "_").slice(0, 100)}`;
 
 // --- décision -----------------------------------------------------------------------------------------
 

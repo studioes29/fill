@@ -105,7 +105,7 @@ export const traiter = async (item, d) => {
     // la base refuse : unités insuffisantes, prestation fermée à la formule… La demande reste à terminer dans l'Espace.
     if (!refusBase(dep.error)) throw new Panne(dep.error.message ?? "mail_deposer");
     const m = String(dep.error.message ?? "");
-    motif = /^Unités insuffisantes/.test(m) ? "sans_unites" : "depot_impossible";
+    motif = /^Unit\u00e9s insuffisantes/.test(m) ? "sans_unites" : "depot_impossible";
     detail = motif === "sans_unites" ? (m.match(/cette demande compte [^.]+/) ?? [null])[0] : null;
   }
 

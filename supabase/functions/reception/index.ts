@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
   const items = Array.isArray(s?.items) ? s.items : s && typeof s === "object" && s.From ? [s] : [];
   if (!items.length) return json({ ok: true, mails: [] });      // corps illisible ou vide : rien à refaire
 
+  // « alerter » écrit à Fill quand le mail d'un membre n'est pas devenu une demande
   const d = {
     domaine, site: SITE, echap,
     origine: Deno.env.get("RECEPTION_ORIGINE") === "adresse" ? "adresse" : "preuve",
@@ -130,7 +131,6 @@ Deno.serve(async (req) => {
       if (r && !r.ok && r.status === 400) r = await poster(corps);      // en-têtes refusés : le message part sans eux
       return Boolean(r?.ok);
     },
-    // à Fill : un mail d'un membre qui n'est pas devenu une demande
     alerter: async (m) => {
       if (!cleBrevo) return false;
       const r = await fetch(`${BREVO}/smtp/email`, {
