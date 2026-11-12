@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
   const { evenement, demande: demandeId, commande: commandeId, organisation: orgId, canal } = await req.json();
   const estFill = serveur || EQUIPE2.includes(moi.role);
-  const profils = async (org) => (await admin.from("profil").select("id, nom, email, role, organisation_id, actif").eq("organisation_id", org).eq("actif", true)).data ?? [];
+  const profils = async (org) => (await admin.from("profil").select("id, nom, email, role, organisation_id, actif, mails_etapes").eq("organisation_id", org).eq("actif", true)).data ?? [];
   const mails = [];
   let essai = false;
   if (evenement === "credit" || evenement === "paiement") {
@@ -91,6 +91,8 @@ Deno.serve(async (req) => {
     const quand = d.heure ? ` à ${String(d.heure).replace(":", " h ")}` : "";
     const nom = `« ${echap(d.titre)} »`;
     const destClient = (qui) => [...new Map(qui.filter(Boolean).map((p) => [p.email, { email: p.email, name: p.nom }])).values()];
+    // mails d'étape : seulement pour qui ne les a pas coupés dans son espace (menu Équipe)
+    const etapes = (qui) => qui.filter((p) => p && p.mails_etapes !== false);
     if (evenement === "jet") {
       if (!serveur) return new Response("Réservé au serveur", { status: 403, headers: cors });
       const { data: b } = await admin.from("brouillon").select("maj, contenu").eq("demande_id", d.id).maybeSingle();
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
       // accusé de réception pour l'auteur, quand la demande attend la confirmation de Fill ;
       // une demande arrivée par l'adresse de transfert a déjà reçu sa réponse (fonction reception)
       const parMail = (await admin.from("mail_recu").select("id").eq("demande_id", d.id).limit(1)).data?.length;
-      if (!auto && auteur && !parMail) {
+      if (!auto && auteur && !parMail && auteur.mails_etapes !== false) {
         mails.push({
           a: destClient([auteur]),
           sujet: `Demande reçue : ${d.titre}`,
@@ -166,12 +168,12 @@ Deno.serve(async (req) => {
           transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
         }
         const versClient = {
-          confirmee: { sujet: `Demande confirmée : ${d.titre}`, titre: `${nom} est confirmée`, texte: `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison prévue le ${jour(d.livraison)}` : ""}. Vous suivez chaque étape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
+          confirmee: { sujet: `Demande confirmée : ${d.titre}`, titre: `${nom} est confirmée`, texte: `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison prévue le ${jour(d.livraison)}` : ""}. Vous suivez chaque étape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], etape: true, apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
           a_valider: { sujet: `À relire : ${d.titre}`, titre: `Une version de ${nom} est prête`, texte: "Relisez-la dans votre espace : validez-la, ou indiquez vos corrections au bon endroit. Deux allers-retours sont inclus.", bouton: "Relire la version", qui: [auteur, referent] },
           attente_client: { sujet: `Un élément est attendu : ${d.titre}`, titre: `Fill attend un élément pour ${nom}`, texte: "La production reprend dès votre réponse. Le détail est dans les échanges de la demande.", bouton: "Répondre", qui: [auteur, referent] },
           accord_requis: { sujet: `Votre accord est demandé : ${d.titre}`, titre: `Votre accord est demandé pour ${nom}`, texte: "Cette demande dépasse ce qui était prévu (unités ou plafond du contributeur). Elle est lancée dès votre accord.", bouton: "Donner mon accord", qui: [referent] },
-          livree: iss === "fichiers" ? { sujet: `Fichiers livrés : ${d.titre}`, titre: `Les fichiers de ${nom} sont livrés`, texte: "Les fichiers finaux sont à télécharger dans la demande, prêts à imprimer ou à diffuser.", bouton: "Récupérer les fichiers", qui: [auteur, referent] } : { sujet: `C’est publié : ${d.titre}`, titre: `${nom} est publiée`, texte: iss === "mixte" ? "Fill l’a publiée sur vos comptes ; les fichiers des supports imprimés sont à télécharger dans la demande." : "Fill l’a publiée sur vos comptes. Les liens et les fichiers restent disponibles dans la demande.", bouton: "Voir la demande", qui: [auteur, referent] },
-          annulee: { sujet: `Demande annulée : ${d.titre}`, titre: `${nom} est annulée`, texte: "Les unités réservées sont rendues à votre compte. Le motif est dans les échanges de la demande.", bouton: "Voir la demande", qui: [auteur] }
+          livree: iss === "fichiers" ? { sujet: `Fichiers livrés : ${d.titre}`, titre: `Les fichiers de ${nom} sont livrés`, texte: "Les fichiers finaux sont à télécharger dans la demande, prêts à imprimer ou à diffuser.", bouton: "Récupérer les fichiers", qui: [auteur, referent], etape: true } : { sujet: `C’est publié : ${d.titre}`, titre: `${nom} est publiée`, texte: iss === "mixte" ? "Fill l’a publiée sur vos comptes ; les fichiers des supports imprimés sont à télécharger dans la demande." : "Fill l’a publiée sur vos comptes. Les liens et les fichiers restent disponibles dans la demande.", bouton: "Voir la demande", qui: [auteur, referent], etape: true },
+          annulee: { sujet: `Demande annulée : ${d.titre}`, titre: `${nom} est annulée`, texte: "Les unités réservées sont rendues à votre compte. Le motif est dans les échanges de la demande.", bouton: "Voir la demande", qui: [auteur], etape: true }
         };
         const v = versClient[d.statut];
         if (!v) return new Response("Rien à signaler", { status: 409, headers: cors });
@@ -194,7 +196,7 @@ Deno.serve(async (req) => {
           });
           const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
           if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
-        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
+        } else mails.push({ a: destClient(v.etape ? etapes(v.qui) : v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
       }
     } else return new Response("Événement inconnu", { status: 400, headers: cors });
   }

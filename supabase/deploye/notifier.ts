@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
   const { evenement, demande: demandeId, commande: commandeId, organisation: orgId, canal } = await req.json();
   const estFill = serveur || EQUIPE2.includes(moi.role);
-  const profils = async (org) => (await admin.from("profil").select("id, nom, email, role, organisation_id, actif").eq("organisation_id", org).eq("actif", true)).data ?? [];
+  const profils = async (org) => (await admin.from("profil").select("id, nom, email, role, organisation_id, actif, mails_etapes").eq("organisation_id", org).eq("actif", true)).data ?? [];
   const mails = [];
   let essai = false;
   if (evenement === "credit" || evenement === "paiement") {
@@ -183,6 +183,7 @@ Deno.serve(async (req) => {
     const quand = d.heure ? ` \xE0 ${String(d.heure).replace(":", " h ")}` : "";
     const nom = `\xAB ${echap(d.titre)} \xBB`;
     const destClient = (qui) => [...new Map(qui.filter(Boolean).map((p) => [p.email, { email: p.email, name: p.nom }])).values()];
+    const etapes = (qui) => qui.filter((p) => p && p.mails_etapes !== false);
     if (evenement === "jet") {
       if (!serveur) return new Response("R\xE9serv\xE9 au serveur", { status: 403, headers: cors });
       const { data: b } = await admin.from("brouillon").select("maj, contenu").eq("demande_id", d.id).maybeSingle();
@@ -211,7 +212,7 @@ Deno.serve(async (req) => {
         bouton: { libelle: "Ouvrir la demande", lien: lienDemande }
       });
       const parMail = (await admin.from("mail_recu").select("id").eq("demande_id", d.id).limit(1)).data?.length;
-      if (!auto && auteur && !parMail) {
+      if (!auto && auteur && !parMail && auteur.mails_etapes !== false) {
         mails.push({
           a: destClient([auteur]),
           sujet: `Demande re\xE7ue : ${d.titre}`,
@@ -255,12 +256,12 @@ Deno.serve(async (req) => {
           transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
         }
         const versClient = {
-          confirmee: { sujet: `Demande confirm\xE9e : ${d.titre}`, titre: `${nom} est confirm\xE9e`, texte: `${d.unites} unit\xE9${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison pr\xE9vue le ${jour(d.livraison)}` : ""}. Vous suivez chaque \xE9tape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
+          confirmee: { sujet: `Demande confirm\xE9e : ${d.titre}`, titre: `${nom} est confirm\xE9e`, texte: `${d.unites} unit\xE9${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison pr\xE9vue le ${jour(d.livraison)}` : ""}. Vous suivez chaque \xE9tape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], etape: true, apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
           a_valider: { sujet: `\xC0 relire : ${d.titre}`, titre: `Une version de ${nom} est pr\xEAte`, texte: "Relisez-la dans votre espace : validez-la, ou indiquez vos corrections au bon endroit. Deux allers-retours sont inclus.", bouton: "Relire la version", qui: [auteur, referent] },
           attente_client: { sujet: `Un \xE9l\xE9ment est attendu : ${d.titre}`, titre: `Fill attend un \xE9l\xE9ment pour ${nom}`, texte: "La production reprend d\xE8s votre r\xE9ponse. Le d\xE9tail est dans les \xE9changes de la demande.", bouton: "R\xE9pondre", qui: [auteur, referent] },
           accord_requis: { sujet: `Votre accord est demand\xE9 : ${d.titre}`, titre: `Votre accord est demand\xE9 pour ${nom}`, texte: "Cette demande d\xE9passe ce qui \xE9tait pr\xE9vu (unit\xE9s ou plafond du contributeur). Elle est lanc\xE9e d\xE8s votre accord.", bouton: "Donner mon accord", qui: [referent] },
-          livree: iss === "fichiers" ? { sujet: `Fichiers livr\xE9s : ${d.titre}`, titre: `Les fichiers de ${nom} sont livr\xE9s`, texte: "Les fichiers finaux sont \xE0 t\xE9l\xE9charger dans la demande, pr\xEAts \xE0 imprimer ou \xE0 diffuser.", bouton: "R\xE9cup\xE9rer les fichiers", qui: [auteur, referent] } : { sujet: `C\u2019est publi\xE9 : ${d.titre}`, titre: `${nom} est publi\xE9e`, texte: iss === "mixte" ? "Fill l\u2019a publi\xE9e sur vos comptes ; les fichiers des supports imprim\xE9s sont \xE0 t\xE9l\xE9charger dans la demande." : "Fill l\u2019a publi\xE9e sur vos comptes. Les liens et les fichiers restent disponibles dans la demande.", bouton: "Voir la demande", qui: [auteur, referent] },
-          annulee: { sujet: `Demande annul\xE9e : ${d.titre}`, titre: `${nom} est annul\xE9e`, texte: "Les unit\xE9s r\xE9serv\xE9es sont rendues \xE0 votre compte. Le motif est dans les \xE9changes de la demande.", bouton: "Voir la demande", qui: [auteur] }
+          livree: iss === "fichiers" ? { sujet: `Fichiers livr\xE9s : ${d.titre}`, titre: `Les fichiers de ${nom} sont livr\xE9s`, texte: "Les fichiers finaux sont \xE0 t\xE9l\xE9charger dans la demande, pr\xEAts \xE0 imprimer ou \xE0 diffuser.", bouton: "R\xE9cup\xE9rer les fichiers", qui: [auteur, referent], etape: true } : { sujet: `C\u2019est publi\xE9 : ${d.titre}`, titre: `${nom} est publi\xE9e`, texte: iss === "mixte" ? "Fill l\u2019a publi\xE9e sur vos comptes ; les fichiers des supports imprim\xE9s sont \xE0 t\xE9l\xE9charger dans la demande." : "Fill l\u2019a publi\xE9e sur vos comptes. Les liens et les fichiers restent disponibles dans la demande.", bouton: "Voir la demande", qui: [auteur, referent], etape: true },
+          annulee: { sujet: `Demande annul\xE9e : ${d.titre}`, titre: `${nom} est annul\xE9e`, texte: "Les unit\xE9s r\xE9serv\xE9es sont rendues \xE0 votre compte. Le motif est dans les \xE9changes de la demande.", bouton: "Voir la demande", qui: [auteur], etape: true }
         };
         const v = versClient[d.statut];
         if (!v) return new Response("Rien \xE0 signaler", { status: 409, headers: cors });
@@ -282,7 +283,7 @@ Deno.serve(async (req) => {
           });
           const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
           if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
-        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
+        } else mails.push({ a: destClient(v.etape ? etapes(v.qui) : v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
       }
     } else return new Response("\xC9v\xE9nement inconnu", { status: 400, headers: cors });
   }
