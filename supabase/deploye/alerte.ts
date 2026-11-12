@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       { titre: "Envoyez votre logo et votre charte", texte: "R\xE9pondez simplement \xE0 ce message. Sans r\xE9ponse, je les reprends depuis votre site." },
       { titre: "D\xE9posez votre premi\xE8re demande", texte: transfert ? "Deux chemins, au choix : le formulaire de votre espace, ou un mail \xE0 l\u2019adresse ci-dessous." : "Depuis votre espace, en quelques minutes." }
     ],
-    encart: transfert ? { titre: "Votre adresse pour les demandes", texte: `<a href="mailto:${transfert}" style="color:#1A1A1A;font-weight:700;text-decoration:none">${transfert}</a><br><span style="font-size:14.5px;color:#4A4540">Envoyez-y votre demande, ou transf\xE9rez-y simplement l\u2019information re\xE7ue, depuis l\u2019adresse de votre compte. Elle arrive dans votre espace comme une demande d\xE9pos\xE9e en ligne. Vous pouvez aussi passer directement par la plateforme : les deux m\xE8nent au m\xEAme endroit.</span>` } : null,
+    encart: transfert ? { titre: "Votre adresse pour les demandes", texte: `<a href="mailto:${transfert}" style="color:#1A1A1A;font-weight:700;text-decoration:none">${transfert}</a><br><span style="font-size:14.5px;color:#4A4540">Envoyez-y votre demande, ou transf\xE9rez-y l\u2019information re\xE7ue, depuis l\u2019adresse de votre compte. Elle arrive dans votre espace comme une demande d\xE9pos\xE9e en ligne.</span>` } : null,
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
     apres: [
       "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez \xE0 ce message."
