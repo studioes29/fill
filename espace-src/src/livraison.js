@@ -16,6 +16,50 @@
   const typeFichier = (a, f) => (/\.(mp4|mov|webm)$/i.test(f.name) ? `video` : /\.pdf$/i.test(f.name) ? `pdf` : a.type === `pdf` ? `affiche` : a.type);
   let etatPanneau = null;
 
+  // Champ de fichier aux couleurs de Fill : le bouton natif du navigateur (« Choose file ») est masqué,
+  // une zone de dépôt en français le remplace et affiche le nom du fichier choisi.
+  const styler = () => {
+    if (document.getElementById(`fill-depot-style`)) return;
+    const st = document.createElement(`style`);
+    st.id = `fill-depot-style`;
+    st.textContent = `.fill-depot{border:1.5px dashed var(--ligne2,#1a1a1a33);cursor:pointer;border-radius:14px;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 16px;font-weight:550;background:var(--blanc,#fff);transition:border-color .2s,background .2s}`
+      + `.fill-depot:hover{border-color:var(--c-f,#7052b3);background:var(--c-c,#e9e1ff)}`
+      + `.fill-depot:focus-within,label:focus-within>.fill-depot{outline:2px solid var(--c-f,#7052b3);outline-offset:2px}`
+      + `.fill-depot svg{width:18px;height:18px;flex:none}`
+      + `.fill-depot .nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`
+      + `.fill-depot .chg{margin-left:auto;font-size:13px;font-weight:600;color:var(--mu,#1a1a1ac7);flex:none}`
+      + `.fill-depot.plein{border-style:solid;border-color:var(--ligne2,#1a1a1a33)}`;
+    document.head.append(st);
+  };
+  const ICONE = `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>`;
+  const depot = (input, plusieurs, balise = `label`) => {
+    styler();
+    input.classList.add(`sr`);
+    input.classList.remove(`saisie`, `fichier`);
+    const nom = el(`span`, { class: `nom` });
+    const chg = el(`span`, { class: `chg`, "aria-hidden": `true` });
+    const zone = el(balise, { class: `fill-depot`, for: balise === `label` ? input.id : null });
+    zone.innerHTML = ICONE;
+    zone.append(nom, chg);
+    if (balise === `label`) zone.append(input);
+    const peindre = () => {
+      const f = Array.from(input.files ?? []);
+      zone.classList.toggle(`plein`, f.length > 0);
+      nom.textContent = f.length === 0 ? (plusieurs ? `Choisir les fichiers` : `Choisir le fichier`) : f.length === 1 ? f[0].name : `${f.length} fichiers choisis`;
+      chg.textContent = f.length ? `Remplacer` : ``;
+    };
+    input.addEventListener(`change`, peindre);
+    peindre();
+    return zone;
+  };
+  // le formulaire d'origine (demande sans livrables détaillés) reçoit la même zone de dépôt
+  const habillerOrigine = () => {
+    const i = document.querySelector(`form.version:not(#${ID}) input[type=file]:not(.sr)`);
+    if (!i) return;
+    // la zone se glisse dans le label du composant (sans déplacer le champ, que l'écran garde en référence)
+    i.before(depot(i, i.multiple, `span`));
+  };
+
   const texteDe = (b) => b?.legende ?? [b?.contenu?.titre, b?.contenu?.chapo, ...(b?.contenu?.corps ?? [])].filter(Boolean).join(`\n\n`);
   const depuisJet = (d, attendus) => {
     const reste = [...(d.brouillon?.fichiers ?? [])];
@@ -62,7 +106,7 @@
       etatLigne[a.cle] = peindre;
       const idF = `lv-f-${i}`, idT = `lv-t-${i}`;
       const fichier = el(`input`, {
-        id: idF, class: `saisie fichier svelte-bswkfh`, type: `file`, multiple: a.plusieurs,
+        id: idF, type: `file`, multiple: a.plusieurs, "aria-label": `${a.libelle} : ${a.plusieurs ? `fichiers` : `fichier`}`,
         accept: a.type === `video` ? `video/*` : `image/*,application/pdf,video/*`,
         onchange: (e) => { s.fichiers = Array.from(e.currentTarget.files ?? []); peindre(); maj(); },
       });
@@ -73,7 +117,7 @@
       const bloc = el(`fieldset`, { style: `border:1px solid var(--ligne, #1a1a1a1f);border-radius:16px;padding:14px 16px;margin:0 0 12px;display:grid;gap:10px` },
         el(`legend`, { class: `sr` }, a.libelle),
         el(`div`, { style: `display:flex;align-items:center;gap:10px` }, el(`b`, { "aria-hidden": `true` }, a.libelle), pastille),
-        el(`label`, { class: `champ`, for: idF }, el(`span`, {}, a.plusieurs ? `Fichiers` : `Fichier`), fichier),
+        el(`div`, { class: `champ` }, el(`span`, {}, a.plusieurs ? `Fichiers` : `Fichier`), depot(fichier, a.plusieurs)),
         texte,
         jet[a.cle] ? el(`small`, { class: `tres-petit mu` }, `Texte repris du premier jet de l’atelier : relisez-le avant de livrer.`) : null);
       peindre();
@@ -127,6 +171,7 @@
   };
 
   const placer = () => {
+    habillerOrigine();
     const route = typeof routeDepuisHash === `function` ? routeDepuisHash() : ``;
     const existant = document.getElementById(ID);
     const m = etat.pret ? moi() : null;

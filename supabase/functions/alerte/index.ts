@@ -73,9 +73,9 @@ Deno.serve(async (req) => {
     etapes: [
       { titre: "Donnez l’accès à vos canaux", texte: "Site, réseaux sociaux, lettre d’information : depuis le menu Comptes de votre espace. Vous invitez Fill avec des droits limités, sans communiquer de mot de passe, et vous retirez l’accès quand vous voulez." },
       { titre: "Envoyez votre logo et votre charte", texte: "Répondez simplement à ce message. Sans réponse, je les reprends depuis votre site." },
-      { titre: "Déposez votre première demande", texte: "Depuis votre espace, ou par un simple mail à l’adresse ci-dessous." }
+      { titre: "Déposez votre première demande", texte: transfert ? "Deux chemins, au choix : le formulaire de votre espace, ou un mail à l’adresse ci-dessous." : "Depuis votre espace, en quelques minutes." }
     ],
-    encart: transfert ? { titre: "Votre adresse pour les demandes", texte: `<a href="mailto:${transfert}" style="color:#1A1A1A;font-weight:700;text-decoration:none">${transfert}</a><br><span style="font-size:14.5px;color:#4A4540">Écrivez-y ou transférez-y l’information, depuis l’adresse de votre compte. Vous relisez ensuite sur un lien.</span>` } : null,
+    encart: transfert ? { titre: "Votre adresse pour les demandes", texte: `<a href="mailto:${transfert}" style="color:#1A1A1A;font-weight:700;text-decoration:none">${transfert}</a><br><span style="font-size:14.5px;color:#4A4540">Envoyez-y votre demande, ou transférez-y l’information reçue, depuis l’adresse de votre compte. Elle arrive dans votre espace comme une demande déposée en ligne.</span>` } : null,
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
     apres: [
       "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez à ce message."

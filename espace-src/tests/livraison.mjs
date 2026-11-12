@@ -55,6 +55,13 @@ await test('une fiche à livrer montre la liste des livrables, et masque le form
   assert.equal(await page.locator('form.version:not(#fill-livraison)').isHidden(), true);
   assert.ok((await page.locator('#fill-livraison fieldset').count()) >= 1);
 });
+await test('le dépôt de fichier est en français, sans bouton natif du navigateur', async () => {
+  const zones = page.locator('#fill-livraison .fill-depot');
+  assert.ok((await zones.count()) >= 1);
+  assert.match(await zones.first().innerText(), /^Choisir (le|les) fichiers?$/);
+  for (const i of await page.locator('#fill-livraison input[type=file]').all()) assert.equal(await i.evaluate((n) => n.getBoundingClientRect().width <= 1), true, 'champ natif visible');
+  await page.screenshot({ path: '/tmp/livraison-vide.png', clip: await page.locator('#fill-livraison').boundingBox().then((b) => ({ x: b.x - 10, y: Math.max(0, b.y - 10), width: b.width + 20, height: Math.min(900, b.height + 20) })) });
+});
 await test('l’envoi reste grisé tant qu’un livrable est vide, et dit lequel', async () => {
   const lignes = page.locator('#fill-livraison fieldset');
   const n = await lignes.count();
@@ -70,6 +77,8 @@ await test('l’envoi reste grisé tant qu’un livrable est vide, et dit lequel
   }
   assert.equal(await page.locator('#fill-livraison button[type=submit]').isDisabled(), false);
   assert.match(await page.textContent('#fill-livraison [role=status]'), /Tous les livrables sont prêts/);
+  const zone = page.locator('#fill-livraison .fill-depot.plein').first();
+  if (await zone.count()) assert.match(await zone.innerText(), /visuel-\d+\.png[\s\S]*Remplacer/);
 });
 await test('accessibilité de la liste (axe)', async () => {
   const r = await page.evaluate(async () => (window.axe ? (await axe.run('#fill-livraison')).violations.flatMap((v) => v.nodes.map((n) => `${v.id} : ${n.target} ${(n.any[0]?.message ?? '').slice(0, 120)}`)) : ['axe absent']));
