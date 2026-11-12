@@ -23,6 +23,7 @@ Toutes sont déployées sans vérification du jeton JWT par Supabase (`verify_jw
 | `alerte` | Alerte à Fill à l'ouverture d'un compte (et mail de bienvenue) ou au dépôt d'un bon de commande | l'Espace | session de l'utilisateur | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `relecture` | Relecture par lien : relire et valider un livrable sans compte (page `espace/relecture/`), demander un avis ou confier la validation | la page de relecture (jeton du lien, en POST seulement), l'Espace (action `creer`) | jeton de 256 bits dont la base ne garde que l'empreinte ; session d'un référent pour `creer` | clés Supabase, `BREVO_API_KEY`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `bilan` | Mail mensuel unique « Votre mois avec Fill » : fige le bilan de chaque période d'abonnement close (chiffres et trois suggestions), l'envoie au référent une seule fois, après l'accord de Fill dans Hors-champ ; sert la page `espace/bilan/` | tâche planifiée `fill-bilan` (à créer : un passage par jour ouvré), `bilan_valider` (accord donné dans Hors-champ, par pg_net), la page de bilan (jeton du lien, en POST seulement) | clé secrète ou jeton `verifier_jeton_pilote` pour la tâche ; jeton de 256 bits dont la base ne garde que l'empreinte pour la page | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
+| `reception` | Adresse de transfert : reçoit de Brevo les mails envoyés à `nom-de-la-structure@demandes.studioes.fr`. Le mail d'un membre reconnu devient une demande déposée (règles de `deposer_demande`), sinon réponse courte et lien vers la demande pré-remplie. Action d'administration `webhook` : vérifie ou crée le webhook chez Brevo | Brevo (webhook « inbound ») ; Fill pour l'action `webhook` | secret `RECEPTION_CLE` (dans l'adresse du webhook ou en en-tête) ; clé secrète ou jeton `verifier_jeton_pilote` pour `webhook` | clés Supabase, `BREVO_API_KEY`, `RECEPTION_CLE`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL`, `DOMAINE_RECEPTION` et `RECEPTION_ORIGINE` (facultatifs) |
 | `inviter` | Invitation d'un collègue par le référent (compte, profil, e-mail) | l'Espace (écran Équipe) | session d'un référent actif | clés Supabase, `SITE_URL` |
 | `paiement` | Session de paiement Stripe : premier mois d'une entreprise, commande d'unités | l'Espace | session de l'utilisateur | clés Supabase, `STRIPE_SECRET_KEY`, `SITE_URL` |
 | `mensualite` | Lien de paiement personnel des mensualités (période anniversaire), alerte de règlement et récapitulatif des mensualités en attente | lien envoyé au client, `stripe-webhook`, `traiter_echeances` (base) | public pour le lien ; clé secrète ou jeton pilote pour le reste | clés Supabase, `STRIPE_SECRET_KEY`, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
@@ -43,6 +44,7 @@ Clés Supabase : `CLE_SECRETE` et `CLE_PUBLIABLE` si elles sont posées dans les
 - `offre.json` et `regles/offre.ts` : l'offre publiée (formules, catalogue, délais) ;
 - `calendrier-type.json` : copie du calendrier type des temps forts de `assets/t.js` (source unique), écrite par `node supabase/calendrier-type.mjs` ; après toute modification du calendrier type, relancer ce script (le test `tests/bilan.test.mjs` échoue tant que la copie n'est pas à jour) et redéployer `bilan` ;
 - `regles/bilan.ts` : règles du mail mensuel (trois suggestions, plage d'envoi, liens, textes) ;
+- `regles/reception.ts` : analyse d'un mail entrant (mails automatiques, découpe entre la consigne du client et le message transféré, supports demandés, date, pièces jointes, textes des réponses) ; `regles/transfert.ts` : l'adresse de transfert et les deux phrases qui la montrent (`alerte`, `notifier`) ;
 - `regles/` : calendrier et jours ouvrés, estimation, charge, pilote, registre des unités, cycle des demandes. L'Espace en a sa propre copie dans `espace-src/src/regles/` : une règle modifiée d'un côté doit l'être de l'autre.
 
 Une réserve sur ces modules : esbuild retire les commentaires et les types en assemblant, ils ne sont donc pas revenus. Les noms suffixés d'un chiffre (`EQUIPE2`, `html2`, `o2`) sont ceux que l'assemblage avait donnés ; les laisser tels quels garantit un fichier identique.
@@ -83,6 +85,35 @@ select cron.schedule('fill-bilan', '10 7 * * 1-5', $$ select net.http_post(
 7 h 10 UTC, soit 8 h 10 ou 9 h 10 à Paris selon la saison : après la clôture de la nuit (`fill-echeances`, 23 h 05 UTC) et dans la plage d'envoi.
 
 Tests : `node tests/bilan.test.mjs` (base embarquée : migration, chiffres, étanchéité, règles, et la fonction elle-même assemblée comme au déploiement, service d'envoi simulé) et `node ../espace-src/tests/bilan.mjs` (page dans Chrome).
+
+## Adresse de transfert (branche `lot-adresse-transfert`, pas encore en service)
+
+Chaque organisation a une adresse `organisation.alias_mail@demandes.studioes.fr`, générée depuis son nom. Un mail écrit ou transféré à cette adresse par un référent ou un contributeur actif, reconnu à son adresse d'expéditeur, suit ce chemin :
+
+1. `reception` écarte les mails automatiques et les boucles, puis `mail_ouvrir` (base) dit qui écrit et pour quelle structure ;
+2. `regles/reception.ts` sépare la consigne du client du message transféré. Dépôt direct seulement si l'origine du mail est prouvée (en-tête `Authentication-Results` aligné sur le domaine de l'expéditeur) et si le client demande, par une consigne de publication, un support courant à une unité (réseaux sociaux, actualité du site, agenda), sans réserve. `mail_deposer` applique alors les règles de `deposer_demande` et revérifie le garde-fou (prestations courantes à une unité, un exemplaire, trois au plus) ;
+3. dans tous les autres cas, rien n'est déposé : le mail attend dans `mail_recu`, le client reçoit une réponse courte avec un lien `…/espace/?mail=<id>` vers la nouvelle demande pré-remplie (module `espace-src/src/transfert.js`), et Fill reçoit une alerte. À l'envoi, `mail_rattacher` joint les pièces du mail à la demande.
+
+Réglages : `RECEPTION_CLE` (secret du webhook, 24 caractères au moins, obligatoire), `DOMAINE_RECEPTION` (défaut `demandes.studioes.fr`), `RECEPTION_ORIGINE=adresse` pour accepter le dépôt direct sur la seule foi de l'adresse d'expéditeur quand aucun contrôle d'origine n'échoue (défaut : preuve exigée).
+
+Mise en service, dans l'ordre : enregistrements MX du sous-domaine (10 `inbound1.sendinblue.com`, 20 `inbound2.sendinblue.com`), secret `RECEPTION_CLE`, migration `migrations/2026-11-adresse-de-transfert.sql`, déploiement de `reception` (`verify_jwt: false`), action `{"action":"webhook","creer":true}`, fusion (publie l'Espace), essai réel, puis déploiement de `notifier` et `alerte`, qui montrent l'adresse aux clients. Après chaque déploiement, copier `.assemblees/<fonction>.ts` dans `deploye/`.
+
+État au 12 novembre 2026, fin de journée (fusionné dans `main`) :
+
+- `reception` version 5 en ligne (verify_jwt désactivé), depuis la branche `transfert-secret-au-coffre` : elle lit le secret du coffre (vérifié : l'action `webhook` répond 200, `mx_ok: true`). `deploye/reception.ts` est la copie exacte du fichier en ligne : l'outil de déploiement a converti les échappements `\uXXXX` en caractères (sauf caractères de contrôle). Après décodage de ces échappements, il est identique à `.assemblees/reception.ts` ; l'assembleur affiche donc un écart pour `reception`, sans différence de comportement. Au prochain déploiement par la CLI (`supabase functions deploy reception --no-verify-jwt`), l'écart disparaît ;
+- webhook pas encore créé : Brevo ne connaît que `studioes.fr`. Déclarer `demandes.studioes.fr` dans Brevo (voir plus bas), puis appeler `{"action":"webhook","creer":true}` ;
+- `notifier` et `alerte` (qui montrent l'adresse aux clients) ne sont pas encore déployés : à faire après l'essai réel.
+
+État au 12 novembre 2026, matin (branche `transfert-secret-au-coffre`, posée sur `lot-adresse-transfert`) :
+
+- le secret du webhook n'a plus à être saisi : la migration le génère dans le coffre de la base (Vault, secret `reception_cle`) et la fonction le lit par `reception_cle()` quand `RECEPTION_CLE` n'est pas réglé. La fonction `reception_cle` et le secret existent déjà en base ; la version 4 en ligne ne les lit pas encore (elle répond 503), la version de cette branche oui ;
+- Brevo répond 400 `document_not_found` à la lecture des webhooks tant qu'il n'en existe aucun : l'action `webhook` le traite comme une liste vide (champ `lecture` de la réponse) ;
+- Brevo refuse pour l'instant la création du webhook : `Domain is not found or is inactive`. Les enregistrements MX sont visibles (`mx_ok: true`) ; seul `studioes.fr` est déclaré dans Brevo. À faire dans Brevo : déclarer `demandes.studioes.fr` (Expéditeurs, domaines), puis relancer `{"action":"webhook","creer":true}` ;
+- le contrôle d'origine lit `Authentication-Results`. L'exemple de la documentation de Brevo ne montre que `Received-SPF`, `DKIM-Signature` et `ARC-Authentication-Results` : au premier mail réel, la ligne `reception, origine : … ; serveur : …` du journal de la fonction dit ce que Brevo transmet. Sans cet en-tête, tout mail passe par le lien pré-rempli (motif `origine_non_prouvee`), jamais par le dépôt direct.
+
+Suivi : `select recu, expediteur, sujet, issue, motif, demande_id from mail_recu order by recu desc`.
+
+Tests : `node tests/reception.test.mjs` (base embarquée, 43 tests : migration, règles en base, analyse de mails réalistes de `tests/mails-exemples.mjs`, déroulé complet, fonction assemblée) et `node ../espace-src/tests/transfert.mjs` (lien pré-rempli dans un navigateur, 6 contrôles).
 
 ## Historique
 

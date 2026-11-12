@@ -2,6 +2,7 @@ import { CLE_PUBLIABLE, CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { issue } from '../_partage/regles/cycle.ts';
 import { DUREE_JOURS, empreinte, lienPage, nouveauJeton } from '../_partage/regles/relecture.ts';
+import { adresseTransfert, phraseConfirmee } from '../_partage/regles/transfert.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 var extrait = (t, n = 280) => t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
@@ -143,8 +144,14 @@ Deno.serve(async (req) => {
         if (!texte) return new Response("Rien à signaler", { status: 409, headers: cors });
         mails.push({ a: [{ email: pourFill }], repondreA: { email: qui.email, name: qui.nom }, sujet: `${o?.nom} : ${d.titre}`, titre: `${echap(qui.nom)} ${texte}`, texte: [`${nom}, ${echap(o?.nom)}.`, h.detail ? `<i>${echap(extrait(h.detail, 400))}</i>` : ""].filter(Boolean), bouton: { libelle: "Ouvrir la demande", lien: lienDemande } });
       } else {
+        // adresse de transfert de la structure, rappelée d'une ligne ; tant que la colonne n'existe pas, le mail habituel part
+        let transfert = null;
+        if (d.statut === "confirmee") {
+          const { data: al } = await admin.from("organisation").select("alias_mail").eq("id", d.organisation_id).maybeSingle();
+          transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
+        }
         const versClient = {
-          confirmee: { sujet: `Demande confirmée : ${d.titre}`, titre: `${nom} est confirmée`, texte: `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison prévue le ${jour(d.livraison)}` : ""}. Vous suivez chaque étape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur] },
+          confirmee: { sujet: `Demande confirmée : ${d.titre}`, titre: `${nom} est confirmée`, texte: `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison prévue le ${jour(d.livraison)}` : ""}. Vous suivez chaque étape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
           a_valider: { sujet: `À relire : ${d.titre}`, titre: `Une version de ${nom} est prête`, texte: "Relisez-la dans votre espace : validez-la, ou indiquez vos corrections au bon endroit. Deux allers-retours sont inclus.", bouton: "Relire la version", qui: [auteur, referent] },
           attente_client: { sujet: `Un élément est attendu : ${d.titre}`, titre: `Fill attend un élément pour ${nom}`, texte: "La production reprend dès votre réponse. Le détail est dans les échanges de la demande.", bouton: "Répondre", qui: [auteur, referent] },
           accord_requis: { sujet: `Votre accord est demandé : ${d.titre}`, titre: `Votre accord est demandé pour ${nom}`, texte: "Cette demande dépasse ce qui était prévu (unités ou plafond du contributeur). Elle est lancée dès votre accord.", bouton: "Donner mon accord", qui: [referent] },
@@ -172,7 +179,7 @@ Deno.serve(async (req) => {
           });
           const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
           if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
-        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
       }
     } else return new Response("Événement inconnu", { status: 400, headers: cors });
   }

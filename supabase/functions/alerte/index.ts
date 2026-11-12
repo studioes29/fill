@@ -1,5 +1,6 @@
 import { CLE_PUBLIABLE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
+import { adresseTransfert, phraseBienvenue } from '../_partage/regles/transfert.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 Deno.serve(async (req) => {
@@ -56,6 +57,9 @@ Deno.serve(async (req) => {
     bouton: { libelle: "Ouvrir le pilotage", lien: `${site}/#pilotage` }
   });
   const prenom = String(p.nom).split(" ")[0];
+  // adresse de transfert de la structure ; tant que la colonne n'existe pas, le mail habituel part
+  const { data: al } = await sb.from("organisation").select("alias_mail").eq("id", o.id).maybeSingle();
+  const transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
   const bienvenue = gabarit({
     titre: `Bienvenue, ${echap(prenom)}`,
     aperçu: "Votre espace Fill est ouvert.",
@@ -64,7 +68,7 @@ Deno.serve(async (req) => {
       o.type === "collectivite" ? "Je vous appelle sous 24 h ouvrées pour caler avec vous le volume d’unités, puis je vous envoie le devis et le bon de commande. Déposez le bon signé dans votre espace : vos unités sont créditées dès sa validation, et la production de vos demandes démarre." : "Vos unités sont créditées dès le premier règlement, à faire en ligne depuis l’accueil de votre espace, et la production de vos demandes démarre. Je vous appelle aussi pour caler le volume avec vous."
     ],
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
-    apres: ["Pour que vos supports portent vos couleurs dès la première demande, répondez à ce message avec votre logo et votre charte graphique si vous en avez une. Sans réponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."]
+    apres: [...transfert ? [phraseBienvenue(transfert)] : [], "Pour que vos supports portent vos couleurs dès la première demande, répondez à ce message avec votre logo et votre charte graphique si vous en avez une. Sans réponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."]
   });
   const [r] = await Promise.all([
     envoyer({ to: [{ email: pourFill }], replyTo: { email: p.email, name: p.nom }, subject: `Nouvelle inscription : ${o.nom}`, htmlContent: html }),
