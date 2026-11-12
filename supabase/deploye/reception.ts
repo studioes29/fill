@@ -27,25 +27,45 @@ var cors = {
 
 // supabase/functions/_partage/courriel.ts
 var LOGO = "https://fill.studioes.fr/assets/mail/fill.png";
-var P = "margin:0 0 16px;font:400 16px/1.6 Arial,Helvetica,sans-serif;color:#4A4540";
+var POLICE = "Arial,Helvetica,sans-serif";
+var TITRES = "'Bricolage Grotesque',Arial,Helvetica,sans-serif";
+var P = `margin:0 0 16px;font:400 16px/1.6 ${POLICE};color:#2E2A27`;
+var P2 = `margin:0 0 14px;font:400 15px/1.6 ${POLICE};color:#4A4540`;
+var encart = (e) => e ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td style="background:#F1ECFF;border-radius:14px;padding:16px 18px">
+        ${e.titre ? `<p style="margin:0 0 4px;font:700 13px/1.4 ${POLICE};letter-spacing:.04em;text-transform:uppercase;color:#5B3F9C">${e.titre}</p>` : ""}
+        <p style="margin:0;font:400 16px/1.55 ${POLICE};color:#1A1A1A">${e.texte}</p>
+      </td></tr></table>` : "";
+var etapes = (l) => l?.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px">
+        ${l.map((x, i) => `<tr>
+          <td width="40" valign="top" style="padding:0 0 18px"><div style="width:30px;height:30px;border-radius:15px;background:${i % 2 ? "#FFE1D8" : "#E6DDFF"};color:#1A1A1A;font:700 15px/30px ${POLICE};text-align:center">${i + 1}</div></td>
+          <td valign="top" style="padding:3px 0 18px">
+            <p style="margin:0;font:700 16px/1.45 ${POLICE};color:#1A1A1A">${x.titre}</p>
+            ${x.texte ? `<p style="margin:4px 0 0;font:400 15px/1.6 ${POLICE};color:#4A4540">${x.texte}</p>` : ""}
+          </td></tr>`).join("")}
+      </table>` : "";
 var gabarit = (c) => `<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${c.titre}</title></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${c.titre}</title>
+<style>@font-face{font-family:'Bricolage Grotesque';font-weight:700;src:url(https://fill.studioes.fr/espace/assets/br-Cre6nC2_.woff2) format('woff2')}a{color:#5B3F9C}</style></head>
 <body style="margin:0;padding:0;background:#F8F5F2">
-<div style="display:none;max-height:0;overflow:hidden;color:#F8F5F2">${c.aperçu ?? c.texte[0] ?? ""}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5F2"><tr><td align="center" style="padding:32px 16px">
+<div style="display:none;max-height:0;overflow:hidden;color:#F8F5F2">${c.aper\u00E7u ?? c.texte[0] ?? ""}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5F2"><tr><td align="center" style="padding:28px 14px 36px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-    <tr><td style="padding:0 8px 22px"><a href="https://fill.studioes.fr"><img src="${LOGO}" width="88" height="46" alt="Fill" style="display:block;border:0"></a></td></tr>
-    <tr><td style="background:#FFFFFF;border-radius:22px;padding:40px 36px 34px">
-      <div style="width:44px;height:4px;border-radius:2px;background:#B8A4FF;margin:0 0 22px"></div>
-      <h1 style="margin:0 0 18px;font:700 26px/1.2 Arial,Helvetica,sans-serif;letter-spacing:-.4px;color:#1A1A1A">${c.titre}</h1>
+    <tr><td style="padding:0 6px 20px"><a href="https://fill.studioes.fr"><img src="${LOGO}" width="88" height="46" alt="Fill" style="display:block;border:0"></a></td></tr>
+    <tr><td style="background:#FFFFFF;border-radius:22px;overflow:hidden">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" style="height:6px;background:#B8A4FF;font-size:0;line-height:0">&nbsp;</td><td width="50%" style="height:6px;background:#FF8A6B;font-size:0;line-height:0">&nbsp;</td></tr></table>
+      <div style="padding:32px 28px 30px">
+      <h1 style="margin:0 0 18px;font:700 27px/1.2 ${TITRES};letter-spacing:-.4px;color:#1A1A1A">${c.titre}</h1>
       ${c.texte.map((t) => `<p style="${P}">${t}</p>`).join("\n      ")}
-      ${c.bouton ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 24px"><tr><td style="border-radius:999px;background:#1A1A1A"><a href="${c.bouton.lien}" style="display:inline-block;padding:16px 30px;font:700 16px Arial,Helvetica,sans-serif;color:#F8F5F2;text-decoration:none;border-radius:999px">${c.bouton.libelle}&nbsp;&nbsp;&rarr;</a></td></tr></table>` : ""}
-      ${(c.apres ?? []).map((t) => `<p style="${P};font-size:14px;color:#6B6560">${t}</p>`).join("\n      ")}
-      <p style="margin:26px 0 0;font:400 16px/1.5 Arial,Helvetica,sans-serif;color:#1A1A1A">Ewen Soupault<br><span style="color:#6B6560">Fill</span></p>
+      ${etapes(c.etapes)}
+      ${encart(c.encart)}
+      ${c.bouton ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 26px"><tr><td style="border-radius:999px;background:#1A1A1A"><a href="${c.bouton.lien}" style="display:inline-block;padding:16px 30px;font:700 16px ${POLICE};color:#F8F5F2;text-decoration:none;border-radius:999px">${c.bouton.libelle}&nbsp;&nbsp;&rarr;</a></td></tr></table>` : ""}
+      ${(c.apres ?? []).map((t) => `<p style="${P2}">${t}</p>`).join("\n      ")}
+      <p style="margin:24px 0 0;padding-top:18px;border-top:1px solid #EFEAE4;font:400 16px/1.5 ${POLICE};color:#1A1A1A">Ewen Soupault<br><span style="color:#6B6560;font-size:15px">Fill</span></p>
+      </div>
     </td></tr>
-    <tr><td style="padding:22px 8px 0;font:400 13px/1.6 Arial,Helvetica,sans-serif;color:#8A847D">
+    <tr><td style="padding:20px 6px 0;font:400 13px/1.6 ${POLICE};color:#7A746D">
       Fill, la communication externalis\xE9e des collectivit\xE9s et des entreprises, est un service de Studio ES.<br>
-      <a href="mailto:contact@studioes.fr" style="color:#8A847D">contact@studioes.fr</a> \xB7 06 51 22 21 07 \xB7 <a href="https://fill.studioes.fr" style="color:#8A847D">fill.studioes.fr</a>
+      <a href="mailto:contact@studioes.fr" style="color:#7A746D">contact@studioes.fr</a> \xB7 06 51 22 21 07 \xB7 <a href="https://fill.studioes.fr" style="color:#7A746D">fill.studioes.fr</a>
     </td></tr>
   </table>
 </td></tr></table>
@@ -71,7 +91,7 @@ var LIMITES = {
   joursLien: 30
 };
 var EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/;
-var plat = (t) => String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’‘`´]/g, "'");
+var plat = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\u2019\u2018`\u00b4]/g, "'");
 var sain = (t) => String(t ?? "").replace(/\u0000/g, "").replace(/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, "");
 var propre = (t, max) => sain(String(t ?? "").replace(/\s+/g, " ").trim().slice(0, max)).trim();
 var liste = (v) => Array.isArray(v) ? v : v == null ? [] : [v];
@@ -82,7 +102,7 @@ var adresse = (v) => {
   const a = (m ? m[1] : brut).trim().toLowerCase();
   return EMAIL.test(a) && a.length <= 254 ? a : null;
 };
-var ENTITES = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", eacute: "\xE9", egrave: "\xE8", ecirc: "\xEA", agrave: "\xE0", acirc: "\xE2", ccedil: "\xE7", ugrave: "\xF9", ucirc: "\xFB", ocirc: "\xF4", icirc: "\xEE", iuml: "\xEF", euml: "\xEB", laquo: "\xAB", raquo: "\xBB", rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”", hellip: "…", ndash: "-", mdash: "-", euro: "€", deg: "\xB0" };
+var ENTITES = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", eacute: "\xE9", egrave: "\xE8", ecirc: "\xEA", agrave: "\xE0", acirc: "\xE2", ccedil: "\xE7", ugrave: "\xF9", ucirc: "\xFB", ocirc: "\xF4", icirc: "\xEE", iuml: "\xEF", euml: "\xEB", laquo: "\xAB", raquo: "\xBB", rsquo: "\u2019", lsquo: "\u2018", ldquo: "\u201C", rdquo: "\u201D", hellip: "\u2026", ndash: "-", mdash: "-", euro: "\u20AC", deg: "\xB0" };
 var htmlVersTexte = (html) => String(html ?? "").replace(/<(style|script|head|title)\b[\s\S]*?<\/\1>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|tr|h[1-6]|blockquote|table)>/gi, "\n").replace(/<li\b[^>]*>/gi, "- ").replace(/<[^>]+>/g, "").replace(/&#(\d+);/g, (_, n) => {
   try {
     return String.fromCodePoint(Number(n));
@@ -99,7 +119,7 @@ var htmlVersTexte = (html) => String(html ?? "").replace(/<(style|script|head|ti
   const v = ENTITES[n.toLowerCase()];
   return v === void 0 ? tout : /^[A-Z]/.test(n) ? v.toUpperCase() : v;
 });
-var lignesNettes = (t) => String(t ?? "").replace(/\r\n?/g, "\n").replace(/[   ]/g, " ").replace(/[​-‍﻿]/g, "").split("\n").map((l) => l.replace(/\s+$/, "")).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+var lignesNettes = (t) => String(t ?? "").replace(/\r\n?/g, "\n").replace(/[\u00a0\u2007\u202f]/g, " ").replace(/[\u200b-\u200d\ufeff]/g, "").split("\n").map((l) => l.replace(/\s+$/, "")).join("\n").replace(/\n{3,}/g, "\n\n").trim();
 var empreinteCourte = (t) => {
   let h = 2166136261;
   for (let i = 0; i < t.length; i++) {
@@ -389,12 +409,12 @@ var trierPieces = (pieces = []) => {
   }
   return { gardees, ecartees };
 };
-var cheminPiece = (organisation, dossier, nom, horodatage) => `${organisation}/${dossier}/${horodatage}-${String(nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(0, 100)}`;
+var cheminPiece = (organisation, dossier, nom, horodatage) => `${organisation}/${dossier}/${horodatage}-${String(nom).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.\-]+/g, "_").slice(0, 100)}`;
 var couper = (t, max) => {
   if (t.length <= max) return t;
   const c = t.slice(0, max - 1);
   const e = c.lastIndexOf(" ");
-  return sain(e > max * 0.6 ? c.slice(0, e) : c).trimEnd() + "…";
+  return sain(e > max * 0.6 ? c.slice(0, e) : c).trimEnd() + "\u2026";
 };
 var analyser = (mail, c = {}) => {
   const aujourdhui = c.aujourdhui;
@@ -412,7 +432,7 @@ var analyser = (mail, c = {}) => {
   const blocs = [d.note, d.cite ? `Message transf\xE9r\xE9 :
 ${d.cite}` : ""].filter(Boolean);
   let brief = blocs.join("\n\n");
-  if (brief.length > LIMITES.brief) brief = sain(brief.slice(0, LIMITES.brief - 60)).trimEnd() + "\n[…] Texte abr\xE9g\xE9 : le mail d’origine \xE9tait plus long.";
+  if (brief.length > LIMITES.brief) brief = sain(brief.slice(0, LIMITES.brief - 60)).trimEnd() + "\n[\u2026] Texte abr\xE9g\xE9 : le mail d\u2019origine \xE9tait plus long.";
   const matiere = (mots + d.cite).replace(/\s+/g, "").length;
   if (!brief && gardees.length) brief = "Information dans les pi\xE8ces jointes du mail.";
   const sup = supportsDemandes({ objet: transfert ? "" : s.titre, texte: mots });
@@ -429,13 +449,13 @@ var pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 var jourLong = (iso) => (/* @__PURE__ */ new Date(`${iso}T12:00:00Z`)).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 var enListe = (l) => l.length <= 1 ? l.join("") : `${l.slice(0, -1).join(", ")} et ${l[l.length - 1]}`;
 var MOTIFS_PIECE = {
-  poids: "trop lourde pour \xEAtre reprise d’un mail (15 Mo au plus)",
-  nombre: "au-del\xE0 de ce qu’un mail peut apporter (8 pi\xE8ces, 30 Mo au total)",
-  type: "d’un type de fichier que Fill ne reprend pas",
+  poids: "trop lourde pour \xEAtre reprise d\u2019un mail (15 Mo au plus)",
+  nombre: "au-del\xE0 de ce qu\u2019un mail peut apporter (8 pi\xE8ces, 30 Mo au total)",
+  type: "d\u2019un type de fichier que Fill ne reprend pas",
   illisible: "illisible \xE0 la r\xE9ception",
   erreur: "non reprise \xE0 la r\xE9ception"
 };
-var phrasesPieces = (ecartees = []) => ecartees.slice(0, 6).map((p) => `La pi\xE8ce \xAB ${p.nom} \xBB n’a pas \xE9t\xE9 reprise : ${MOTIFS_PIECE[p.motif] ?? MOTIFS_PIECE.erreur}. Envoyez-la par un lien de t\xE9l\xE9chargement, en r\xE9ponse \xE0 ce message.`);
+var phrasesPieces = (ecartees = []) => ecartees.slice(0, 6).map((p) => `La pi\xE8ce \xAB ${p.nom} \xBB n\u2019a pas \xE9t\xE9 reprise : ${MOTIFS_PIECE[p.motif] ?? MOTIFS_PIECE.erreur}. Envoyez-la par un lien de t\xE9l\xE9chargement, en r\xE9ponse \xE0 ce message.`);
 var mailRecu = ({ titre, unites, supports, parution, pieces, ecartees, adresseInconnue }) => ({
   sujet: `Bien re\xE7u : ${titre}`,
   titre: "Votre demande est enregistr\xE9e",
@@ -446,43 +466,43 @@ var mailRecu = ({ titre, unites, supports, parution, pieces, ecartees, adresseIn
   bouton: "Voir la demande",
   apres: [
     ...phrasesPieces(ecartees),
-    "Ce n’est pas ce que vous attendiez ? R\xE9pondez \xE0 ce message, ou annulez la demande dans votre espace : les unit\xE9s reviennent sur le compte.",
-    adresseInconnue ? `L’adresse utilis\xE9e n’est pas celle de votre structure. La bonne adresse : ${adresseInconnue}.` : ""
+    "Ce n\u2019est pas ce que vous attendiez ? R\xE9pondez \xE0 ce message, ou annulez la demande dans votre espace : les unit\xE9s reviennent sur le compte.",
+    adresseInconnue ? `L\u2019adresse utilis\xE9e n\u2019est pas celle de votre structure. La bonne adresse : ${adresseInconnue}.` : ""
   ].filter(Boolean)
 });
 var MANQUES = {
   support_manquant: (c) => [
-    "Votre mail est bien arriv\xE9. Il ne dit pas sur quel support publier (r\xE9seaux sociaux, site, agenda, affiche…) : rien n’est donc engag\xE9.",
+    "Votre mail est bien arriv\xE9. Il ne dit pas sur quel support publier (r\xE9seaux sociaux, site, agenda, affiche\u2026) : rien n\u2019est donc engag\xE9.",
     `La demande est d\xE9j\xE0 remplie avec votre texte${c.pieces ? " et vos pi\xE8ces jointes" : ""}. Choisissez le support, puis envoyez.`
   ],
   support_a_confirmer: (c) => [
-    `Votre mail est bien arriv\xE9. ${c.supports.length ? `Il semble demander : ${enListe(c.supports)}.` : ""} Ce choix se confirme dans votre espace, o\xF9 le nombre d’unit\xE9s s’affiche avant l’envoi : rien n’est engag\xE9 d’ici l\xE0.`.replace(/\s+/g, " "),
+    `Votre mail est bien arriv\xE9. ${c.supports.length ? `Il semble demander : ${enListe(c.supports)}.` : ""} Ce choix se confirme dans votre espace, o\xF9 le nombre d\u2019unit\xE9s s\u2019affiche avant l\u2019envoi : rien n\u2019est engag\xE9 d\u2019ici l\xE0.`.replace(/\s+/g, " "),
     `La demande est d\xE9j\xE0 remplie avec votre texte${c.pieces ? " et vos pi\xE8ces jointes" : ""}. V\xE9rifiez les supports, puis envoyez.`
   ],
   contenu_insuffisant: () => [
-    "Votre mail est bien arriv\xE9, mais il ne contient ni texte ni pi\xE8ce jointe \xE0 partir desquels travailler. Rien n’est engag\xE9.",
-    "Renvoyez l’information \xE0 la m\xEAme adresse, ou d\xE9crivez la demande dans votre espace."
+    "Votre mail est bien arriv\xE9, mais il ne contient ni texte ni pi\xE8ce jointe \xE0 partir desquels travailler. Rien n\u2019est engag\xE9.",
+    "Renvoyez l\u2019information \xE0 la m\xEAme adresse, ou d\xE9crivez la demande dans votre espace."
   ],
   sans_unites: (c) => [
-    `Votre mail est bien arriv\xE9, mais il ne reste pas assez d’unit\xE9s sur le compte pour cette demande${c.detail ? ` (${c.detail})` : ""}. Rien n’est engag\xE9.`,
+    `Votre mail est bien arriv\xE9, mais il ne reste pas assez d\u2019unit\xE9s sur le compte pour cette demande${c.detail ? ` (${c.detail})` : ""}. Rien n\u2019est engag\xE9.`,
     "La demande est d\xE9j\xE0 remplie : elle pourra partir d\xE8s que le compte sera recharg\xE9, depuis votre espace."
   ],
   origine_non_prouvee: (c) => [
-    "Votre mail est bien arriv\xE9. Son origine n’a pas pu \xEAtre v\xE9rifi\xE9e automatiquement : par pr\xE9caution, rien n’est engag\xE9.",
-    `La demande est d\xE9j\xE0 remplie avec votre texte${c.pieces ? " et vos pi\xE8ces jointes" : ""}. Il reste \xE0 l’envoyer depuis votre espace. Si ce mail ne vient pas de vous, ignorez ce message.`
+    "Votre mail est bien arriv\xE9. Son origine n\u2019a pas pu \xEAtre v\xE9rifi\xE9e automatiquement : par pr\xE9caution, rien n\u2019est engag\xE9.",
+    `La demande est d\xE9j\xE0 remplie avec votre texte${c.pieces ? " et vos pi\xE8ces jointes" : ""}. Il reste \xE0 l\u2019envoyer depuis votre espace. Si ce mail ne vient pas de vous, ignorez ce message.`
   ],
   origine_en_echec: () => [
-    "Un mail est arriv\xE9 \xE0 votre nom, mais le contr\xF4le de son origine a \xE9chou\xE9. Par pr\xE9caution, rien n’est engag\xE9 et ses pi\xE8ces jointes n’ont pas \xE9t\xE9 conserv\xE9es.",
-    "Si ce mail vient bien de vous, la demande est d\xE9j\xE0 remplie avec son texte : il reste \xE0 l’envoyer depuis votre espace. Sinon, ignorez ce message."
+    "Un mail est arriv\xE9 \xE0 votre nom, mais le contr\xF4le de son origine a \xE9chou\xE9. Par pr\xE9caution, rien n\u2019est engag\xE9 et ses pi\xE8ces jointes n\u2019ont pas \xE9t\xE9 conserv\xE9es.",
+    "Si ce mail vient bien de vous, la demande est d\xE9j\xE0 remplie avec son texte : il reste \xE0 l\u2019envoyer depuis votre espace. Sinon, ignorez ce message."
   ],
   depot_impossible: () => [
-    "Votre mail est bien arriv\xE9, mais la demande n’a pas pu \xEAtre enregistr\xE9e automatiquement. Rien n’est engag\xE9.",
-    "Elle est d\xE9j\xE0 remplie avec votre texte : il reste \xE0 l’envoyer depuis votre espace."
+    "Votre mail est bien arriv\xE9, mais la demande n\u2019a pas pu \xEAtre enregistr\xE9e automatiquement. Rien n\u2019est engag\xE9.",
+    "Elle est d\xE9j\xE0 remplie avec votre texte : il reste \xE0 l\u2019envoyer depuis votre espace."
   ]
 };
 var mailACompleter = ({ motif, titre, supports = [], pieces = 0, ecartees = [], detail = null }) => ({
   sujet: `\xC0 compl\xE9ter : ${titre || "votre demande"}`,
-  titre: motif === "contenu_insuffisant" ? "Il manque l’information" : motif === "sans_unites" ? "Il manque des unit\xE9s" : motif === "support_manquant" ? "Il manque le support" : "Votre confirmation est n\xE9cessaire",
+  titre: motif === "contenu_insuffisant" ? "Il manque l\u2019information" : motif === "sans_unites" ? "Il manque des unit\xE9s" : motif === "support_manquant" ? "Il manque le support" : "Votre confirmation est n\xE9cessaire",
   texte: (MANQUES[motif] ?? MANQUES.depot_impossible)({ supports, pieces, detail }),
   bouton: motif === "contenu_insuffisant" ? "Ouvrir mon espace" : "Terminer la demande",
   apres: [...phrasesPieces(ecartees), motif === "contenu_insuffisant" ? "" : `Ce lien reste valable ${LIMITES.joursLien} jours. Une question ? R\xE9pondez \xE0 ce message.`].filter(Boolean)
@@ -493,46 +513,46 @@ var MOTIFS_FILL = {
   contenu_insuffisant: "ni texte ni pi\xE8ce jointe",
   sans_unites: "unit\xE9s insuffisantes",
   origine_non_prouvee: "origine du mail non prouv\xE9e",
-  origine_en_echec: "contr\xF4le d’origine en \xE9chec (adresse peut-\xEAtre imit\xE9e)",
+  origine_en_echec: "contr\xF4le d\u2019origine en \xE9chec (adresse peut-\xEAtre imit\xE9e)",
   depot_impossible: "d\xE9p\xF4t refus\xE9 par la base"
 };
 var mailPourFill = ({ motif, titre, organisation, expediteur, extrait, pieces = 0 }) => ({
   sujet: `Mail non d\xE9pos\xE9 : ${titre || "sans objet"} (${organisation})`,
   titre: `Un mail de ${organisation} attend son auteur`,
   texte: [
-    `${expediteur} a \xE9crit \xE0 l’adresse de transfert. Rien n’est d\xE9pos\xE9 : ${MOTIFS_FILL[motif] ?? motif}. Le client a re\xE7u une r\xE9ponse avec le lien vers la demande pr\xE9-remplie${pieces ? `, ${pluriel(pieces, "pi\xE8ce")} conserv\xE9e${pieces > 1 ? "s" : ""}` : ""}.`,
+    `${expediteur} a \xE9crit \xE0 l\u2019adresse de transfert. Rien n\u2019est d\xE9pos\xE9 : ${MOTIFS_FILL[motif] ?? motif}. Le client a re\xE7u une r\xE9ponse avec le lien vers la demande pr\xE9-remplie${pieces ? `, ${pluriel(pieces, "pi\xE8ce")} conserv\xE9e${pieces > 1 ? "s" : ""}` : ""}.`,
     extrait ? `<i>${extrait}</i>` : "",
-    "S’il s’agit d’une question, d’un retrait ou d’une correction, r\xE9pondez directement : ce message r\xE9pond \xE0 son auteur."
+    "S\u2019il s\u2019agit d\u2019une question, d\u2019un retrait ou d\u2019une correction, r\xE9pondez directement : ce message r\xE9pond \xE0 son auteur."
   ].filter(Boolean),
   bouton: null
 });
 var mailRefus = ({ cas, expediteur, adressePropre }) => {
   const t = {
     inconnu: {
-      sujet: "Adresse non reconnue : votre mail n’a pas \xE9t\xE9 enregistr\xE9",
-      titre: "Votre adresse n’est pas reconnue",
+      sujet: "Adresse non reconnue : votre mail n\u2019a pas \xE9t\xE9 enregistr\xE9",
+      titre: "Votre adresse n\u2019est pas reconnue",
       texte: [
-        `Cette adresse re\xE7oit les demandes des personnes inscrites \xE0 l’espace Fill de leur structure. ${expediteur} n’y figure pas : rien n’a \xE9t\xE9 enregistr\xE9.`,
-        "\xC9crivez depuis l’adresse de votre compte, ou demandez au r\xE9f\xE9rent de votre structure de vous inviter (menu \xC9quipe)."
+        `Cette adresse re\xE7oit les demandes des personnes inscrites \xE0 l\u2019espace Fill de leur structure. ${expediteur} n\u2019y figure pas : rien n\u2019a \xE9t\xE9 enregistr\xE9.`,
+        "\xC9crivez depuis l\u2019adresse de votre compte, ou demandez au r\xE9f\xE9rent de votre structure de vous inviter (menu \xC9quipe)."
       ],
       bouton: null
     },
     lecteur: {
       sujet: "Demande non enregistr\xE9e : compte en lecture seule",
       titre: "Votre compte permet de suivre, pas de demander",
-      texte: ["Votre compte est en lecture seule : rien n’a \xE9t\xE9 enregistr\xE9.", "Le r\xE9f\xE9rent de votre structure peut vous donner le droit de d\xE9poser des demandes (menu \xC9quipe), ou envoyer lui-m\xEAme ce mail."],
+      texte: ["Votre compte est en lecture seule : rien n\u2019a \xE9t\xE9 enregistr\xE9.", "Le r\xE9f\xE9rent de votre structure peut vous donner le droit de d\xE9poser des demandes (menu \xC9quipe), ou envoyer lui-m\xEAme ce mail."],
       bouton: "Ouvrir mon espace"
     },
     autre_structure: {
-      sujet: "Demande non enregistr\xE9e : adresse d’une autre structure",
-      titre: "Cette adresse n’est pas celle de votre structure",
-      texte: ["L’adresse \xE0 laquelle vous avez \xE9crit n’est pas celle de votre structure : rien n’a \xE9t\xE9 enregistr\xE9.", adressePropre ? `Renvoyez votre mail \xE0 ${adressePropre}.` : "Retrouvez l’adresse de votre structure dans votre mail de bienvenue."],
+      sujet: "Demande non enregistr\xE9e : adresse d\u2019une autre structure",
+      titre: "Cette adresse n\u2019est pas celle de votre structure",
+      texte: ["L\u2019adresse \xE0 laquelle vous avez \xE9crit n\u2019est pas celle de votre structure : rien n\u2019a \xE9t\xE9 enregistr\xE9.", adressePropre ? `Renvoyez votre mail \xE0 ${adressePropre}.` : "Retrouvez l\u2019adresse de votre structure dans votre mail de bienvenue."],
       bouton: null
     },
     resiliee: {
       sujet: "Demande non enregistr\xE9e : abonnement termin\xE9",
-      titre: "L’abonnement de votre structure est termin\xE9",
-      texte: ["Rien n’a \xE9t\xE9 enregistr\xE9. Pour reprendre, r\xE9pondez simplement \xE0 ce message."],
+      titre: "L\u2019abonnement de votre structure est termin\xE9",
+      texte: ["Rien n\u2019a \xE9t\xE9 enregistr\xE9. Pour reprendre, r\xE9pondez simplement \xE0 ce message."],
       bouton: null
     }
   };
@@ -641,7 +661,7 @@ var traiter = async (item, d) => {
     }
     if (!refusBase(dep.error)) throw new Panne(dep.error.message ?? "mail_deposer");
     const m = String(dep.error.message ?? "");
-    motif = /^Unités insuffisantes/.test(m) ? "sans_unites" : "depot_impossible";
+    motif = /^Unit\u00e9s insuffisantes/.test(m) ? "sans_unites" : "depot_impossible";
     detail = motif === "sans_unites" ? (m.match(/cette demande compte [^.]+/) ?? [null])[0] : null;
   }
   const vide = motif === "contenu_insuffisant";
@@ -728,7 +748,7 @@ Deno.serve(async (req) => {
     if (cleWebhook.length < 24) return json({ erreur: "Secret RECEPTION_CLE manquant ou trop court (24 caract\xE8res au moins)" }, 503);
     const cible = `${url}/functions/v1/reception?cle=${encodeURIComponent(cleWebhook)}`;
     const brevo = (chemin, init = {}) => fetch(`${BREVO}${chemin}`, { ...init, headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" } });
-    const masque = (u) => String(u ?? "").replace(/([?&]cle=)[^&]+/, "$1…");
+    const masque = (u) => String(u ?? "").replace(/([?&]cle=)[^&]+/, "$1\u2026");
     const lu = await brevo("/webhooks?type=inbound").catch(() => null);
     let lecture = null;
     if (!lu?.ok) {
