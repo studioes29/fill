@@ -22,6 +22,7 @@ Toutes sont déployées sans vérification du jeton JWT par Supabase (`verify_jw
 | `notifier` | E-mails de suivi de l'Espace Fill (dépôt, statut, message, premier jet, crédit d'unités, accès aux comptes) | l'Espace, `pilote`, `stripe-webhook` | clé secrète ou session active | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `alerte` | Alerte à Fill à l'ouverture d'un compte (et mail de bienvenue) ou au dépôt d'un bon de commande | l'Espace | session de l'utilisateur | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `relecture` | Relecture par lien : relire et valider un livrable sans compte (page `espace/relecture/`), demander un avis ou confier la validation | la page de relecture (jeton du lien, en POST seulement), l'Espace (action `creer`) | jeton de 256 bits dont la base ne garde que l'empreinte ; session d'un référent pour `creer` | clés Supabase, `BREVO_API_KEY`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
+| `bilan` | Mail mensuel unique « Votre mois avec Fill » : fige le bilan de chaque période d'abonnement close (chiffres et trois suggestions), l'envoie au référent une seule fois, après l'accord de Fill dans Hors-champ ; sert la page `espace/bilan/` | tâche planifiée `fill-bilan` (à créer : un passage par jour ouvré), `bilan_valider` (accord donné dans Hors-champ, par pg_net), la page de bilan (jeton du lien, en POST seulement) | clé secrète ou jeton `verifier_jeton_pilote` pour la tâche ; jeton de 256 bits dont la base ne garde que l'empreinte pour la page | clés Supabase, `BREVO_API_KEY`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL` |
 | `reception` | Adresse de transfert : reçoit de Brevo les mails envoyés à `nom-de-la-structure@demandes.studioes.fr`. Le mail d'un membre reconnu devient une demande déposée (règles de `deposer_demande`), sinon réponse courte et lien vers la demande pré-remplie. Action d'administration `webhook` : vérifie ou crée le webhook chez Brevo | Brevo (webhook « inbound ») ; Fill pour l'action `webhook` | secret `RECEPTION_CLE` (dans l'adresse du webhook ou en en-tête) ; clé secrète ou jeton `verifier_jeton_pilote` pour `webhook` | clés Supabase, `BREVO_API_KEY`, `RECEPTION_CLE`, `ALERTE_EMAIL`, `EXPEDITEUR_EMAIL`, `SITE_URL`, `DOMAINE_RECEPTION` et `RECEPTION_ORIGINE` (facultatifs) |
 | `inviter` | Invitation d'un collègue par le référent (compte, profil, e-mail) | l'Espace (écran Équipe) | session d'un référent actif | clés Supabase, `SITE_URL` |
 | `paiement` | Session de paiement Stripe : premier mois d'une entreprise, commande d'unités | l'Espace | session de l'utilisateur | clés Supabase, `STRIPE_SECRET_KEY`, `SITE_URL` |
@@ -41,6 +42,8 @@ Clés Supabase : `CLE_SECRETE` et `CLE_PUBLIABLE` si elles sont posées dans les
 - `cles.ts` : lecture des clés, adresse de l'Espace (`SITE`) et en-têtes CORS ;
 - `courriel.ts` : gabarit HTML des e-mails de Fill (`alerte`, `notifier`) ;
 - `offre.json` et `regles/offre.ts` : l'offre publiée (formules, catalogue, délais) ;
+- `calendrier-type.json` : copie du calendrier type des temps forts de `assets/t.js` (source unique), écrite par `node supabase/calendrier-type.mjs` ; après toute modification du calendrier type, relancer ce script (le test `tests/bilan.test.mjs` échoue tant que la copie n'est pas à jour) et redéployer `bilan` ;
+- `regles/bilan.ts` : règles du mail mensuel (trois suggestions, plage d'envoi, liens, textes) ;
 - `regles/reception.ts` : analyse d'un mail entrant (mails automatiques, découpe entre la consigne du client et le message transféré, supports demandés, date, pièces jointes, textes des réponses) ; `regles/transfert.ts` : l'adresse de transfert et les deux phrases qui la montrent (`alerte`, `notifier`) ;
 - `regles/` : calendrier et jours ouvrés, estimation, charge, pilote, registre des unités, cycle des demandes. L'Espace en a sa propre copie dans `espace-src/src/regles/` : une règle modifiée d'un côté doit l'être de l'autre.
 
@@ -54,6 +57,34 @@ Une réserve sur ces modules : esbuild retire les commentaires et les types en a
 4. Copier `.assemblees/<fonction>.ts` dans `deploye/` et faire un commit.
 
 Changer un module commun touche toutes les fonctions qui l'importent : elles sont toutes à redéployer.
+
+## Mail mensuel unique (fonction `bilan`)
+
+Un seul mail programmé par période et par client. Le lendemain de la fin d'une période d'abonnement, une fois la période clôturée (`traiter_echeances`, table `cloture`), la fonction agit. Si le quota de la période qui commence n'est pas encore crédité (entreprise dont la mensualité n'est pas réglée), elle attend, quatre jours au plus, pour que les suggestions se chiffrent sur des unités réellement disponibles. Elle :
+
+1. fige le bilan (`bilan_candidats`, `bilan_calculer`, `bilan_preparer`) : demandes livrées, livrables par type, unités utilisées, reportées et expirées (celles du registre), demandes livrées à la date annoncée, délai moyen de validation côté client, liste datée. Aucune durée de travail, aucune statistique d'audience ; un retard de Fill apparaît tel quel ;
+2. y joint trois suggestions au plus pour la période qui commence (`_partage/regles/bilan.ts`) : ce que le client a demandé à la même période l'an passé, puis le calendrier type, dans la limite des unités disponibles, report compris et demandes déposées en attente déduites, comme dans l'Espace. Un sujet déjà demandé (même titre, demande encore en cours ou datée de moins de 60 jours) ou dont le délai ne peut plus être tenu n'est pas proposé. La base refuse elle aussi un total supérieur au solde, et retire à l'envoi une suggestion dont la date limite de dépôt est passée entre-temps ;
+3. tant que le réglage `parametre.pilote_bilan` est faux (valeur par défaut), laisse le bilan en attente : Hors-champ le propose dans « Maintenant » (« Valider le bilan du mois »), sans aucun mail. Depuis la carte, Fill voit les chiffres, retire une suggestion, ouvre l'aperçu de la page (`espace/bilan/#r=…`, jeton tiré dans Hors-champ, `bilan_relire`), valide (`bilan_valider` : l'envoi est demandé aussitôt à la fonction par pg_net, action `envoyer`) ou écarte le bilan (`bilan_ecarter`). Avec `pilote_bilan` à vrai, le mail part sans validation, sauf pour une organisation dont `mails_auto` est faux ;
+4. envoie le mail au référent : trois chiffres, le lien du bilan (`espace/bilan/#j=…`, sans compte), une ligne et un lien « Lancer » par suggestion (nouvelle demande pré-remplie dans l'Espace).
+
+Un bilan ne part jamais deux fois : l'envoi est réservé dans la base avant de partir (`bilan_reserver_envoi`) et confirmé après (`bilan_confirmer_envoi`). Si le service d'envoi refuse le mail, la réservation est rendue et l'envoi repart au passage suivant. Si sa réponse est incertaine (erreur du service, coupure), l'envoi n'est jamais retenté seul : Fill reçoit un message, et Hors-champ propose au bout de dix minutes « Vérifier l'envoi du bilan ». Après un coup d'œil au journal du service d'envoi, « Il est arrivé » enregistre l'envoi (`bilan_confirmer_envoi`, le lien du client s'ouvre alors) et « Le renvoyer » le libère (`bilan_liberer_envoi`, le mail repart au passage suivant). Rien ne part entre 20 h et 8 h, le week-end ou un jour férié.
+
+Personne ne lit la réponse de la tâche planifiée : quand un passage laisse quelque chose en plan (bilan impossible à calculer, mail refusé par le service d'envoi, organisation sans référent actif), Fill reçoit un seul message qui le résume, à chaque passage tant que le point n'est pas corrigé. Les fonctions de Hors-champ (`bilan_a_valider`, `bilan_relire`, `bilan_valider`, `bilan_ecarter`) passent par le connecteur Supabase, comme `fill_retards` : elles sont refusées aux visiteurs et aux comptes clients.
+
+Essai sans effet : `{"action":"quotidien","simuler":true}` répond ce qui serait figé et envoyé, sans rien écrire ni envoyer.
+
+Tâche planifiée à créer à la mise en service (sur le modèle de `fill-pilote`) :
+
+```sql
+select cron.schedule('fill-bilan', '10 7 * * 1-5', $$ select net.http_post(
+  url := 'https://nfnbseonwgmtouxsaajd.supabase.co/functions/v1/bilan',
+  headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'jeton_pilote'), 'Content-Type', 'application/json'),
+  body := '{"action":"quotidien"}'::jsonb, timeout_milliseconds := 60000) $$);
+```
+
+7 h 10 UTC, soit 8 h 10 ou 9 h 10 à Paris selon la saison : après la clôture de la nuit (`fill-echeances`, 23 h 05 UTC) et dans la plage d'envoi.
+
+Tests : `node tests/bilan.test.mjs` (base embarquée : migration, chiffres, étanchéité, règles, et la fonction elle-même assemblée comme au déploiement, service d'envoi simulé) et `node ../espace-src/tests/bilan.mjs` (page dans Chrome).
 
 ## Adresse de transfert (branche `lot-adresse-transfert`, pas encore en service)
 
@@ -85,6 +116,8 @@ Suivi : `select recu, expediteur, sujet, issue, motif, demande_id from mail_recu
 Tests : `node tests/reception.test.mjs` (base embarquée, 43 tests : migration, règles en base, analyse de mails réalistes de `tests/mails-exemples.mjs`, déroulé complet, fonction assemblée) et `node ../espace-src/tests/transfert.mjs` (lien pré-rempli dans un navigateur, 6 contrôles).
 
 ## Historique
+
+- `bilan`, version 1 (12 novembre 2026, en service) : mail mensuel unique, bilan de période et trois suggestions. Migration `migrations/2026-11-bilan-mensuel.sql` appliquée (par exécution SQL directe, l'outil de migration demandant une confirmation que l'application mobile n'affiche pas ; la ligne `drop policy if exists`, sans objet sur une table neuve, a été omise), fonction `bilan` déployée (`verify_jwt: false`), tâche planifiée `fill-bilan` créée (7 h 10 UTC, en semaine). Essai `{"action":"quotidien","simuler":true}` : 200, rien à préparer. `pilote_bilan` reste faux : chaque bilan attend l'accord de Fill dans Hors-champ. Le fichier envoyé est `.assemblees/bilan.ts` écrit en ASCII pur (caractères non ASCII échappés, commentaires retirés, données du calendrier type et de l'offre remises en forme compacte) ; `deploye/bilan.ts` garde la version assemblée, de même comportement. Au prochain déploiement par la CLI, l'écart de forme disparaît.
 
 - `relecture`, version 1, `notifier` et `alerte` (11 novembre 2026, `notifier` version 7, `alerte` version 12) : relecture et validation par lien. Migration `migrations/2026-11-relecture-par-lien.sql` appliquée (elle élargit aussi la contrainte `historique_type_check` au type `lien`), puis les trois fonctions déployées. Le mail « À relire » du référent mène à la page `espace/relecture/` ; si la création du lien échoue, le mail habituel part. Le mail de bienvenue demande le logo et la charte. Essai sur la base réelle fait dans une transaction annulée ; les fonctions répondent (jeton inconnu : 404, sans session : 401). Tests : `node tests/relecture.test.mjs` (base embarquée, 14 tests) et `node ../espace-src/tests/relecture.mjs` (page dans Chrome, 9 contrôles). `_partage/regles/relecture.ts` est commun à `relecture` et `notifier`.
 

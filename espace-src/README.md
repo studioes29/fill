@@ -60,11 +60,21 @@ Limite : les états au survol, au focus et les pseudo-éléments (`::placeholder
 | `donnees/supabase.js` | client Supabase, connexion, chargement (`charger`) et objet `api` : un appel par action |
 | `donnees/etat.js`, `donnees/actions.js` | état de l'application, démonstration, actions des écrans (déposer, confirmer, livrer, commander, inviter…) |
 | `donnees/demo.js` | données et images de la démonstration (`?demo`) |
-| `routeur.js` | navigation par `#route` |
+| `routeur.js` | navigation par `#route` ; lit le lien « Lancer » d'une suggestion (`#nouvelle?titre=…&parution=AAAA-MM-JJ&qte=post:1,actu:2`, écrit par le mail mensuel et la page de bilan), contrôle les valeurs, pré-remplit la nouvelle demande, puis remet l'adresse à `#nouvelle` |
 | `gestes.js`, `transfert.js` | modules ajoutés par-dessus les écrans, sans toucher aux composants. `transfert.js` : le lien `?mail=<identifiant>` des réponses de l'adresse de transfert ouvre la nouvelle demande pré-remplie (lecture de `mail_recu`, saisie gardée), puis `mail_rattacher` joint les pièces du mail à l'envoi. Contrôle : `node tests/transfert.mjs` (Supabase simulé) |
 | `pages/` | écrans : Connexion, Ouverture, NouveauMotDePasse, Accueil, Demandes, NouvelleDemande, Fiche, Unites, Calendrier, Production, Pilotage, Equipe, Comptes |
 | `ui/` | éléments communs : Icone, Logo, Toasts, Visite, Fete, Bobine (jauge d'unités), FilEtat, CarteDemande, CommandeUnites, bon de commande, Volet, Visionneuse, Livrable… |
 | `App.js` | coquille : menu, barre mobile, notifications, choix de l'écran |
+
+## Pages sans compte
+
+Deux pages autonomes vivent dans `../espace`, écrites à la main en JavaScript simple (elles ne passent pas par `construire.mjs`) : `relecture/` (relire et valider un livrable par lien) et `bilan/` (bilan de période par lien, lien du mail mensuel ; `?demo` pour la démonstration, `?demo=relecture` pour l'aperçu que Fill ouvre depuis Hors-champ avant l'envoi). Elles ne sont pas indexées, n'affichent qu'un objet et se contrôlent dans Chrome, accessibilité comprise :
+
+```
+npm i --no-save playwright-core axe-core
+node tests/relecture.mjs
+node tests/bilan.mjs        # contrôle aussi le lien « Lancer » dans l'Espace en démonstration
+```
 
 ## Carte des appels à Supabase
 
