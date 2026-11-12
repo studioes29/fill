@@ -27,25 +27,45 @@ var cors = {
 
 // supabase/functions/_partage/courriel.ts
 var LOGO = "https://fill.studioes.fr/assets/mail/fill.png";
-var P = "margin:0 0 16px;font:400 16px/1.6 Arial,Helvetica,sans-serif;color:#4A4540";
+var POLICE = "Arial,Helvetica,sans-serif";
+var TITRES = "'Bricolage Grotesque',Arial,Helvetica,sans-serif";
+var P = `margin:0 0 16px;font:400 16px/1.6 ${POLICE};color:#2E2A27`;
+var P2 = `margin:0 0 14px;font:400 15px/1.6 ${POLICE};color:#4A4540`;
+var encart = (e) => e ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td style="background:#F1ECFF;border-radius:14px;padding:16px 18px">
+        ${e.titre ? `<p style="margin:0 0 4px;font:700 13px/1.4 ${POLICE};letter-spacing:.04em;text-transform:uppercase;color:#5B3F9C">${e.titre}</p>` : ""}
+        <p style="margin:0;font:400 16px/1.55 ${POLICE};color:#1A1A1A">${e.texte}</p>
+      </td></tr></table>` : "";
+var etapes = (l) => l?.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px">
+        ${l.map((x, i) => `<tr>
+          <td width="40" valign="top" style="padding:0 0 18px"><div style="width:30px;height:30px;border-radius:15px;background:${i % 2 ? "#FFE1D8" : "#E6DDFF"};color:#1A1A1A;font:700 15px/30px ${POLICE};text-align:center">${i + 1}</div></td>
+          <td valign="top" style="padding:3px 0 18px">
+            <p style="margin:0;font:700 16px/1.45 ${POLICE};color:#1A1A1A">${x.titre}</p>
+            ${x.texte ? `<p style="margin:4px 0 0;font:400 15px/1.6 ${POLICE};color:#4A4540">${x.texte}</p>` : ""}
+          </td></tr>`).join("")}
+      </table>` : "";
 var gabarit = (c) => `<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${c.titre}</title></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${c.titre}</title>
+<style>@font-face{font-family:'Bricolage Grotesque';font-weight:700;src:url(https://fill.studioes.fr/espace/assets/br-Cre6nC2_.woff2) format('woff2')}a{color:#5B3F9C}</style></head>
 <body style="margin:0;padding:0;background:#F8F5F2">
 <div style="display:none;max-height:0;overflow:hidden;color:#F8F5F2">${c.aper\u00E7u ?? c.texte[0] ?? ""}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5F2"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5F2"><tr><td align="center" style="padding:28px 14px 36px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-    <tr><td style="padding:0 8px 22px"><a href="https://fill.studioes.fr"><img src="${LOGO}" width="88" height="46" alt="Fill" style="display:block;border:0"></a></td></tr>
-    <tr><td style="background:#FFFFFF;border-radius:22px;padding:40px 36px 34px">
-      <div style="width:44px;height:4px;border-radius:2px;background:#B8A4FF;margin:0 0 22px"></div>
-      <h1 style="margin:0 0 18px;font:700 26px/1.2 Arial,Helvetica,sans-serif;letter-spacing:-.4px;color:#1A1A1A">${c.titre}</h1>
+    <tr><td style="padding:0 6px 20px"><a href="https://fill.studioes.fr"><img src="${LOGO}" width="88" height="46" alt="Fill" style="display:block;border:0"></a></td></tr>
+    <tr><td style="background:#FFFFFF;border-radius:22px;overflow:hidden">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" style="height:6px;background:#B8A4FF;font-size:0;line-height:0">&nbsp;</td><td width="50%" style="height:6px;background:#FF8A6B;font-size:0;line-height:0">&nbsp;</td></tr></table>
+      <div style="padding:32px 28px 30px">
+      <h1 style="margin:0 0 18px;font:700 27px/1.2 ${TITRES};letter-spacing:-.4px;color:#1A1A1A">${c.titre}</h1>
       ${c.texte.map((t) => `<p style="${P}">${t}</p>`).join("\n      ")}
-      ${c.bouton ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 24px"><tr><td style="border-radius:999px;background:#1A1A1A"><a href="${c.bouton.lien}" style="display:inline-block;padding:16px 30px;font:700 16px Arial,Helvetica,sans-serif;color:#F8F5F2;text-decoration:none;border-radius:999px">${c.bouton.libelle}&nbsp;&nbsp;&rarr;</a></td></tr></table>` : ""}
-      ${(c.apres ?? []).map((t) => `<p style="${P};font-size:14px;color:#6B6560">${t}</p>`).join("\n      ")}
-      <p style="margin:26px 0 0;font:400 16px/1.5 Arial,Helvetica,sans-serif;color:#1A1A1A">Ewen Soupault<br><span style="color:#6B6560">Fill</span></p>
+      ${etapes(c.etapes)}
+      ${encart(c.encart)}
+      ${c.bouton ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 26px"><tr><td style="border-radius:999px;background:#1A1A1A"><a href="${c.bouton.lien}" style="display:inline-block;padding:16px 30px;font:700 16px ${POLICE};color:#F8F5F2;text-decoration:none;border-radius:999px">${c.bouton.libelle}&nbsp;&nbsp;&rarr;</a></td></tr></table>` : ""}
+      ${(c.apres ?? []).map((t) => `<p style="${P2}">${t}</p>`).join("\n      ")}
+      <p style="margin:24px 0 0;padding-top:18px;border-top:1px solid #EFEAE4;font:400 16px/1.5 ${POLICE};color:#1A1A1A">Ewen Soupault<br><span style="color:#6B6560;font-size:15px">Fill</span></p>
+      </div>
     </td></tr>
-    <tr><td style="padding:22px 8px 0;font:400 13px/1.6 Arial,Helvetica,sans-serif;color:#8A847D">
+    <tr><td style="padding:20px 6px 0;font:400 13px/1.6 ${POLICE};color:#7A746D">
       Fill, la communication externalis\xE9e des collectivit\xE9s et des entreprises, est un service de Studio ES.<br>
-      <a href="mailto:contact@studioes.fr" style="color:#8A847D">contact@studioes.fr</a> \xB7 06 51 22 21 07 \xB7 <a href="https://fill.studioes.fr" style="color:#8A847D">fill.studioes.fr</a>
+      <a href="mailto:contact@studioes.fr" style="color:#7A746D">contact@studioes.fr</a> \xB7 06 51 22 21 07 \xB7 <a href="https://fill.studioes.fr" style="color:#7A746D">fill.studioes.fr</a>
     </td></tr>
   </table>
 </td></tr></table>
@@ -58,7 +78,6 @@ var adresseTransfert = (alias, domaine) => {
   const d = String(domaine || DOMAINE_DEFAUT).trim().toLowerCase();
   return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(a) ? `${a}@${d}` : null;
 };
-var phraseBienvenue = (adresse) => `Pour une demande, un mail suffit : \xE9crivez ou transf\xE9rez l\u2019information \xE0 <a href="mailto:${adresse}" style="color:#6B6560">${adresse}</a>, depuis l\u2019adresse de votre compte. Vous relisez ensuite sur un lien.`;
 
 // supabase/functions/alerte/index.ts
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -121,18 +140,21 @@ Deno.serve(async (req) => {
   const transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
   const bienvenue = gabarit({
     titre: `Bienvenue, ${echap(prenom)}`,
-    aper\u00E7u: "Votre espace Fill est ouvert.",
+    aper\u00E7u: "Votre espace Fill est ouvert : trois gestes pour bien d\xE9marrer.",
     texte: [
-      `L\u2019espace de ${echap(o.nom)} est ouvert. Vous pouvez d\xE8s maintenant inviter vos coll\xE8gues (menu \xC9quipe) et d\xE9poser vos premi\xE8res demandes.`,
-      o.type === "collectivite" ? "Je vous appelle sous 24 h ouvr\xE9es pour caler avec vous le volume d\u2019unit\xE9s, puis je vous envoie le devis et le bon de commande. D\xE9posez le bon sign\xE9 dans votre espace : vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s sa validation, et la production de vos demandes d\xE9marre." : "Vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s le premier r\xE8glement, \xE0 faire en ligne depuis l\u2019accueil de votre espace, et la production de vos demandes d\xE9marre. Je vous appelle aussi pour caler le volume avec vous."
+      `L\u2019espace de ${echap(o.nom)} est ouvert.`,
+      o.type === "collectivite" ? "Je vous appelle sous 24 h ouvr\xE9es pour caler avec vous le volume d\u2019unit\xE9s, puis je vous envoie le devis et le bon de commande. Vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s r\xE9ception du bon sign\xE9, \xE0 d\xE9poser dans votre espace." : "Vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s le premier r\xE8glement, \xE0 faire en ligne depuis l\u2019accueil de votre espace. Je vous appelle aussi pour caler le volume avec vous.",
+      "<b>Pour bien d\xE9marrer, trois gestes :</b>"
     ],
+    etapes: [
+      { titre: "Donnez l\u2019acc\xE8s \xE0 vos canaux", texte: "Site, r\xE9seaux sociaux, lettre d\u2019information : depuis le menu Comptes de votre espace. Vous invitez Fill avec des droits limit\xE9s, sans communiquer de mot de passe, et vous retirez l\u2019acc\xE8s quand vous voulez." },
+      { titre: "Envoyez votre logo et votre charte", texte: "R\xE9pondez simplement \xE0 ce message. Sans r\xE9ponse, je les reprends depuis votre site." },
+      { titre: "D\xE9posez votre premi\xE8re demande", texte: "Depuis votre espace, ou par un simple mail \xE0 l\u2019adresse ci-dessous." }
+    ],
+    encart: transfert ? { titre: "Votre adresse pour les demandes", texte: `<a href="mailto:${transfert}" style="color:#1A1A1A;font-weight:700;text-decoration:none">${transfert}</a><br><span style="font-size:14.5px;color:#4A4540">\xC9crivez-y ou transf\xE9rez-y l\u2019information, depuis l\u2019adresse de votre compte. Vous relisez ensuite sur un lien.</span>` } : null,
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
     apres: [
-      '<b style="color:#1A1A1A">Pour bien d\xE9marrer, deux gestes</b>',
-      "1. Donnez \xE0 Fill l\u2019acc\xE8s \xE0 vos canaux (site, r\xE9seaux sociaux, lettre d\u2019information) depuis le menu Comptes de votre espace. Chaque outil permet d\u2019inviter Fill avec des droits limit\xE9s, sans jamais communiquer de mot de passe, et vous retirez l\u2019acc\xE8s quand vous voulez. Sans acc\xE8s, Fill vous remet les fichiers et la publication reste de votre c\xF4t\xE9.",
-      "2. R\xE9pondez \xE0 ce message avec votre logo et votre charte graphique si vous en avez une, pour que vos supports portent vos couleurs d\xE8s la premi\xE8re demande. Sans r\xE9ponse, je les reprends depuis votre site.",
-      ...transfert ? [phraseBienvenue(transfert)] : [],
-      "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez simplement \xE0 ce message."
+      "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez \xE0 ce message."
     ]
   });
   const [r] = await Promise.all([

@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
           sujet: `Demande reçue : ${d.titre}`,
           titre: `${nom} est bien reçue`,
           texte: [
-            `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.parution ? `, parution souhaitée le ${jour(d.parution)}${quand}` : ""}. Fill la confirme avec sa date de livraison : vous recevez alors un second message.`,
-            "Rien n’est engagé avant cette confirmation. D’ici là, vous pouvez encore annuler la demande depuis votre espace."
+            `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.parution ? `, parution souhaitée le ${jour(d.parution)}${quand}` : ""}. Fill la confirme avec sa date de livraison.`,
+            "D’ici là, rien n’est engagé : vous pouvez encore l’annuler depuis votre espace."
           ],
           bouton: { libelle: "Suivre la demande", lien: lienDemande }
         });
@@ -159,6 +159,20 @@ Deno.serve(async (req) => {
         };
         const texte = quoi[h.type === "modification" ? "deposee" : d.statut];
         if (!texte) return new Response("Rien à signaler", { status: 409, headers: cors });
+        // confirmation à la personne qui vient de répondre (mail d'étape : il respecte sa préférence)
+        if (qui.mails_etapes !== false && (d.statut === "validee" || d.statut === "correction")) {
+          const date = d.parution ? ` le ${jour(d.parution)}${quand}` : "";
+          const suite = iss === "fichiers" ? "Fill prépare les fichiers finaux : ils seront à télécharger dans la demande."
+            : iss === "publication" ? `Fill la publie sur vos comptes${date}.`
+            : `Fill la publie sur vos comptes${date} et prépare les fichiers des supports imprimés.`;
+          mails.push({
+            a: destClient([qui]),
+            sujet: d.statut === "validee" ? `Version validée : ${d.titre}` : `Corrections transmises : ${d.titre}`,
+            titre: d.statut === "validee" ? "Votre validation est enregistrée" : "Vos corrections sont transmises",
+            texte: [d.statut === "validee" ? `Merci. ${nom} est validée. ${suite}` : `${nom} : Fill reprend la version et vous en remet une nouvelle à relire.`],
+            bouton: { libelle: "Suivre la demande", lien: lienDemande }
+          });
+        }
         mails.push({ a: [{ email: pourFill }], repondreA: { email: qui.email, name: qui.nom }, sujet: `${o?.nom} : ${d.titre}`, titre: `${echap(qui.nom)} ${texte}`, texte: [`${nom}, ${echap(o?.nom)}.`, h.detail ? `<i>${echap(extrait(h.detail, 400))}</i>` : ""].filter(Boolean), bouton: { libelle: "Ouvrir la demande", lien: lienDemande } });
       } else {
         // adresse de transfert de la structure, rappelée d'une ligne ; tant que la colonne n'existe pas, le mail habituel part
@@ -208,7 +222,7 @@ Deno.serve(async (req) => {
       to: m.a,
       replyTo: m.repondreA ?? { email: "contact@studioes.fr", name: "Ewen Soupault, Fill" },
       subject: `${essai ? "[Test] " : ""}${m.sujet}`,
-      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton, apres: m.apres })
+      htmlContent: gabarit({ titre: m.titre, texte: m.texte, bouton: m.bouton, apres: m.apres, etapes: m.etapes, encart: m.encart })
     })
   }));
   const res = await Promise.all(envois);

@@ -73,6 +73,29 @@ const etat = (titre, texte, action, fait = false) => {
   main.focus();
   window.scrollTo({ top: 0 });
 };
+// fin de parcours : une carte, ce qui vient d'être fait, ce qui suit, et le message de confirmation
+const coche = () => {
+  const s = document.createElementNS(`http://www.w3.org/2000/svg`, `svg`);
+  s.setAttribute(`viewBox`, `0 0 24 24`); s.setAttribute(`aria-hidden`, `true`);
+  s.innerHTML = `<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return s;
+};
+const fin = (d, titre, texte, suite) => {
+  document.querySelector(`.barre`)?.remove();
+  const quoi = d?.demande?.titre ? h(`p`, { class: `quoi` }, `« ${d.demande.titre} »${d.version?.numero ? `, version ${d.version.numero}` : ``}`) : null;
+  const carte = h(`section`, { class: `etat fait fin`, role: `status` },
+    h(`span`, { class: `pastille` }, coche()),
+    h(`h2`, {}, titre), quoi, h(`p`, {}, texte),
+    suite?.length ? h(`ol`, { class: `suite` }, ...suite.map((t) => h(`li`, {}, t))) : null,
+    d?.usage === `referent` ? versEspace(d) : null);
+  poser(main, carte);
+  main.focus();
+  window.scrollTo({ top: 0 });
+};
+const suiteValidee = (d) => [
+  d?.demande?.parution ? `Fill publie le contenu ${date(d.demande.parution)}${heure(d.demande.heure)}, ou vous remet les fichiers finaux pour les supports imprimés.` : `Fill publie le contenu à la date prévue, ou vous remet les fichiers finaux pour les supports imprimés.`,
+  `Vous êtes prévenu dès que c’est en ligne ou livré, et tout reste disponible dans votre espace.`,
+];
 const versEspace = (d) => (d?.espace ? h(`a`, { class: `bt cl`, href: `${d.espace}/` }, `Ouvrir mon espace`) : null);
 
 const fermes = {
@@ -124,9 +147,9 @@ const barre = (d, decide, nombre = 1) => {
     dire(); bouton.disabled = true;
     try {
       const r = await appeler({ action: `repondre`, reponse, remarque });
-      if (!r.decision) etat(`Avis transmis.`, `${d.demandeur ?? `Votre interlocuteur`} le reçoit par e-mail et décide. Vous pouvez fermer cette page.`, null, true);
-      else if (reponse === `accord`) etat(`Version validée.`, `Fill prend la suite. Vous pouvez fermer cette page.`, null, true);
-      else etat(`Corrections transmises.`, `Fill reprend la version et vous en remet une nouvelle à relire.`, null, true);
+      if (!r.decision) fin(d, `Avis transmis`, `${d.demandeur ?? `Votre interlocuteur`} le reçoit par e-mail et décide. Vous pouvez fermer cette page.`, null);
+      else if (reponse === `accord`) fin(d, `Version validée`, `Merci. Fill prend la suite :`, suiteValidee(d));
+      else fin(d, `Corrections transmises`, `Fill reprend la version et vous en remet une nouvelle à relire.`, null);
     } catch (e) { bouton.disabled = false; dire(e.message); }
   };
 
@@ -186,9 +209,9 @@ const barreMulti = (d, decide, m, titres) => {
     const remarque = aCorriger ? m.reponses.map((e, i) => `${titres[i]} : ${e.r === `accord` ? `d’accord` : `à corriger. ${e.texte.trim()}`}`).join(`\n`) : null;
     try {
       const r = await appeler({ action: `repondre`, reponse: aCorriger ? `correction` : `accord`, remarque });
-      if (!r.decision) etat(`Avis transmis.`, `${d.demandeur ?? `Votre interlocuteur`} le reçoit par e-mail et décide. Vous pouvez fermer cette page.`, null, true);
-      else if (!aCorriger) etat(`Version validée.`, `Fill prend la suite. Vous pouvez fermer cette page.`, null, true);
-      else etat(`Réponse transmise.`, `Fill reprend ce qui est à corriger et vous remet une nouvelle version. Ce que vous avez validé ne change pas.`, null, true);
+      if (!r.decision) fin(d, `Avis transmis`, `${d.demandeur ?? `Votre interlocuteur`} le reçoit par e-mail et décide. Vous pouvez fermer cette page.`, null);
+      else if (!aCorriger) fin(d, `Version validée`, `Merci. Fill prend la suite :`, suiteValidee(d));
+      else fin(d, `Réponse transmise`, `Fill reprend ce qui est à corriger et vous remet une nouvelle version à relire. Ce que vous avez validé ne change pas.`, null);
     } catch (e) { bouton.disabled = false; dire(e.message); }
   };
   const depart = () => {
