@@ -67,7 +67,13 @@ Réglages : `RECEPTION_CLE` (secret du webhook, 24 caractères au moins, obligat
 
 Mise en service, dans l'ordre : enregistrements MX du sous-domaine (10 `inbound1.sendinblue.com`, 20 `inbound2.sendinblue.com`), secret `RECEPTION_CLE`, migration `migrations/2026-11-adresse-de-transfert.sql`, déploiement de `reception` (`verify_jwt: false`), action `{"action":"webhook","creer":true}`, fusion (publie l'Espace), essai réel, puis déploiement de `notifier` et `alerte`, qui montrent l'adresse aux clients. Après chaque déploiement, copier `.assemblees/<fonction>.ts` dans `deploye/`.
 
-État au 12 novembre 2026 (branche `transfert-secret-au-coffre`, posée sur `lot-adresse-transfert`) :
+État au 12 novembre 2026, fin de journée (fusionné dans `main`) :
+
+- `reception` version 5 en ligne (verify_jwt désactivé), depuis la branche `transfert-secret-au-coffre` : elle lit le secret du coffre (vérifié : l'action `webhook` répond 200, `mx_ok: true`). `deploye/reception.ts` est la copie exacte du fichier en ligne : l'outil de déploiement a converti les échappements `\uXXXX` en caractères (sauf caractères de contrôle). Après décodage de ces échappements, il est identique à `.assemblees/reception.ts` ; l'assembleur affiche donc un écart pour `reception`, sans différence de comportement. Au prochain déploiement par la CLI (`supabase functions deploy reception --no-verify-jwt`), l'écart disparaît ;
+- webhook pas encore créé : Brevo ne connaît que `studioes.fr`. Déclarer `demandes.studioes.fr` dans Brevo (voir plus bas), puis appeler `{"action":"webhook","creer":true}` ;
+- `notifier` et `alerte` (qui montrent l'adresse aux clients) ne sont pas encore déployés : à faire après l'essai réel.
+
+État au 12 novembre 2026, matin (branche `transfert-secret-au-coffre`, posée sur `lot-adresse-transfert`) :
 
 - le secret du webhook n'a plus à être saisi : la migration le génère dans le coffre de la base (Vault, secret `reception_cle`) et la fonction le lit par `reception_cle()` quand `RECEPTION_CLE` n'est pas réglé. La fonction `reception_cle` et le secret existent déjà en base ; la version 4 en ligne ne les lit pas encore (elle répond 503), la version de cette branche oui ;
 - Brevo répond 400 `document_not_found` à la lecture des webhooks tant qu'il n'en existe aucun : l'action `webhook` le traite comme une liste vide (champ `lecture` de la réponse) ;
