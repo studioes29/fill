@@ -370,6 +370,12 @@ var agir = async (e, t, n) => {
   };
 var livrerVersion = async (e, t, n) => {
     let r = demande(e);
+    // tous les livrables commandés avant d'envoyer la version
+    let manque = livrablesManquants(r, t);
+    if (manque.length)
+      throw Error(
+        `${manque.length > 1 ? `Il reste ${manque.length} livrables` : `Il reste un livrable`} : ${manque.map((x) => x.libelle).join(`, `)}.`,
+      );
     if (MODE_REEL) {
       let i = [];
       for (let e of t)
@@ -379,6 +385,9 @@ var livrerVersion = async (e, t, n) => {
                 nom: e.nom,
                 type: e.type,
                 contenu: e.contenu,
+                legende: e.legende,
+                livrable: e.livrable,
+                libelle: e.libelle,
                 chemin: await api.televerser(r.organisationId, r.id, e.fichier),
               }
             : {
@@ -386,6 +395,8 @@ var livrerVersion = async (e, t, n) => {
                 type: e.type,
                 contenu: e.contenu,
                 legende: e.legende,
+                livrable: e.livrable,
+                libelle: e.libelle,
               },
         );
       (await api.livrerVersion(e, r.organisationId, r.versions.length + 1, i, n),

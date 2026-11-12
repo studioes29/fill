@@ -16,6 +16,7 @@ regles/format.js
 regles/pilote.js
 regles/registre.js
 regles/atelier.js
+regles/livrables.js
 regles/tempsforts.js
 donnees/demo.js
 vendor/supabase-js.js
@@ -63,3 +64,4 @@ App.js
 gestes.js
 transfert.js
 preferences.js
+livraison.js

@@ -119,7 +119,8 @@ const afficher = (d) => {
     : d.usage === `delegation` ? `${d.demandeur ?? d.organisation} vous confie la validation. Votre réponse lance la suite.`
     : null;
   const v = d.version, fichiers = v.fichiers ?? [];
-  const noms = fichiers.map((f) => TYPES[typeDe(f)] ?? `Fichier`);
+  // le nom du livrable commandé quand la version le porte (« Affiche », « Publication 2 »), sinon le type de fichier
+  const noms = fichiers.map((f) => (typeof f.libelle === `string` && f.libelle.trim() ? f.libelle.trim() : TYPES[typeDe(f)] ?? `Fichier`));
   const titres = noms.map((nom, i) => (fichiers.length < 2 ? null : noms.filter((x) => x === nom).length > 1 ? `${nom} ${noms.slice(0, i + 1).filter((x) => x === nom).length}` : nom));
   // plusieurs contenus : une réponse par contenu, envoyée en une fois
   const multi = fichiers.length > 1 ? { reponses: fichiers.map(() => ({ r: null, texte: `` })), peintres: [], maj: () => {} } : null;
