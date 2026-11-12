@@ -51,6 +51,15 @@ var gabarit = (c) => `<!doctype html>
 </td></tr></table>
 </body></html>`;
 
+// supabase/functions/_partage/regles/transfert.ts
+var DOMAINE_DEFAUT = "demandes.studioes.fr";
+var adresseTransfert = (alias, domaine) => {
+  const a = String(alias ?? "").trim().toLowerCase();
+  const d = String(domaine || DOMAINE_DEFAUT).trim().toLowerCase();
+  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(a) ? `${a}@${d}` : null;
+};
+var phraseBienvenue = (adresse) => `Pour une demande, un mail suffit : \xE9crivez ou transf\xE9rez l\u2019information \xE0 <a href="mailto:${adresse}" style="color:#6B6560">${adresse}</a>, depuis l\u2019adresse de votre compte. Vous relisez ensuite sur un lien.`;
+
 // supabase/functions/alerte/index.ts
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -108,6 +117,8 @@ Deno.serve(async (req) => {
     bouton: { libelle: "Ouvrir le pilotage", lien: `${site}/#pilotage` }
   });
   const prenom = String(p.nom).split(" ")[0];
+  const { data: al } = await sb.from("organisation").select("alias_mail").eq("id", o.id).maybeSingle();
+  const transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
   const bienvenue = gabarit({
     titre: `Bienvenue, ${echap(prenom)}`,
     aper\u00E7u: "Votre espace Fill est ouvert.",
@@ -116,7 +127,13 @@ Deno.serve(async (req) => {
       o.type === "collectivite" ? "Je vous appelle sous 24 h ouvr\xE9es pour caler avec vous le volume d\u2019unit\xE9s, puis je vous envoie le devis et le bon de commande. D\xE9posez le bon sign\xE9 dans votre espace : vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s sa validation, et la production de vos demandes d\xE9marre." : "Vos unit\xE9s sont cr\xE9dit\xE9es d\xE8s le premier r\xE8glement, \xE0 faire en ligne depuis l\u2019accueil de votre espace, et la production de vos demandes d\xE9marre. Je vous appelle aussi pour caler le volume avec vous."
     ],
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
-    apres: ["Pour que vos supports portent vos couleurs d\xE8s la premi\xE8re demande, r\xE9pondez \xE0 ce message avec votre logo et votre charte graphique si vous en avez une. Sans r\xE9ponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez simplement \xE0 ce message."]
+    apres: [
+      '<b style="color:#1A1A1A">Pour bien d\xE9marrer, deux gestes</b>',
+      "1. Donnez \xE0 Fill l\u2019acc\xE8s \xE0 vos canaux (site, r\xE9seaux sociaux, lettre d\u2019information) depuis le menu Comptes de votre espace. Chaque outil permet d\u2019inviter Fill avec des droits limit\xE9s, sans jamais communiquer de mot de passe, et vous retirez l\u2019acc\xE8s quand vous voulez. Sans acc\xE8s, Fill vous remet les fichiers et la publication reste de votre c\xF4t\xE9.",
+      "2. R\xE9pondez \xE0 ce message avec votre logo et votre charte graphique si vous en avez une, pour que vos supports portent vos couleurs d\xE8s la premi\xE8re demande. Sans r\xE9ponse, je les reprends depuis votre site.",
+      ...transfert ? [phraseBienvenue(transfert)] : [],
+      "Pour vous connecter : votre adresse e-mail et le mot de passe choisi \xE0 l\u2019inscription. Une question ? R\xE9pondez simplement \xE0 ce message."
+    ]
   });
   const [r] = await Promise.all([
     envoyer({ to: [{ email: pourFill }], replyTo: { email: p.email, name: p.nom }, subject: `Nouvelle inscription : ${o.nom}`, htmlContent: html }),

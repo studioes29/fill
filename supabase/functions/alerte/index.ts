@@ -68,7 +68,13 @@ Deno.serve(async (req) => {
       o.type === "collectivite" ? "Je vous appelle sous 24 h ouvrées pour caler avec vous le volume d’unités, puis je vous envoie le devis et le bon de commande. Déposez le bon signé dans votre espace : vos unités sont créditées dès sa validation, et la production de vos demandes démarre." : "Vos unités sont créditées dès le premier règlement, à faire en ligne depuis l’accueil de votre espace, et la production de vos demandes démarre. Je vous appelle aussi pour caler le volume avec vous."
     ],
     bouton: { libelle: "Ouvrir mon espace", lien: `${site}/` },
-    apres: [...transfert ? [phraseBienvenue(transfert)] : [], "Pour que vos supports portent vos couleurs dès la première demande, répondez à ce message avec votre logo et votre charte graphique si vous en avez une. Sans réponse, je les reprends depuis votre site.", "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."]
+    apres: [
+      "<b style=\"color:#1A1A1A\">Pour bien démarrer, deux gestes</b>",
+      "1. Donnez à Fill l’accès à vos canaux (site, réseaux sociaux, lettre d’information) depuis le menu Comptes de votre espace. Chaque outil permet d’inviter Fill avec des droits limités, sans jamais communiquer de mot de passe, et vous retirez l’accès quand vous voulez. Sans accès, Fill vous remet les fichiers et la publication reste de votre côté.",
+      "2. Répondez à ce message avec votre logo et votre charte graphique si vous en avez une, pour que vos supports portent vos couleurs dès la première demande. Sans réponse, je les reprends depuis votre site.",
+      ...transfert ? [phraseBienvenue(transfert)] : [],
+      "Pour vous connecter : votre adresse e-mail et le mot de passe choisi à l’inscription. Une question ? Répondez simplement à ce message."
+    ]
   });
   const [r] = await Promise.all([
     envoyer({ to: [{ email: pourFill }], replyTo: { email: p.email, name: p.nom }, subject: `Nouvelle inscription : ${o.nom}`, htmlContent: html }),

@@ -85,6 +85,15 @@ var empreinte = async (jeton) => {
 };
 var lienPage = (site, jeton) => `${String(site).replace(/\/$/, "")}/relecture/#j=${jeton}`;
 
+// supabase/functions/_partage/regles/transfert.ts
+var DOMAINE_DEFAUT = "demandes.studioes.fr";
+var adresseTransfert = (alias, domaine) => {
+  const a = String(alias ?? "").trim().toLowerCase();
+  const d = String(domaine || DOMAINE_DEFAUT).trim().toLowerCase();
+  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(a) ? `${a}@${d}` : null;
+};
+var phraseConfirmee = (adresse) => `Pour une prochaine demande, un mail suffit : \xE9crivez ou transf\xE9rez l\u2019information \xE0 <a href="mailto:${adresse}" style="color:#6B6560">${adresse}</a>.`;
+
 // supabase/functions/notifier/index.ts
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 var echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -201,6 +210,19 @@ Deno.serve(async (req) => {
         ],
         bouton: { libelle: "Ouvrir la demande", lien: lienDemande }
       });
+      const parMail = (await admin.from("mail_recu").select("id").eq("demande_id", d.id).limit(1)).data?.length;
+      if (!auto && auteur && !parMail) {
+        mails.push({
+          a: destClient([auteur]),
+          sujet: `Demande re\xE7ue : ${d.titre}`,
+          titre: `${nom} est bien re\xE7ue`,
+          texte: [
+            `${d.unites} unit\xE9${d.unites > 1 ? "s" : ""}${d.parution ? `, parution souhait\xE9e le ${jour(d.parution)}${quand}` : ""}. Fill la confirme avec sa date de livraison : vous recevez alors un second message.`,
+            "Rien n\u2019est engag\xE9 avant cette confirmation. D\u2019ici l\xE0, vous pouvez encore annuler la demande depuis votre espace."
+          ],
+          bouton: { libelle: "Suivre la demande", lien: lienDemande }
+        });
+      }
     } else if (evenement === "message") {
       const { data: msg } = await admin.from("message").select("texte, auteur_id, creee, systeme").eq("demande_id", d.id).order("creee", { ascending: false }).limit(1).maybeSingle();
       if (!msg || msg.systeme || !recent(msg.creee, 3) || moi && msg.auteur_id !== moi.id) return new Response("Rien \xE0 signaler", { status: 409, headers: cors });
@@ -227,8 +249,13 @@ Deno.serve(async (req) => {
         if (!texte) return new Response("Rien \xE0 signaler", { status: 409, headers: cors });
         mails.push({ a: [{ email: pourFill }], repondreA: { email: qui.email, name: qui.nom }, sujet: `${o?.nom} : ${d.titre}`, titre: `${echap(qui.nom)} ${texte}`, texte: [`${nom}, ${echap(o?.nom)}.`, h.detail ? `<i>${echap(extrait(h.detail, 400))}</i>` : ""].filter(Boolean), bouton: { libelle: "Ouvrir la demande", lien: lienDemande } });
       } else {
+        let transfert = null;
+        if (d.statut === "confirmee") {
+          const { data: al } = await admin.from("organisation").select("alias_mail").eq("id", d.organisation_id).maybeSingle();
+          transfert = adresseTransfert(al?.alias_mail, Deno.env.get("DOMAINE_RECEPTION"));
+        }
         const versClient = {
-          confirmee: { sujet: `Demande confirm\xE9e : ${d.titre}`, titre: `${nom} est confirm\xE9e`, texte: `${d.unites} unit\xE9${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison pr\xE9vue le ${jour(d.livraison)}` : ""}. Vous suivez chaque \xE9tape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur] },
+          confirmee: { sujet: `Demande confirm\xE9e : ${d.titre}`, titre: `${nom} est confirm\xE9e`, texte: `${d.unites} unit\xE9${d.unites > 1 ? "s" : ""}${d.livraison ? `, livraison pr\xE9vue le ${jour(d.livraison)}` : ""}. Vous suivez chaque \xE9tape dans votre espace.`, bouton: "Suivre la demande", qui: [auteur], apres: transfert ? [phraseConfirmee(transfert)] : void 0 },
           a_valider: { sujet: `\xC0 relire : ${d.titre}`, titre: `Une version de ${nom} est pr\xEAte`, texte: "Relisez-la dans votre espace : validez-la, ou indiquez vos corrections au bon endroit. Deux allers-retours sont inclus.", bouton: "Relire la version", qui: [auteur, referent] },
           attente_client: { sujet: `Un \xE9l\xE9ment est attendu : ${d.titre}`, titre: `Fill attend un \xE9l\xE9ment pour ${nom}`, texte: "La production reprend d\xE8s votre r\xE9ponse. Le d\xE9tail est dans les \xE9changes de la demande.", bouton: "R\xE9pondre", qui: [auteur, referent] },
           accord_requis: { sujet: `Votre accord est demand\xE9 : ${d.titre}`, titre: `Votre accord est demand\xE9 pour ${nom}`, texte: "Cette demande d\xE9passe ce qui \xE9tait pr\xE9vu (unit\xE9s ou plafond du contributeur). Elle est lanc\xE9e d\xE8s votre accord.", bouton: "Donner mon accord", qui: [referent] },
@@ -255,7 +282,7 @@ Deno.serve(async (req) => {
           });
           const autres = destClient(v.qui.filter((p) => p && p.id !== referent.id));
           if (autres.length) mails.push({ a: autres, sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
-        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande } });
+        } else mails.push({ a: destClient(v.qui), sujet: `${prefixe}${v.sujet}`, titre: v.titre, texte: [v.texte], bouton: { libelle: v.bouton, lien: lienDemande }, apres: v.apres });
       }
     } else return new Response("\xC9v\xE9nement inconnu", { status: 400, headers: cors });
   }

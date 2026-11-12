@@ -290,10 +290,23 @@ var preparerJet = (e) => {
 var confirmerDemande = async (e, t = {}) => {
     if (MODE_REEL) {
       let n = await api.confirmer(e, t.unites, t.motif, t.livraison);
+      // confirmée par Fill à la main : premier jet de l'atelier, comme quand le pilote confirme
+      let d = demande(e),
+        o = d && organisation(d.organisationId);
       return (
         api.notifier(`statut`, {
           demande: e,
         }),
+        n === `confirmee` &&
+          etat.d.pilote.atelier &&
+          o &&
+          !o.sansIA &&
+          !d.brouillon &&
+          atelierConcerne(d) &&
+          api
+            .atelier(e)
+            .then(() => recharger())
+            .catch(() => null),
         await recharger(),
         n
       );

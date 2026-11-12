@@ -118,6 +118,21 @@ Deno.serve(async (req) => {
         ],
         bouton: { libelle: "Ouvrir la demande", lien: lienDemande }
       });
+      // accusé de réception pour l'auteur, quand la demande attend la confirmation de Fill ;
+      // une demande arrivée par l'adresse de transfert a déjà reçu sa réponse (fonction reception)
+      const parMail = (await admin.from("mail_recu").select("id").eq("demande_id", d.id).limit(1)).data?.length;
+      if (!auto && auteur && !parMail) {
+        mails.push({
+          a: destClient([auteur]),
+          sujet: `Demande reçue : ${d.titre}`,
+          titre: `${nom} est bien reçue`,
+          texte: [
+            `${d.unites} unité${d.unites > 1 ? "s" : ""}${d.parution ? `, parution souhaitée le ${jour(d.parution)}${quand}` : ""}. Fill la confirme avec sa date de livraison : vous recevez alors un second message.`,
+            "Rien n’est engagé avant cette confirmation. D’ici là, vous pouvez encore annuler la demande depuis votre espace."
+          ],
+          bouton: { libelle: "Suivre la demande", lien: lienDemande }
+        });
+      }
     } else if (evenement === "message") {
       const { data: msg } = await admin.from("message").select("texte, auteur_id, creee, systeme").eq("demande_id", d.id).order("creee", { ascending: false }).limit(1).maybeSingle();
       if (!msg || msg.systeme || !recent(msg.creee, 3) || moi && msg.auteur_id !== moi.id) return new Response("Rien à signaler", { status: 409, headers: cors });
