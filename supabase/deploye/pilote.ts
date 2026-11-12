@@ -94,7 +94,7 @@ var periodeDe = (s) => s.slice(0, 7);
 
 // supabase/functions/_partage/offre.json
 var offre_default = {
-  version: "2026-10-27",
+  version: "2026-11-07",
   unite_sup: 55,
   engagement_mois: 6,
   formules: [
@@ -149,7 +149,7 @@ var offre_default = {
         "Demandes courantes en 2 jours ouvr\xE9s",
         "Un point de suivi par trimestre"
       ],
-      mise_en_place: 490,
+      mise_en_place: 0,
       court: "pr\xE9sence entretenue",
       atouts: [
         "<b>10 unit\xE9s</b> par mois",
@@ -227,7 +227,7 @@ var offre_default = {
         "Demandes courantes en 2 jours ouvr\xE9s",
         "Un point de suivi par mois"
       ],
-      mise_en_place: 990,
+      mise_en_place: 0,
       court: "pr\xE9sence chaque semaine",
       atouts: [
         "<b>22 unit\xE9s</b> par mois",
@@ -268,7 +268,7 @@ var offre_default = {
           "10 publications",
           "6 actualit\xE9s",
           "1 newsletter",
-          "1 vid\xE9o courte"
+          "1 affiche en cr\xE9ation"
         ]
       ],
       repartitions: [
@@ -301,8 +301,8 @@ var offre_default = {
             post: 10,
             actu: 6,
             news: 1,
-            video: 1,
-            point: 2
+            point: 2,
+            affiche: 1
           }
         }
       ],
@@ -311,7 +311,7 @@ var offre_default = {
         "Deux urgences par mois incluses",
         "Un point toutes les deux semaines"
       ],
-      mise_en_place: 990,
+      mise_en_place: 0,
       court: "production soutenue",
       atouts: [
         "<b>45 unit\xE9s</b> par mois",
@@ -459,16 +459,6 @@ var offre_default = {
       creation: true
     },
     {
-      id: "video",
-      cat: "creer",
-      nom: "Vid\xE9o courte",
-      u: 4,
-      detail: "Montage de moins de 60 secondes \xE0 partir de vos images",
-      max: 4,
-      t: "#A9CCFF",
-      creation: true
-    },
-    {
       id: "photo",
       cat: "terrain",
       nom: "Reportage photo",
@@ -555,14 +545,14 @@ var offre_default = {
       }
     }
   ],
-  engagement_long: 12,
-  mise_en_place_regle: "490 \u20AC HT pour Essentiel, 990 \u20AC HT pour R\xE9gulier et Soutenu ; offerte avec un engagement de 12 mois",
+  engagement_long: 6,
+  mise_en_place_regle: "Aucune mise en place factur\xE9e ; premier mois sans engagement, puis 6 mois minimum compt\xE9s depuis le premier mois, puis r\xE9siliable chaque mois avec un mois de pr\xE9avis",
   urgence_unites: 1,
   report: "Les unit\xE9s non utilis\xE9es sont report\xE9es une fois, sur le mois suivant ; elles sont consomm\xE9es en premier",
   delais: {
     courant: "publication, actualit\xE9, agenda, visuel sur gabarit, communiqu\xE9",
     creation: "5 jours ouvr\xE9s",
-    creation_liste: "affiche, flyer, newsletter, page de site, vid\xE9o",
+    creation_liste: "affiche, flyer, newsletter, page de site",
     bulletin: "R\xE9troplanning fix\xE9 ensemble, \xE9l\xE9ments \xE0 fournir trois semaines avant parution",
     photo: "Date convenue ensemble, au moins une semaine \xE0 l\u2019avance",
     courant_j: "1 \xE0 2 jours ouvr\xE9s"
@@ -574,7 +564,7 @@ var o = offre_default;
 var OFFRE = {
   version: o.version,
   uniteSup: o.unite_sup,
-  // prix HT d'une unité hors forfait
+  // prix d'une unité hors forfait (TVA non applicable)
   engagementMois: o.engagement_mois,
   engagementLong: o.engagement_long,
   // mise en place offerte à partir de cet engagement

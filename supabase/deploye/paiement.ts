@@ -48,11 +48,10 @@ Deno.serve(async (req) => {
     ref = `commande:${c.id}`;
   } else if (objet === "ouverture") {
     const { data: o } = await sb.from("organisation").select("id, formule, engagement_mois, statut").eq("id", id).single();
-    const { data: f } = await sb.from("formule").select("nom, prix, unites, mise_en_place").eq("id", o?.formule).eq("offre_id", (await sb.rpc("offre_active")).data).single();
+    const { data: f } = await sb.from("formule").select("nom, prix, unites").eq("id", o?.formule).eq("offre_id", (await sb.rpc("offre_active")).data).single();
     if (!o || o.statut !== "a_activer" || !f) return new Response("Compte introuvable", { status: 404, headers: cors });
-    const mep = o.engagement_mois >= 12 ? 0 : Number(f.mise_en_place);
-    libelle = `Fill \xB7 formule ${f.nom}, premier mois (${f.unites} unit\xE9s)${mep ? " et mise en place" : ""}`;
-    montant = Number(f.prix) + mep;
+    libelle = `Fill \xB7 formule ${f.nom}, premier mois (${f.unites} unit\xE9s), sans engagement`;
+    montant = Number(f.prix);
     ref = `ouverture:${o.id}`;
   } else return new Response("Objet inconnu", { status: 400, headers: cors });
   const site = SITE;
