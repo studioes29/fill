@@ -101,7 +101,7 @@ Mise en service, dans l'ordre : enregistrements MX du sous-domaine (10 `inbound1
 État au 12 novembre 2026, fin de journée (fusionné dans `main`) :
 
 - `reception` version 5 en ligne (verify_jwt désactivé), depuis la branche `transfert-secret-au-coffre` : elle lit le secret du coffre (vérifié : l'action `webhook` répond 200, `mx_ok: true`). `deploye/reception.ts` est la copie exacte du fichier en ligne : l'outil de déploiement a converti les échappements `\uXXXX` en caractères (sauf caractères de contrôle). Après décodage de ces échappements, il est identique à `.assemblees/reception.ts` ; l'assembleur affiche donc un écart pour `reception`, sans différence de comportement. Au prochain déploiement par la CLI (`supabase functions deploy reception --no-verify-jwt`), l'écart disparaît ;
-- webhook pas encore créé : Brevo ne connaît que `studioes.fr`. Déclarer `demandes.studioes.fr` dans Brevo (voir plus bas), puis appeler `{"action":"webhook","creer":true}` ;
+- 12 novembre, 13 h 20 : `demandes.studioes.fr` déclaré et authentifié dans Brevo (code Brevo en TXT et deux CNAME DKIM ajoutés chez OVH, DMARC hérité), puis webhook créé par `{"action":"webhook","creer":true}` (Brevo, webhook 2675671, `conforme: true`, `mx_ok: true`). Reste l'essai réel avec un vrai mail ;
 - `notifier` et `alerte` (qui montrent l'adresse aux clients) ne sont pas encore déployés : à faire après l'essai réel.
 
 État au 12 novembre 2026, matin (branche `transfert-secret-au-coffre`, posée sur `lot-adresse-transfert`) :
