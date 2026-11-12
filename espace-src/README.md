@@ -67,7 +67,7 @@ Limite : les états au survol, au focus et les pseudo-éléments (`::placeholder
 
 ## Pages sans compte
 
-Deux pages autonomes vivent dans `../espace`, écrites à la main en JavaScript simple (elles ne passent pas par `construire.mjs`) : `relecture/` (relire et valider un livrable par lien) et `bilan/` (bilan de période par lien, lien du mail mensuel ; `?demo` pour la démonstration, `?demo=relecture` pour la relecture par Fill avant envoi). Elles ne sont pas indexées, n'affichent qu'un objet et se contrôlent dans Chrome, accessibilité comprise :
+Deux pages autonomes vivent dans `../espace`, écrites à la main en JavaScript simple (elles ne passent pas par `construire.mjs`) : `relecture/` (relire et valider un livrable par lien) et `bilan/` (bilan de période par lien, lien du mail mensuel ; `?demo` pour la démonstration, `?demo=relecture` pour l'aperçu que Fill ouvre depuis Hors-champ avant l'envoi). Elles ne sont pas indexées, n'affichent qu'un objet et se contrôlent dans Chrome, accessibilité comprise :
 
 ```
 npm i --no-save playwright-core axe-core

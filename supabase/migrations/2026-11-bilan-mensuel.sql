@@ -3,14 +3,14 @@
 -- À la fin de chaque période d'abonnement (date anniversaire : periode_org, debut_periode_org, fin_periode_org),
 -- une fois la période clôturée (table cloture : le report et l'expiration des unités sont alors écrits au registre),
 -- la fonction serveur « bilan » fige un bilan par organisation et par période, puis envoie un seul mail au référent.
+-- Tant que le réglage pilote_bilan est faux, chaque bilan préparé attend l'accord de Fill dans Hors-champ.
 --
 --   bilan_candidats      les périodes closes qui attendent leur bilan ;
 --   bilan_calculer       les chiffres, lus dans le registre, l'historique et les demandes ;
 --   bilan_contexte       les demandes récentes et les fermetures, pour les règles de suggestion ;
 --   bilan_preparer       fige le bilan (chiffres + suggestions fournies par les règles du serveur) ;
---   bilan_lire           ce que la page espace/bilan/ affiche pour un jeton (partage ou relecture avant envoi) ;
---   bilan_ouvrir_relecture, bilan_fermer_relecture   le lien de relecture envoyé à Fill avant l'envoi au client ;
---   bilan_approuver      accord de Fill avant envoi (depuis ce lien) ;
+--   bilan_lire           ce que la page espace/bilan/ affiche pour un jeton (partage, ou aperçu avant envoi) ;
+--   bilan_a_valider, bilan_relire, bilan_valider, bilan_ecarter   Hors-champ : bilans à valider, aperçu, accord, refus ;
 --   bilan_a_envoyer, bilan_reserver_envoi, bilan_confirmer_envoi, bilan_liberer_envoi   un bilan ne part qu'une fois ;
 --   bilan_revoquer       le référent (ou Fill) retire le lien de partage.
 --
@@ -31,7 +31,6 @@ create table if not exists public.bilan (
   empreinte           text unique check (empreinte ~ '^[0-9a-f]{64}$'),
   empreinte_relecture text unique check (empreinte_relecture ~ '^[0-9a-f]{64}$'),
   calcule_le          timestamptz not null default now(),
-  relecture_envoyee_le timestamptz,
   approuve_le         timestamptz,
   envoi_reserve_le    timestamptz,
   envoye_le           timestamptz,
@@ -48,7 +47,7 @@ alter table public.bilan enable row level security;
 
 -- lecture : l''équipe Fill, et les comptes de l''organisation une fois le bilan envoyé ; jamais les empreintes
 revoke all on public.bilan from anon, authenticated;
-grant select (id, organisation_id, periode, debut, fin, donnees, calcule_le, relecture_envoyee_le, approuve_le, envoye_le, envoye_a, revoque_le)
+grant select (id, organisation_id, periode, debut, fin, donnees, calcule_le, approuve_le, envoye_le, envoye_a, revoque_le)
   on public.bilan to authenticated;
 
 drop policy if exists bilan_lecture on public.bilan;
@@ -265,7 +264,7 @@ begin
   return jsonb_build_object('cree', true, 'id', nouveau);
 end $function$;
 
--- Ce que la page de bilan affiche pour un jeton : lien de partage (après envoi) ou lien de relecture (Fill, avant envoi).
+-- Ce que la page de bilan affiche pour un jeton : lien de partage (après envoi) ou aperçu (Fill, depuis Hors-champ).
 -- Un jeton inconnu ne révèle rien. Réservé au serveur.
 create or replace function public.bilan_lire(p_empreinte text) returns jsonb
 language plpgsql stable security definer set search_path to 'public'
@@ -284,66 +283,101 @@ begin
   select nom, email into ref from profil
    where organisation_id = b.organisation_id and role = 'referent' and actif order by creee limit 1;
   return jsonb_build_object(
-    'etat', 'ouvert', 'mode', 'relecture', 'id', b.id, 'donnees', b.donnees, 'calcule_le', b.calcule_le,
-    'approuve_le', b.approuve_le, 'envoye_le', b.envoye_le, 'en_cours_d_envoi', b.envoi_reserve_le is not null and b.envoye_le is null,
+    'etat', 'ouvert', 'mode', 'relecture', 'id', b.id, 'donnees', b.donnees, 'calcule_le', b.calcule_le, 'envoye_le', b.envoye_le,
     'referent', case when ref.nom is null then null else jsonb_build_object('nom', ref.nom) end);
 end $function$;
 
--- Ouvre la relecture d''un bilan qui attend l''accord de Fill : le jeton du lien envoyé à Fill est créé à ce moment
--- (son empreinte seulement). Une seule ouverture aboutit ; null si le bilan n''attend pas de relecture. Réservé au serveur.
-create or replace function public.bilan_ouvrir_relecture(p_bilan uuid, p_empreinte text) returns jsonb
-language plpgsql security definer set search_path to 'public'
+-- ---------- Hors-champ : la validation des bilans par Fill ----------
+-- Hors-champ, l'outil de pilotage d'Ewen, lit et écrit par le connecteur Supabase, comme pour fill_retards.
+-- Ces fonctions ne sont ouvertes ni aux visiteurs ni aux comptes clients (droits retirés, rôle contrôlé).
+
+-- Les bilans préparés qui attendent l''accord de Fill, et ceux dont l''envoi est resté sans confirmation.
+create or replace function public.bilan_a_valider() returns jsonb
+language plpgsql stable security definer set search_path to 'public'
 as $function$
-declare b bilan; o organisation;
+declare auto boolean;
 begin
-  if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
-  select * into b from bilan where id = p_bilan for update;
-  if b.id is null or b.envoye_le is not null or b.envoi_reserve_le is not null or b.approuve_le is not null
-     or b.relecture_envoyee_le is not null or b.revoque_le is not null then return null; end if;
-  select * into o from organisation where id = b.organisation_id;
-  update bilan set relecture_envoyee_le = now(), empreinte_relecture = p_empreinte where id = b.id;
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') then raise exception 'Réservé à Fill'; end if;
+  select coalesce(pilote_bilan, false) into auto from parametre limit 1;
   return jsonb_build_object(
-    'id', b.id, 'donnees', b.donnees,
-    'organisation', jsonb_build_object('id', o.id, 'nom', o.nom, 'essai', o.essai),
-    'referent', (select nom from profil where organisation_id = b.organisation_id and role = 'referent' and actif order by creee limit 1));
+    'a_valider', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', b.id, 'organisation', o.nom, 'type', o.type, 'essai', o.essai, 'periode', b.periode, 'debut', b.debut, 'fin', b.fin,
+               'calcule_le', b.calcule_le, 'donnees', b.donnees,
+               'referent', (select jsonb_build_object('nom', p.nom, 'email', p.email) from profil p
+                             where p.organisation_id = o.id and p.role = 'referent' and p.actif order by p.creee limit 1))
+             order by b.calcule_le)
+        from bilan b join organisation o on o.id = b.organisation_id
+       where b.envoye_le is null and b.envoi_reserve_le is null and b.revoque_le is null and b.approuve_le is null
+         and not (coalesce(auto, false) and o.mails_auto)), '[]'::jsonb),
+    'bloques', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', b.id, 'organisation', o.nom, 'periode', b.periode, 'debut', b.debut, 'fin', b.fin, 'depuis', b.envoi_reserve_le,
+               'referent', (select jsonb_build_object('nom', p.nom, 'email', p.email) from profil p
+                             where p.organisation_id = o.id and p.role = 'referent' and p.actif order by p.creee limit 1))
+             order by b.envoi_reserve_le)
+        from bilan b join organisation o on o.id = b.organisation_id
+       where b.envoye_le is null and b.envoi_reserve_le is not null and b.envoi_reserve_le < now() - interval '10 minutes'), '[]'::jsonb));
 end $function$;
 
--- Le mail de relecture n''est pas parti : le lien est rendu, il sera recréé au passage suivant. Réservé au serveur.
-create or replace function public.bilan_fermer_relecture(p_bilan uuid) returns boolean
+-- Aperçu d''un bilan depuis Hors-champ : le jeton du lien est tiré dans Hors-champ, la base n''en garde que l''empreinte.
+-- Chaque nouvel aperçu remplace le précédent. La page montre le bilan tel que le client le recevra, sans aucune action.
+create or replace function public.bilan_relire(p_bilan uuid, p_empreinte text) returns boolean
 language plpgsql security definer set search_path to 'public'
 as $function$
 begin
-  if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
-  update bilan set relecture_envoyee_le = null, empreinte_relecture = null
-   where id = p_bilan and envoye_le is null and approuve_le is null and relecture_envoyee_le is not null;
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') then raise exception 'Réservé à Fill'; end if;
+  update bilan set empreinte_relecture = p_empreinte where id = p_bilan and revoque_le is null;
   return found;
 end $function$;
 
--- Accord de Fill avant envoi, depuis le lien de relecture. Les suggestions retirées disparaissent du bilan,
--- qui n''est figé pour le client qu''à l''envoi. Réservé au serveur.
-create or replace function public.bilan_approuver(p_empreinte_relecture text, p_retirer text[] default '{}')
-returns jsonb
+-- Accord de Fill depuis Hors-champ. Les suggestions retirées disparaissent du bilan, puis l''envoi est demandé tout de suite
+-- à la fonction « bilan » (jeton du pilote) : dans la plage d''envoi, le mail part aussitôt ; sinon au passage suivant.
+-- Renvoie l''identifiant de l''appel, à lire ensuite avec parcours_reponse.
+create or replace function public.bilan_valider(p_bilan uuid, p_retirer text[] default '{}') returns bigint
 language plpgsql security definer set search_path to 'public'
 as $function$
-declare b bilan;
+declare b bilan; jeton text;
 begin
-  if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
-  select * into b from bilan where empreinte_relecture = p_empreinte_relecture for update;
-  if b.id is null then raise exception 'Lien inconnu'; end if;
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') then raise exception 'Réservé à Fill'; end if;
+  select * into b from bilan where id = p_bilan for update;
+  if b.id is null then raise exception 'Bilan introuvable'; end if;
   if b.envoye_le is not null or b.envoi_reserve_le is not null then raise exception 'Ce bilan est déjà parti'; end if;
-  if b.revoque_le is not null then raise exception 'Ce bilan a été retiré'; end if;
+  if b.revoque_le is not null then raise exception 'Ce bilan a été écarté'; end if;
   update bilan
      set approuve_le = coalesce(approuve_le, now()),
          donnees = jsonb_set(donnees, '{suggestions}', coalesce((
            select jsonb_agg(x order by n) from jsonb_array_elements(donnees->'suggestions') with ordinality t(x, n)
             where not (x->>'cle' = any (coalesce(p_retirer, '{}')))), '[]'::jsonb))
    where id = b.id;
-  return jsonb_build_object('id', b.id, 'organisation', b.organisation_id);
+  perform journaliser(b.organisation_id, 'bilan_valide', b.id::text, jsonb_build_object('retirees', coalesce(cardinality(p_retirer), 0)));
+  select decrypted_secret into jeton from vault.decrypted_secrets where name = 'jeton_pilote';
+  if jeton is null then return null; end if;
+  return net.http_post(
+    url := 'https://nfnbseonwgmtouxsaajd.supabase.co/functions/v1/bilan',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || jeton, 'Content-Type', 'application/json'),
+    body := jsonb_build_object('action', 'envoyer', 'bilan', b.id),
+    timeout_milliseconds := 30000);
+end $function$;
+
+-- « Ne pas l''envoyer » depuis Hors-champ : le bilan reste en base, écarté ; il ne partira pas.
+create or replace function public.bilan_ecarter(p_bilan uuid) returns boolean
+language plpgsql security definer set search_path to 'public'
+as $function$
+declare b bilan;
+begin
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') then raise exception 'Réservé à Fill'; end if;
+  update bilan set revoque_le = now()
+   where id = p_bilan and envoye_le is null and envoi_reserve_le is null and revoque_le is null
+  returning * into b;
+  if b.id is null then return false; end if;
+  perform journaliser(b.organisation_id, 'bilan_ecarte', b.id::text, null);
+  return true;
 end $function$;
 
 -- Les bilans prêts à partir : approuvés par Fill, ou tous si le réglage pilote_bilan l''autorise et que
--- l''organisation accepte les envois automatiques. « a_relire » : ceux qui attendent un accord et dont le lien de
--- relecture n''est pas encore parti chez Fill. « bloques » : envoi réservé mais jamais confirmé (à regarder à la main).
+-- l''organisation accepte les envois automatiques. « en_attente » : ceux qui attendent un accord dans Hors-champ.
+-- « bloques » : envoi réservé mais jamais confirmé (Hors-champ les montre aussi).
 create or replace function public.bilan_a_envoyer() returns jsonb
 language plpgsql stable security definer set search_path to 'public'
 as $function$
@@ -355,9 +389,6 @@ begin
     'prets', coalesce((select jsonb_agg(b.id order by b.calcule_le) from bilan b join organisation o on o.id = b.organisation_id
                         where b.envoye_le is null and b.envoi_reserve_le is null and b.revoque_le is null
                           and (b.approuve_le is not null or (coalesce(auto, false) and o.mails_auto))), '[]'::jsonb),
-    'a_relire', coalesce((select jsonb_agg(b.id order by b.calcule_le) from bilan b join organisation o on o.id = b.organisation_id
-                           where b.envoye_le is null and b.envoi_reserve_le is null and b.revoque_le is null and b.relecture_envoyee_le is null
-                             and not (b.approuve_le is not null or (coalesce(auto, false) and o.mails_auto))), '[]'::jsonb),
     'en_attente', (select count(*)::int from bilan b join organisation o on o.id = b.organisation_id
                     where b.envoye_le is null and b.envoi_reserve_le is null and b.revoque_le is null
                       and not (b.approuve_le is not null or (coalesce(auto, false) and o.mails_auto))),
@@ -440,10 +471,11 @@ revoke all on function public.bilan_ouvres_entre(date, date) from public, anon, 
 revoke all on function public.bilan_candidats(date) from public, anon, authenticated;
 revoke all on function public.bilan_calculer(uuid, text) from public, anon, authenticated;
 revoke all on function public.bilan_preparer(uuid, text, jsonb) from public, anon, authenticated;
-revoke all on function public.bilan_ouvrir_relecture(uuid, text) from public, anon, authenticated;
-revoke all on function public.bilan_fermer_relecture(uuid) from public, anon, authenticated;
 revoke all on function public.bilan_lire(text) from public, anon, authenticated;
-revoke all on function public.bilan_approuver(text, text[]) from public, anon, authenticated;
+revoke all on function public.bilan_a_valider() from public, anon, authenticated;
+revoke all on function public.bilan_relire(uuid, text) from public, anon, authenticated;
+revoke all on function public.bilan_valider(uuid, text[]) from public, anon, authenticated;
+revoke all on function public.bilan_ecarter(uuid) from public, anon, authenticated;
 revoke all on function public.bilan_a_envoyer() from public, anon, authenticated;
 revoke all on function public.bilan_reserver_envoi(uuid, text, date) from public, anon, authenticated;
 revoke all on function public.bilan_contexte(uuid, date) from public, anon, authenticated;
@@ -454,10 +486,11 @@ grant execute on function public.bilan_ouvres_entre(date, date) to service_role;
 grant execute on function public.bilan_candidats(date) to service_role;
 grant execute on function public.bilan_calculer(uuid, text) to service_role;
 grant execute on function public.bilan_preparer(uuid, text, jsonb) to service_role;
-grant execute on function public.bilan_ouvrir_relecture(uuid, text) to service_role;
-grant execute on function public.bilan_fermer_relecture(uuid) to service_role;
 grant execute on function public.bilan_lire(text) to service_role;
-grant execute on function public.bilan_approuver(text, text[]) to service_role;
+grant execute on function public.bilan_a_valider() to service_role;
+grant execute on function public.bilan_relire(uuid, text) to service_role;
+grant execute on function public.bilan_valider(uuid, text[]) to service_role;
+grant execute on function public.bilan_ecarter(uuid) to service_role;
 grant execute on function public.bilan_a_envoyer() to service_role;
 grant execute on function public.bilan_reserver_envoi(uuid, text, date) to service_role;
 grant execute on function public.bilan_contexte(uuid, date) to service_role;

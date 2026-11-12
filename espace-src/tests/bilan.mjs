@@ -84,59 +84,93 @@ const donnees = (plus = {}) => ({
   ...plus,
 });
 const vue = (plus = {}, d = {}) => ({ etat: 'ouvert', mode: 'partage', calcule_le: '2026-11-12T08:10:00+00:00', espace: 'https://fill.studioes.fr/espace', donnees: donnees(d), ...plus });
-const relecture = (plus = {}) => vue({ mode: 'relecture', referent: 'Yann Le Gall', approuve_le: null, envoye_le: null, en_cours_d_envoi: false, ...plus });
+const relecture = (plus = {}) => vue({ mode: 'relecture', referent: 'Yann Le Gall', envoye_le: null, ...plus });
+
+const textes = (page, sel) => page.locator(sel).evaluateAll((l) => l.map((e) => e.innerText.replace(/\s+/g, ' ').trim()));
 
 for (const largeur of [390, 1280]) {
-  await test(`démonstration à ${largeur} px : le bilan s'affiche, sans erreur ni défaut d'accessibilité, sans rien envoyer`, async () => {
+  await test(`démonstration à ${largeur} px : le bilan se lit comme une lettre, sans erreur ni défaut d'accessibilité, sans rien envoyer`, async () => {
     const { page, ctx, erreurs, appels } = await ouvrir(`${base}?demo`, { largeur });
-    assert.match(await page.textContent('h1'), /^Bilan du \d.* au \d.* \d{4}$/);
+    assert.equal(await page.textContent('h1'), 'Votre mois avec Fill');
+    assert.match(await page.textContent('.une .voix'), /^du \d+ \S+ au \d+ \S+ \d{4}$/);
     assert.equal(await page.textContent('#client'), 'Commune de Saint-Ivenec');
-    assert.equal(await page.locator('.chiffre').count(), 3);
-    assert.deepEqual(await page.locator('.chiffre b').allTextContents(), ['4', '10', '3 sur 4']);
-    assert.equal(await page.locator('.livre').count(), 4);
+    assert.deepEqual(await textes(page, 'main > section h2'), ['Le mois en calendrier', 'Ce qui a été produit', 'Vos unités', 'Pour la période qui commence']);
+    assert.equal(await page.textContent('.tete-c'), '5demandes livrées');
+    assert.equal(await page.locator('.grille .fait').count(), 4, 'quatre jours livrés, dont un avec deux livraisons');
+    assert.equal(await page.locator('.livre').count(), 5);
     assert.equal(await page.locator('.livre .retard').count(), 1, 'le retard de Fill apparaît');
-    assert.equal(await page.locator('.suggestion').count(), 3);
+    assert.equal(await page.locator('.idee').count(), 3);
     assert.equal(await page.getByRole('link', { name: /^Lancer / }).count(), 3);
     assert.deepEqual(await sansDefaut(page), { parasite: false, deborde: false });
     await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1500);
     await page.screenshot({ path: join(captures, `bilan-${largeur}.png`), fullPage: true });
     assert.deepEqual(await accessibilite(page), []);
     assert.deepEqual(erreurs, []);
     assert.equal(appels.length, 0, 'la démonstration ne doit rien envoyer');
     assert.equal(await page.locator('meta[name=robots]').getAttribute('content'), 'noindex, nofollow');
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => /tabular-nums/.test(getComputedStyle(e).fontVariantNumeric))), false, 'pas de chiffres tabulaires');
     // logo en deux couleurs : « fi » à l'encre, premier « l » lavande, second « l » corail
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.marque svg [fill="#1a1a1a"], .marque svg [stroke]')].map((e) => e.getAttribute('stroke') ?? e.getAttribute('fill'))), ['#1a1a1a', '#b8a4ff', '#ff8a6b']);
+    // le monogramme en filigrane est bien dessiné (masque chargé)
+    assert.match(await page.evaluate(() => getComputedStyle(document.querySelector('.une .motif')).maskImage || getComputedStyle(document.querySelector('.une .motif')).webkitMaskImage), /ll\.svg/);
     await ctx.close();
   });
 }
 
-await test('lien de partage : le jeton part en POST, dans le corps ; chiffres, unités, délais et liste datée s’affichent', async () => {
+await test('lien de partage : le jeton part en POST, dans le corps ; chiffres, calendrier, production, unités et suite s’affichent', async () => {
   const { page, ctx, appels, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }) });
   assert.deepEqual(appels.map((a) => [a.methode, a.action, a.j, a.r, /A{43}/.test(a.adresse)]), [['POST', 'lire', JETON, undefined, false]]);
-  assert.equal(await page.textContent('h1'), 'Bilan du 12 octobre au 11 novembre 2026');
-  assert.equal(await page.title(), 'Bilan du 12 octobre au 11 novembre 2026 · Fill');
-  assert.deepEqual(await page.locator('.chiffre').allTextContents(), ['2 demandes livrées', '8 unités utilisées sur 13', '1 sur 2 livrées à la date annoncée']);
-  assert.deepEqual(await page.locator('.parts li').allTextContents(), ['Utilisées8', 'Reportées sur la période suivanteà utiliser avant le 11 décembre3', 'Expiréesreport de la période précédente, non utilisé2']);
-  assert.equal(await page.locator('.barre-unites i').count(), 3);
-  assert.match(await page.textContent('#t-unites ~ .note'), /Sur 13 unités : 10 de votre formule, 3 reportées de la période précédente\./);
-  assert.deepEqual(await page.locator('.delais dd').allTextContents(), ['1 demande sur 2', '1,5 jour ouvré']);
-  assert.deepEqual(await page.locator('.livre .quand').allTextContents(), ['Livrée le 21 octobre', 'Livrée le 23 octobre']);
-  assert.equal(await page.textContent('.livre .retard'), 'Version remise le 22 octobre, annoncée le 20 octobre : 2 jours ouvrés de retard');
-  assert.equal(await page.textContent('.livre .tenue'), 'Version remise à la date annoncée');
-  assert.match(await page.textContent('.suite .solde'), /Du 12 novembre au 11 décembre 2026, vous disposez de 13 unités, dont 3 reportées à utiliser avant le 11 décembre\. 2 sujets y tiennent\./);
-  assert.match(await page.textContent('.pied'), /Bilan figé le 12 novembre 2026\. Cette page s’ouvre sans compte/);
-  assert.equal(await page.locator('.barre, .avant, .garder').count(), 0, 'un lien de partage ne propose aucune action de relecture');
+  assert.equal(await page.title(), 'Votre mois avec Fill, du 12 octobre au 11 novembre 2026');
+  assert.equal(await page.textContent('.une .voix'), 'du 12 octobre au 11 novembre 2026');
+  assert.deepEqual(await textes(page, '.une .tete-c, .cotes li, .pied-une'), ['2 demandes livrées', '8 sur 13 unités utilisées', '1 sur 2 livrées à la date annoncée', 'Vous validez en 1,5 jour ouvré en moyenne.']);
+  // le calendrier couvre la période, du lundi de sa première semaine au dimanche de la dernière
+  assert.equal(await page.locator('.grille .j').count(), 35);
+  assert.deepEqual(await textes(page, '.grille .j:not(.hors)'), Array.from({ length: 31 }, (_, i) => { const d = new Date(Date.UTC(2026, 9, 12 + i)); return `${d.getUTCDate() === 1 || i === 0 ? (d.getUTCMonth() === 9 ? 'oct. ' : 'nov. ') : ''}${d.getUTCDate()}`; }));
+  assert.deepEqual(await page.locator('.grille .fait').evaluateAll((l) => l.map((b) => b.getAttribute('aria-label'))), ['21 octobre : <img src=x onerror=alert(1)>Forum', '23 octobre : Affiche du marché d’automne']);
+  assert.deepEqual(await textes(page, '.livre'), ['21 oct. <img src=x onerror=alert(1)>Forum 3 publications', '23 oct. Affiche du marché d’automne 1 affiche Version remise 2 jours ouvrés après la date annoncée (20 octobre)']);
+  assert.deepEqual(await textes(page, '.tuiles li'), ['3 publications', '1 affiche']);
+  assert.deepEqual(await textes(page, '.legende li'), ['8 utilisées', '3 reportées', '2 expirées']);
+  assert.equal(await page.locator('.barre-u i').count(), 3);
+  assert.equal(await page.textContent('.un .note'), 'Sur 13 unités : 10 de votre formule, 3 reportées de la période précédente. Les reportées sont à utiliser avant le 11 décembre. Les expirées venaient du report de la période précédente.');
+  assert.equal(await page.textContent('.suite .voix'), 'du 12 novembre au 11 décembre 2026');
+  assert.equal(await page.textContent('.suite .solde'), 'Vous disposez de 13 unités, dont 3 reportées à utiliser avant le 11 décembre.');
+  assert.deepEqual(await textes(page, '.idee .feuillet'), ['nov. 28', 'date libre']);
+  assert.deepEqual(await textes(page, '.idee .corps > p:first-of-type'), ['Affiche et deux publications, 6 unités.', 'Publication réseaux sociaux, 1 unité. Vous l’aviez demandé l’an passé à la même période.']);
+  assert.match(await page.textContent('.pied'), /Bilan établi le 12 novembre 2026, à partir de votre espace Fill\. Cette page s’ouvre sans compte/);
+  assert.equal(await page.locator('.apercu, .barre, .garder, button:not(.fait)').count(), 0, 'un lien de partage ne propose aucune action de relecture');
   assert.deepEqual(await sansDefaut(page), { parasite: false, deborde: false });
   assert.deepEqual(await accessibilite(page), []);
   assert.deepEqual(erreurs, []);
   await ctx.close();
 });
 
+await test('calendrier : toucher un jour met sa livraison en avant ; le toucher encore la relâche', async () => {
+  const { page, ctx } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }) });
+  const jour = page.getByRole('button', { name: /^23 octobre/ });
+  await jour.click();
+  assert.equal(await jour.getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(await page.locator('.livre.choisi h3').allTextContents(), ['Affiche du marché d’automne']);
+  await page.getByRole('button', { name: /^21 octobre/ }).click();
+  assert.equal(await jour.getAttribute('aria-pressed'), 'false');
+  assert.deepEqual(await page.locator('.livre.choisi h3').allTextContents(), ['<img src=x onerror=alert(1)>Forum']);
+  await page.getByRole('button', { name: /^21 octobre/ }).click();
+  assert.equal(await page.locator('.livre.choisi').count(), 0);
+  // deux livraisons le même jour : un seul jour marqué, avec leur nombre
+  const b = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { livre: [...donnees().livre, { ...donnees().livre[1], titre: 'Marché : publication', lignes: [{ prestation: 'post', nom: 'Publication réseaux sociaux', quantite: 1 }] }] }) }) });
+  assert.deepEqual(await textes(b.page, '.grille .fait i'), ['2']);
+  await b.page.getByRole('button', { name: '23 octobre : Affiche du marché d’automne, Marché : publication' }).click();
+  assert.equal(await b.page.locator('.livre.choisi').count(), 2);
+  assert.deepEqual(await accessibilite(b.page), []);
+  await b.ctx.close();
+  await ctx.close();
+});
+
 await test('un texte venu de la base n’est jamais interprété comme du HTML ; « Lancer » mène à la demande pré-remplie de l’Espace', async () => {
   const { page, ctx } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({ espace: 'https://exemple.invalid' }) }) });
   assert.equal(await page.textContent('.livre h3'), '<img src=x onerror=alert(1)>Forum');
-  assert.equal(await page.locator('.livre h3 img').count(), 0);
-  const liens = await page.locator('.suggestion a.bt').evaluateAll((l) => l.map((a) => a.href));
+  assert.equal(await page.locator('.livre h3 img, .grille img').count(), 0);
+  const liens = await page.locator('.idee a.bt').evaluateAll((l) => l.map((a) => a.href));
   assert.deepEqual(liens, [
     `${origine}/espace/#nouvelle?titre=T%C3%A9l%C3%A9thon%20%26%20march%C3%A9&parution=2026-11-28&qte=affiche:1,post:2`,
     `${origine}/espace/#nouvelle?titre=Portrait%20du%20nouveau%20boulanger&qte=post:1`,
@@ -145,89 +179,63 @@ await test('un texte venu de la base n’est jamais interprété comme du HTML ;
   await ctx.close();
 });
 
-await test('cas limites : rien de livré, pas de période suivante, une entreprise, un seul chiffre au singulier', async () => {
+await test('cas limites : rien de livré, pas de période suivante, une entreprise, les singuliers', async () => {
   const vide = { demandes_livrees: 0, livre: [], livrables: [], delais: { a_la_date: 0, total: 0, sans_date: 0, validations: 0, validation_jours: null }, unites: { quota: 10, report: 0, ajustements: 0, total: 10, utilisees: 0, reservees: 0, reportees: 1, expirees: 0 }, suivante: null, suggestions: [], organisation: { nom: 'Menuiserie Kerbrat', type: 'entreprise', formule: 'regulier' } };
   const { page, ctx, erreurs } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, vide) }) });
-  assert.deepEqual(await page.locator('.chiffre').allTextContents(), ['0 demande livrée', '0 unité utilisée sur 10', '1 unité reportée sur la période suivante']);
+  assert.deepEqual(await textes(page, '.une .tete-c, .cotes li'), ['0 demande livrée', '0 sur 10 unité utilisée']);
+  assert.equal(await page.locator('.pied-une').count(), 0);
   assert.equal(await page.textContent('.vide'), 'Aucune demande n’a été livrée sur cette période.');
-  assert.equal(await page.locator('.suite, #t-delais, #t-types, #t-encours').count(), 0);
+  assert.equal(await page.locator('.suite, .prod, .grille').count(), 0);
+  assert.deepEqual(await textes(page, '.legende li'), ['1 reportée']);
   assert.equal(await page.evaluate(() => document.documentElement.dataset.cible), 'e');
   assert.deepEqual(await sansDefaut(page), { parasite: false, deborde: false });
   assert.deepEqual(await accessibilite(page), []);
   assert.deepEqual(erreurs, []);
+  await page.screenshot({ path: join(captures, 'bilan-entreprise-vide.png'), fullPage: true });
   await ctx.close();
   // unités pas encore créditées (entreprise en attente de règlement) : aucune suggestion, et la page le dit
   const b = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: false, en_attente: 0, disponible: 0, report: 0 }, suggestions: [], en_cours: [{ titre: 'Agenda de novembre', statut: 'production', livraison: '2026-11-13' }, { titre: 'Bulletin', statut: 'confirmee', livraison: null }] }) }) });
-  assert.match(await b.page.textContent('.suite .solde'), /ne sont pas encore créditées : elles le seront dès son règlement\./);
-  assert.deepEqual(await b.page.locator('.encours li').allTextContents(), ['Agenda de novembreversion prévue le 13 novembre', 'Bulletin']);
+  assert.equal(await b.page.textContent('.suite h2'), 'La période qui commence');
+  assert.equal(await b.page.textContent('.suite .solde'), 'Les unités de cette période seront créditées dès son règlement.');
+  assert.equal(await b.page.textContent('.encours'), 'En cours : Agenda de novembre (version le 13 novembre), Bulletin.');
   assert.deepEqual(await sansDefaut(b.page), { parasite: false, deborde: false });
   assert.deepEqual(await accessibilite(b.page), []);
   await b.ctx.close();
   // report seul en attendant le règlement ; tout est engagé ; une suggestion dont le délai est passé ne se lance plus
   const s = (plus) => ({ periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', creditee: true, en_attente: 0, disponible: 13, report: 3, ...plus });
   const c = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: s({ creditee: false, disponible: 1, report: 1 }), suggestions: [donnees().suggestions[1]] }) }) });
-  assert.match(await c.page.textContent('.suite .solde'), /vous disposez de 1 unité, dont 1 reportée à utiliser avant le 11 décembre\. Les unités de votre formule s’y ajoutent dès le règlement de la période\. Un sujet y tient\./);
+  assert.equal(await c.page.textContent('.suite .solde'), 'Vous disposez de 1 unité, dont 1 reportée à utiliser avant le 11 décembre. Les unités de votre formule s’y ajoutent dès le règlement de la période.');
   await c.ctx.close();
   const d = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue({}, { suivante: s({ disponible: 0, report: 0 }), suggestions: [] }) }) });
-  assert.match(await d.page.textContent('.suite .solde'), /sont déjà engagées\./);
+  assert.equal(await d.page.textContent('.suite .solde'), 'Les unités de cette période sont déjà engagées.');
   await d.ctx.close();
   const e = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ body: vue() }), maintenant: '2026-11-20T09:00:00+01:00' });
-  assert.equal(await e.page.locator('.suggestion a.bt').count(), 1, 'seule la suggestion sans date limite se lance encore');
-  assert.match(await e.page.textContent('.suggestion .limite'), /Le délai de ce sujet est passé : il était à déposer avant le jeudi 19 novembre\./);
+  assert.equal(await e.page.locator('.idee a.bt').count(), 1, 'seule la suggestion sans date limite se lance encore');
+  assert.equal(await e.page.textContent('.idee .limite'), 'Le délai de ce sujet est passé : il était à déposer avant le jeudi 19 novembre.');
   assert.deepEqual(await accessibilite(e.page), []);
   await e.ctx.close();
 });
 
-await test('relecture par Fill : rien ne part sans confirmation ; l’accord envoie le jeton de relecture et les suggestions retirées', async () => {
-  const { page, ctx, appels, erreurs } = await ouvrir(`${base}#r=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: relecture() } : { body: { ok: true, envoye: true, a: 'Yann Le Gall' } }) });
-  assert.deepEqual([appels[0].action, appels[0].r, appels[0].j], ['lire', JETON, undefined]);
-  assert.match(await page.textContent('.avant'), /Relecture avant envoi.*Yann Le Gall le reçoit après votre accord/s);
-  assert.equal(await page.locator('.suggestion a.bt').count(), 0, 'pas de « Lancer » pendant la relecture');
-  assert.equal(await page.getByLabel('Garder cette suggestion').count(), 2);
+await test('aperçu de Fill (lien ouvert depuis Hors-champ) : le bilan tel que le client le recevra, sans aucune action', async () => {
+  const { page, ctx, appels, erreurs } = await ouvrir(`${base}#r=${JETON}`, { api: () => ({ body: relecture() }) });
+  assert.deepEqual([appels.length, appels[0].action, appels[0].r, appels[0].j], [1, 'lire', JETON, undefined]);
+  assert.equal(await page.textContent('.apercu'), 'Aperçu avant envoi Il part à Yann Le Gall dès que vous le validez dans Hors-champ.');
+  assert.equal(await page.locator('.idee a.bt').count(), 2, 'les suggestions se présentent comme chez le client');
+  assert.equal(await page.locator('.barre, .garder, button:not(.fait)').count(), 0);
   assert.deepEqual(await accessibilite(page), []);
-  await page.screenshot({ path: join(captures, 'bilan-relecture.png'), fullPage: true });
-  await page.getByLabel('Garder cette suggestion').nth(1).uncheck();
-  await page.getByRole('button', { name: 'Envoyer à Yann Le Gall' }).click();
-  assert.equal(appels.length, 1, 'un seul toucher ne doit rien envoyer');
-  assert.match(await page.textContent('.barre .question'), /Envoyer ce bilan à Yann Le Gall, sans la suggestion retirée \?/);
-  assert.deepEqual(await accessibilite(page), []);
-  await page.getByRole('button', { name: 'Retour' }).click();
-  await page.getByRole('button', { name: 'Envoyer à Yann Le Gall' }).click();
-  await page.getByRole('button', { name: 'Oui, envoyer' }).click();
-  await page.waitForSelector('.avant.fait');
-  assert.deepEqual([appels[1].action, appels[1].r, appels[1].retirer], ['approuver', JETON, ['h-12']]);
-  assert.match(await page.textContent('.avant'), /Bilan envoyé.*Le mail est parti à Yann Le Gall\./s);
-  assert.equal(await page.locator('.barre').count(), 0);
-  assert.deepEqual(await accessibilite(page), []);
+  await page.screenshot({ path: join(captures, 'bilan-apercu.png'), fullPage: true });
   assert.deepEqual(erreurs, []);
   await ctx.close();
-});
-
-await test('relecture : un refus du serveur s’affiche et l’accord reste possible ; hors plage, l’accord est enregistré', async () => {
-  let n = 0;
-  const { page, ctx } = await ouvrir(`${base}#r=${JETON}`, { api: (c) => (c.action === 'lire' ? { body: relecture() } : ++n === 1 ? { status: 409, body: { erreur: 'Ce bilan est déjà parti' } } : { body: { ok: true, envoye: false, motif: 'hors_plage' } }) });
-  await page.getByRole('button', { name: 'Envoyer à Yann Le Gall' }).click();
-  await page.getByRole('button', { name: 'Oui, envoyer' }).click();
-  await page.waitForFunction(() => /déjà parti/.test(document.querySelector('.barre .erreur')?.textContent ?? ''));
-  await page.getByRole('button', { name: 'Oui, envoyer' }).click();
-  await page.waitForSelector('.avant.fait');
-  assert.match(await page.textContent('.avant'), /Accord enregistré.*au prochain passage, un jour ouvré entre 8 h et 20 h/s);
-  await ctx.close();
-  // états déjà traités : plus de barre d'accord
-  for (const [plus, attendu] of [[{ envoye_le: '2026-11-12T09:00:00+00:00', approuve_le: '2026-11-12T08:55:00+00:00' }, /Bilan envoyé.*parti le 12 novembre à Yann Le Gall/s], [{ approuve_le: '2026-11-14T10:00:00+00:00' }, /Accord enregistré/], [{ en_cours_d_envoi: true, approuve_le: '2026-11-12T08:55:00+00:00' }, /Envoi à vérifier/]]) {
-    const b = await ouvrir(`${base}#r=${JETON}`, { api: () => ({ body: relecture(plus) }) });
-    assert.match(await b.page.textContent('.avant'), attendu);
-    assert.equal(await b.page.locator('.barre, .garder').count(), 0);
-    assert.deepEqual(await accessibilite(b.page), []);
-    await b.ctx.close();
-  }
+  const b = await ouvrir(`${base}#r=${JETON}`, { api: () => ({ body: relecture({ envoye_le: '2026-11-12T09:00:00+00:00' }) }) });
+  assert.equal(await b.page.textContent('.apercu'), 'Bilan envoyé Il est parti le 12 novembre à Yann Le Gall.');
+  await b.ctx.close();
 });
 
 await test('liens fermés : chaque état s’explique en clair ; sans jeton, rien n’est demandé au serveur ; une panne propose de réessayer', async () => {
   for (const [etat, attendu] of [['inconnu', /n’est pas valide/], ['revoque', /a été retiré/]]) {
     const { page, ctx } = await ouvrir(`${base}#j=${JETON}`, { api: () => ({ status: etat === 'inconnu' ? 404 : 200, body: { etat } }) });
     assert.match(await page.textContent('.etat h2'), attendu, etat);
-    assert.equal(await page.locator('.chiffre, .suggestion, .barre').count(), 0);
+    assert.equal(await page.locator('.une, .module, .idee').count(), 0);
     assert.deepEqual(await accessibilite(page), [], etat);
     await ctx.close();
   }
@@ -270,8 +278,8 @@ await test('Espace : « Lancer » ouvre la nouvelle demande pré-remplie (titre,
 
 await test('depuis la page de bilan en démonstration, « Lancer » arrive dans l’Espace de démonstration, demande pré-remplie', async () => {
   const { page, ctx } = await ouvrir(`${base}?demo`, { largeur: 390, maintenant: null });
-  const titre = await page.textContent('.suggestion h3');
-  await page.locator('.suggestion a.bt').first().click();
+  const titre = await page.textContent('.idee h3');
+  await page.locator('.idee a.bt').first().click();
   await page.waitForFunction((t) => [...document.querySelectorAll('input')].some((i) => i.value === t), titre);
   assert.match(page.url(), /\/espace\/\?demo#nouvelle$/);
   await page.screenshot({ path: join(captures, 'bilan-lancer-390.png') });

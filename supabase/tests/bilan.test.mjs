@@ -26,7 +26,8 @@ const refuse = async (f, motif) => { let m = null; try { await f(); } catch (e) 
 await db.exec(`
   create role anon; create role authenticated; create role service_role;
   create schema auth; create schema prive;
-  create function auth.role() returns text language sql stable as $$ select coalesce(nullif(current_setting('test.role', true), ''), 'anon') $$;
+  -- « connecteur » : l'appel du connecteur Supabase de Hors-champ, sans jeton, où auth.role() vaut null
+  create function auth.role() returns text language sql stable as $$ select case current_setting('test.role', true) when 'connecteur' then null else coalesce(nullif(current_setting('test.role', true), ''), 'anon') end $$;
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
 
   create table organisation (
@@ -153,6 +154,14 @@ await db.exec(`
     end if;
   end $$;
 
+  -- pg_net et le coffre de Supabase : les appels sortants sont gardés dans net.appels, rien ne part
+  create schema net; create schema vault;
+  create table net.appels (id bigserial primary key, url text, headers jsonb, body jsonb, traite boolean not null default false);
+  create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint
+    language sql as $$ insert into net.appels (url, headers, body) values (url, headers, body) returning id $$;
+  create table vault.decrypted_secrets (name text primary key, decrypted_secret text);
+  insert into vault.decrypted_secrets values ('jeton_pilote', '${'k'.repeat(40)}');
+
   grant usage on schema public, auth to anon, authenticated, service_role;
   grant select on organisation, profil, demande, registre to authenticated;
   insert into prestation (offre_id, id, nom, unites) values
@@ -166,6 +175,7 @@ await db.exec(readFileSync(join(ici, '..', 'migrations', '2026-11-bilan-mensuel.
 const un = async (q, p = []) => (await db.query(q, p)).rows[0];
 const tous = async (q, p = []) => (await db.query(q, p)).rows;
 const serveur = () => db.exec(`reset role; select set_config('test.role', 'service_role', false); select set_config('test.uid', '', false);`);
+const connecteur = () => db.exec(`reset role; select set_config('test.role', 'connecteur', false); select set_config('test.uid', '', false);`);
 const compte = (uid) => db.exec(`select set_config('test.role', 'authenticated', false); select set_config('test.uid', '${uid}', false); set role authenticated;`);
 const E = (n) => String(n).padStart(64, '0');
 let n = 0;
@@ -350,49 +360,71 @@ await test('les suggestions ne dépassent jamais les unités disponibles : la ba
   assert.equal((await preparer(t, [])).cree, true);
 });
 
-await test('sans réglage automatique, rien ne part sans l’accord de Fill ; le lien de relecture s’ouvre une fois', async () => {
+const aValider = async () => { await connecteur(); const v = (await un(`select bilan_a_valider() as v`)).v; await serveur(); return v; };
+const valider = async (id, retirer = []) => { await connecteur(); const v = (await un(`select bilan_valider($1, $2) as v`, [id, retirer])).v; await serveur(); return v; };
+
+await test('Hors-champ : un bilan préparé attend l’accord de Fill ; l’accord retire les suggestions écartées et demande l’envoi aussitôt', async () => {
+  await db.exec(`delete from net.appels`);
   const s = await scene(); await cloturer(s); await credit(s, '2026-11', 10);
   const { id } = await preparer(s, [sug('c-1', 4), sug('c-2', 4, 'Téléthon')]);
   let f = await file();
-  assert.ok(f.a_relire.includes(id) && !f.prets.includes(id));
+  assert.ok(!f.prets.includes(id) && f.en_attente >= 1);
   assert.equal((await reserver(id)).r, null, 'pas d’envoi sans accord');
-  const jr = E(++n);
-  const o = (await un(`select bilan_ouvrir_relecture($1, $2) as v`, [id, jr])).v;
-  assert.deepEqual([o.id, o.organisation.nom, o.referent], [id, 'Commune de Saint-Ivenec', 'Yann Le Gall']);
-  assert.equal((await un(`select bilan_ouvrir_relecture($1, $2) as v`, [id, E(++n)])).v, null, 'un seul lien de relecture');
-  assert.ok(!(await file()).a_relire.includes(id));
-  // le mail de relecture a été refusé : le lien est rendu et sera recréé
-  assert.equal((await un(`select bilan_fermer_relecture($1) as v`, [id])).v, true);
-  assert.deepEqual(await lire(jr), { etat: 'inconnu' });
-  assert.ok((await file()).a_relire.includes(id));
-  const jr2 = E(++n);
-  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, jr2]);
-  const vue = await lire(jr2);
-  assert.deepEqual([vue.etat, vue.mode, vue.referent.nom, vue.approuve_le, vue.envoye_le, vue.donnees.suggestions.length], ['ouvert', 'relecture', 'Yann Le Gall', null, null, 2]);
-  // accord, en retirant une suggestion
-  await db.query(`select bilan_approuver($1, $2)`, [jr2, ['c-2']]);
-  const apres = await lire(jr2);
-  assert.deepEqual(apres.donnees.suggestions.map((x) => x.cle), ['c-1']);
-  assert.ok(apres.approuve_le);
+  const v = (await aValider()).a_valider.find((x) => x.id === id);
+  assert.deepEqual([v.organisation, v.type, v.periode, iso(v.debut), iso(v.fin), v.referent, v.donnees.suggestions.length, v.donnees.demandes_livrees],
+    ['Commune de Saint-Ivenec', 'collectivite', '2026-10', '2026-10-12', '2026-11-11', { nom: 'Yann Le Gall', email: 'yann@exemple.fr' }, 2, 3]);
+  // aperçu : jeton tiré dans Hors-champ, empreinte seulement ; un nouvel aperçu remplace le précédent
+  const [j1, j2] = [E(++n), E(++n)];
+  await connecteur();
+  assert.equal((await un(`select bilan_relire($1, $2) as v`, [id, j1])).v, true);
+  await serveur();
+  assert.deepEqual([(await lire(j1)).mode, (await lire(j1)).referent.nom, (await lire(j1)).envoye_le], ['relecture', 'Yann Le Gall', null]);
+  await connecteur(); await db.query(`select bilan_relire($1, $2)`, [id, j2]); await serveur();
+  assert.deepEqual(await lire(j1), { etat: 'inconnu' });
+  assert.equal((await lire(j2)).etat, 'ouvert');
+  // accord, en retirant une suggestion : l'appel à la fonction « bilan » part avec le jeton du pilote
+  const appel = await valider(id, ['c-2']);
+  const a = await un(`select id, url, headers, body from net.appels where id = $1`, [appel]);
+  assert.deepEqual([a.url, a.headers.Authorization, a.body], ['https://nfnbseonwgmtouxsaajd.supabase.co/functions/v1/bilan', `Bearer ${'k'.repeat(40)}`, { action: 'envoyer', bilan: id }]);
+  assert.deepEqual((await lire(j2)).donnees.suggestions.map((x) => x.cle), ['c-1']);
   f = await file();
-  assert.ok(f.prets.includes(id) && !f.a_relire.includes(id));
-  await refuse(() => db.query(`select bilan_approuver($1, $2)`, [E(999999), []]), /Lien inconnu/);
+  assert.ok(f.prets.includes(id));
+  assert.ok(!(await aValider()).a_valider.some((x) => x.id === id), 'validé : il quitte Hors-champ');
+  assert.equal((await un(`select count(*)::int as n from journal where action = 'bilan_valide' and cible = $1`, [id])).n, 1);
+  await connecteur();
+  await refuse(() => db.query(`select bilan_valider(gen_random_uuid(), '{}')`), /Bilan introuvable/);
+  await serveur();
 });
 
-await test('relecture tardive : une suggestion dont la date limite est passée ne part pas ; un bilan retiré ne s’approuve pas', async () => {
+await test('Hors-champ : « Ne pas l’envoyer » écarte le bilan pour de bon ; un bilan parti ou écarté ne se valide plus', async () => {
+  const s = await scene(); await cloturer(s);
+  const { id } = await preparer(s);
+  await connecteur();
+  assert.equal((await un(`select bilan_ecarter($1) as v`, [id])).v, true);
+  assert.equal((await un(`select bilan_ecarter($1) as v`, [id])).v, false);
+  await refuse(() => db.query(`select bilan_valider($1, '{}')`, [id]), /a été écarté/);
+  assert.equal((await un(`select bilan_relire($1, $2) as v`, [id, E(++n)])).v, false, 'pas d’aperçu d’un bilan écarté');
+  await serveur();
+  assert.ok(!(await aValider()).a_valider.some((x) => x.id === id));
+  assert.ok(!(await file()).prets.includes(id));
+  assert.equal((await un(`select count(*)::int as n from journal where action = 'bilan_ecarte' and cible = $1`, [id])).n, 1);
+  const t2 = await scene(); await cloturer(t2);
+  const autre = (await preparer(t2)).id;
+  await valider(autre);
+  await reserver(autre);
+  await connecteur();
+  await refuse(() => db.query(`select bilan_valider($1, '{}')`, [autre]), /déjà parti/);
+  assert.equal((await un(`select bilan_ecarter($1) as v`, [autre])).v, false);
+  await serveur();
+});
+
+await test('relecture tardive : une suggestion dont la date limite est passée ne part pas', async () => {
   const s = await scene(); await cloturer(s); await credit(s, '2026-11', 10);
   const { id } = await preparer(s, [{ ...sug('c-1', 3, 'Lettre de fin d’année'), limite: '2026-11-12' }, { ...sug('c-2', 4, 'Téléthon'), limite: '2026-11-19' }, { ...sug('h-3', 1, 'Portrait'), limite: null }]);
-  const jr = E(++n);
-  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, jr]);
-  await db.query(`select bilan_approuver($1, '{}')`, [jr]);
+  await valider(id);
   const a = await reserver(id, '2026-11-13');
   assert.deepEqual(a.r.donnees.suggestions.map((x) => x.cle), ['c-2', 'h-3']);
   assert.deepEqual((await un(`select donnees from bilan where id = $1`, [id])).donnees.suggestions.map((x) => x.cle), ['c-2', 'h-3'], 'la page montrera ce que le mail a annoncé');
-  const t = await scene(); await cloturer(t);
-  const autre = (await preparer(t)).id, jr2 = E(++n);
-  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [autre, jr2]);
-  await db.query(`update bilan set revoque_le = now() where id = $1`, [autre]);
-  await refuse(() => db.query(`select bilan_approuver($1, '{}')`, [jr2]), /a été retiré/);
 });
 
 await test('contexte des suggestions : demandes de quinze mois avec leurs prestations, demandes encore en cours, fermetures', async () => {
@@ -413,14 +445,16 @@ await test('contexte des suggestions : demandes de quinze mois avec leurs presta
 await test('un bilan ne part jamais deux fois : une seule réservation, confirmation unique, libération seulement avant l’envoi', async () => {
   const s = await scene(); await cloturer(s);
   const { id } = await preparer(s);
-  const jr = E(++n);
-  await db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, jr]);
-  await db.query(`select bilan_approuver($1, '{}')`, [jr]);
+  await valider(id);
   const a = await reserver(id);
   assert.deepEqual([a.r.id, a.r.referent.email, a.r.organisation.nom, a.r.organisation.essai], [id, 'yann@exemple.fr', 'Commune de Saint-Ivenec', false]);
   assert.equal((await reserver(id)).r, null, 'une seconde réservation n’aboutit pas');
   let f = await file();
   assert.ok(!f.prets.includes(id) && f.bloques.includes(id), 'réservé sans confirmation : signalé, jamais retenté seul');
+  assert.ok(!(await aValider()).bloques.some((x) => x.id === id), 'un envoi en cours n’est pas encore signalé à Hors-champ');
+  await db.query(`update bilan set envoi_reserve_le = now() - interval '11 minutes' where id = $1`, [id]);
+  const bl = (await aValider()).bloques.find((x) => x.id === id);
+  assert.deepEqual([bl.organisation, bl.periode, bl.referent.email], ['Commune de Saint-Ivenec', '2026-10', 'yann@exemple.fr'], 'après dix minutes, Hors-champ le montre');
   assert.deepEqual(await lire(a.e), { etat: 'inconnu' }, 'le lien de partage ne s’ouvre pas avant l’envoi');
   // le service d'envoi refuse : la réservation est rendue, l'envoi repart
   assert.equal((await un(`select bilan_liberer_envoi($1) as v`, [id])).v, true);
@@ -431,12 +465,12 @@ await test('un bilan ne part jamais deux fois : une seule réservation, confirma
   assert.equal((await un(`select bilan_liberer_envoi($1) as v`, [id])).v, false, 'un bilan envoyé ne se libère pas');
   assert.equal((await reserver(id)).r, null);
   f = await file();
-  assert.ok(!f.prets.includes(id) && !f.bloques.includes(id) && !f.a_relire.includes(id));
+  assert.ok(!f.prets.includes(id) && !f.bloques.includes(id));
+  assert.ok(!(await aValider()).bloques.some((x) => x.id === id));
   assert.deepEqual(await un(`select envoye_a, envoye_le is not null as parti from bilan where id = $1`, [id]), { envoye_a: 'yann@exemple.fr', parti: true });
   assert.deepEqual(await lire(a.e), { etat: 'inconnu' }, 'le jeton de l’envoi refusé ne vaut plus rien');
   const vue = await lire(b.e);
   assert.deepEqual([vue.etat, vue.mode, vue.donnees.demandes_livrees, Object.keys(vue).includes('referent')], ['ouvert', 'partage', 3, false]);
-  await refuse(() => db.query(`select bilan_approuver($1, '{}')`, [jr]), /déjà parti/);
   assert.equal((await un(`select count(*)::int as n from journal where action = 'bilan_envoye' and cible = $1`, [id])).n, 1);
 });
 
@@ -448,7 +482,9 @@ await test('réglage pilote_bilan : envoi sans relecture, sauf pour une organisa
   const [a, b, c] = [(await preparer(s)).id, (await preparer(t)).id, (await preparer(sans)).id];
   await db.exec(`update parametre set pilote_bilan = true`);
   const f = await file();
-  assert.ok(f.prets.includes(a) && !f.prets.includes(b) && f.a_relire.includes(b) && !f.a_relire.includes(a));
+  assert.ok(f.prets.includes(a) && !f.prets.includes(b));
+  const hc = (await aValider()).a_valider.map((x) => x.id);
+  assert.ok(hc.includes(b) && !hc.includes(a), 'Hors-champ ne propose que ce qui attend vraiment un accord');
   assert.equal((await reserver(a)).r.id, a);
   assert.equal((await reserver(b)).r, null);
   const r = (await reserver(c)).r;
@@ -481,7 +517,7 @@ await test('lien de partage : ouvert après l’envoi, fermé dès que le réfé
   assert.deepEqual(await lire(e), { etat: 'revoque' });
 });
 
-await test('les fonctions sont réservées au serveur', async () => {
+await test('les fonctions sont réservées au serveur, et celles de Hors-champ à Fill', async () => {
   const s = await scene(); await cloturer(s);
   const { id } = await preparer(s);
   await db.exec(`select set_config('test.role', 'authenticated', false); select set_config('test.uid', '${s.r}', false);`);
@@ -494,12 +530,20 @@ await test('les fonctions sont réservées au serveur', async () => {
   await refuse(() => db.query(`select bilan_contexte($1)`, [s.o]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_confirmer_envoi($1, 'x@y.fr')`, [id]), /Réservé au serveur/);
   await refuse(() => db.query(`select bilan_liberer_envoi($1)`, [id]), /Réservé au serveur/);
-  await refuse(() => db.query(`select bilan_ouvrir_relecture($1, $2)`, [id, E(5)]), /Réservé au serveur/);
-  await refuse(() => db.query(`select bilan_fermer_relecture($1)`, [id]), /Réservé au serveur/);
-  await refuse(() => db.query(`select bilan_approuver($1, '{}')`, [E(5)]), /Réservé au serveur/);
+  // les fonctions de Hors-champ : ni un compte client, ni un visiteur
+  await refuse(() => db.query(`select bilan_a_valider()`), /Réservé à Fill/);
+  await refuse(() => db.query(`select bilan_relire($1, $2)`, [id, E(5)]), /Réservé à Fill/);
+  await refuse(() => db.query(`select bilan_valider($1, '{}')`, [id]), /Réservé à Fill/);
+  await refuse(() => db.query(`select bilan_ecarter($1)`, [id]), /Réservé à Fill/);
+  await db.exec(`select set_config('test.role', 'anon', false);`);
+  await refuse(() => db.query(`select bilan_valider($1, '{}')`, [id]), /Réservé à Fill/);
+  await db.exec(`select set_config('test.role', 'authenticated', false);`);
   await db.exec(`set role authenticated`);
-  for (const q of [`select bilan_calculer('${s.o}', '2026-10')`, `select bilan_lire('${E(1)}')`, `select bilan_a_envoyer()`, `select bilan_reserver_envoi('${id}', '${E(6)}')`, `select bilan_candidats()`, `select bilan_contexte('${s.o}')`])
+  for (const q of [`select bilan_calculer('${s.o}', '2026-10')`, `select bilan_lire('${E(1)}')`, `select bilan_a_envoyer()`, `select bilan_reserver_envoi('${id}', '${E(6)}')`, `select bilan_candidats()`, `select bilan_contexte('${s.o}')`,
+    `select bilan_a_valider()`, `select bilan_relire('${id}', '${E(7)}')`, `select bilan_valider('${id}', '{}')`, `select bilan_ecarter('${id}')`])
     await refuse(() => db.query(q), /permission denied/);
+  await db.exec(`reset role; set role anon`);
+  for (const q of [`select bilan_a_valider()`, `select bilan_valider('${id}', '{}')`]) await refuse(() => db.query(q), /permission denied/);
   await serveur();
 });
 
@@ -536,6 +580,9 @@ const dossier = mkdtempSync(join(tmpdir(), 'bilan-'));
 const { outputFiles } = await build({ entryPoints: [join(ici, '..', 'functions', '_partage', 'regles', 'bilan.ts')], bundle: true, format: 'esm', write: false, logLevel: 'error' });
 writeFileSync(join(dossier, 'regles.mjs'), outputFiles[0].text);
 const R = await import(pathToFileURL(join(dossier, 'regles.mjs')).href);
+const r2 = await build({ entryPoints: [join(ici, '..', 'functions', '_partage', 'regles', 'relecture.ts')], bundle: true, format: 'esm', write: false, logLevel: 'error' });
+writeFileSync(join(dossier, 'relecture.mjs'), r2.outputFiles[0].text);
+const R2 = await import(pathToFileURL(join(dossier, 'relecture.mjs')).href);
 
 const commune = { type: 'collectivite', formule: 'essentiel' };
 const novembre = { periode: '2026-11', debut: '2026-11-12', fin: '2026-12-11', disponible: 10, report: 0 };
@@ -690,13 +737,10 @@ await test('mail mensuel : trois chiffres, le lien du bilan, une ligne et un lie
   assert.equal(R.troisChiffres(donnees({ delais: { a_la_date: 0, total: 0, sans_date: 3 } }))[2].libelle, 'unité reportée sur la période suivante');
 });
 
-await test('mails internes : relecture avant envoi, envoi à vérifier', async () => {
-  const m = R.mailRelecture({ donnees: donnees(), lien: 'https://fill.studioes.fr/espace/bilan/#r=abc', referent: 'Yann Le Gall' });
-  assert.equal(m.sujet, 'Bilan à relire : Commune de <Saint-Ivenec>, du 12 octobre au 11 novembre 2026');
-  assert.ok(m.texte.join(' ').includes('Rien ne part à Yann Le Gall sans votre accord') && m.titre.includes('&lt;Saint-Ivenec&gt;'));
-  assert.deepEqual(m.bouton, { libelle: 'Relire et envoyer', lien: 'https://fill.studioes.fr/espace/bilan/#r=abc' });
+await test('mails internes : envoi à vérifier, anomalies ; plus de mail de relecture', async () => {
+  assert.equal(R.mailRelecture, undefined, 'la relecture se fait dans Hors-champ');
   const b = R.mailBloque({ organisation: 'Commune de Lanvern', periode: '2026-10', id: 'abc', a: 'yann@exemple.fr' }).texte.join(' ');
-  assert.ok(/il n’est pas retenté/.test(b) && b.includes("select bilan_confirmer_envoi('abc', 'yann@exemple.fr');") && b.includes("select bilan_liberer_envoi('abc');"));
+  assert.ok(/il n’est pas retenté/.test(b) && /Hors-champ/.test(b) && b.includes("select bilan_confirmer_envoi('abc', 'yann@exemple.fr');") && b.includes("select bilan_liberer_envoi('abc');"));
   const c = R.mailBloque({ organisation: 'Commune de Lanvern', periode: '2026-10', id: 'abc', a: 'yann@exemple.fr', confirme: true }).texte.join(' ');
   assert.ok(/n’a pas pu être enregistré/.test(c) && c.includes("select bilan_confirmer_envoi('abc', 'yann@exemple.fr');") && !c.includes('bilan_liberer_envoi'));
   const d = R.mailAnomalies(['Commune de <Lanvern> : aucun référent actif']);
@@ -763,11 +807,23 @@ const appeler = async (corps, { cle = null, methode = 'POST' } = {}) => {
   return { statut: r.status, d };
 };
 const quotidien = (plus = {}) => appeler({ action: 'quotidien', ...plus }, { cle: CLE });
+// pg_net simulé : les appels que la base a demandés (bilan_valider) sont rejoués vers la fonction, avec leur jeton
+const pgnet = async () => {
+  await serveur();
+  const rep = [];
+  for (const a of await tous(`select id, headers, body from net.appels where not traite order by id`)) {
+    await db.query(`update net.appels set traite = true where id = $1`, [a.id]);
+    rep.push(await appeler(a.body, { cle: String(a.headers.Authorization).replace(/^Bearer /, '') }));
+  }
+  return rep;
+};
+const bilanDe = async (s) => (await un(`select id from bilan where organisation_id = $1`, [s.o])).id;
 const jetonDe = (html, lettre) => (html.match(new RegExp(`/bilan/#${lettre}=([A-Za-z0-9_-]{43})`)) ?? [])[1];
 // repart d'une base sans bilan en attente : les organisations des tests précédents sont mises de côté
 const depart = async (quand = JEUDI) => {
   await serveur();
   await db.exec(`delete from bilan; update organisation set statut = 'resiliee'; update parametre set pilote_bilan = false;`);
+  await db.exec(`delete from net.appels`);
   mails.length = 0; brevo = () => 201; horloge(quand); pannes.clear();
   const s = await scene(); await cloturer(s); await credit(s, '2026-11', 10);
   return s;
@@ -780,7 +836,9 @@ await test('fonction : réservée au serveur pour la tâche planifiée, POST seu
   assert.equal((await appeler(null, { methode: 'GET' })).statut, 405);
   assert.deepEqual(await appeler({ action: 'lire', j: 'A'.repeat(43) }), { statut: 404, d: { etat: 'inconnu' } });
   assert.deepEqual(await appeler({ action: 'lire', j: 'trop-court' }), { statut: 404, d: { etat: 'inconnu' } });
-  assert.deepEqual(await appeler({ action: 'approuver', r: 'A'.repeat(43) }), { statut: 404, d: { etat: 'inconnu' } });
+  assert.equal((await appeler({ action: 'envoyer', bilan: '00000000-0000-0000-0000-000000000000' })).statut, 401);
+  assert.equal((await appeler({ action: 'envoyer', bilan: 'x' }, { cle: CLE })).statut, 400);
+  assert.deepEqual(await appeler({ action: 'approuver', r: 'A'.repeat(43) }), { statut: 404, d: { etat: 'inconnu' } }, 'l’ancienne action d’accord par lien n’existe plus');
   assert.equal(mails.length, 0);
   assert.equal((await un(`select count(*)::int as n from bilan`)).n, 0);
 });
@@ -803,25 +861,26 @@ await test('fonction : hors plage (week-end), rien n’est figé ni envoyé', as
   assert.equal((await un(`select count(*)::int as n from bilan`)).n, 0);
 });
 
-await test('fonction, relecture puis envoi : un lien pour Fill, un seul mail au référent, quel que soit le nombre de passages', async () => {
+await test('fonction, validation dans Hors-champ : aucun mail de relecture ; l’accord envoie aussitôt un seul mail au référent', async () => {
   const s = await depart();
   const a = (await quotidien()).d;
-  assert.deepEqual([a.prepares.length, a.prepares[0].suggestions, a.relectures.length, a.relectures[0].etat, a.envois.length, a.en_attente], [1, 3, 1, 'parti', 0, 1]);
-  assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['fill@exemple.fr', 'Bilan à relire : Commune de Saint-Ivenec, du 12 octobre au 11 novembre 2026']]);
-  // un second passage ne refait rien
+  assert.deepEqual([a.prepares.length, a.prepares[0].suggestions, a.envois.length, a.en_attente, 'relectures' in a], [1, 3, 0, 1, false]);
+  assert.equal(mails.length, 0, 'le bilan attend dans Hors-champ, sans mail');
   const b = (await quotidien()).d;
-  assert.deepEqual([b.prepares.length, b.relectures.length, b.envois.length, mails.length], [0, 0, 0, 1]);
-  const jr = jetonDe(mails[0].html, 'r');
-  assert.ok(jr, 'le mail de Fill porte le lien de relecture');
-  assert.equal((await un(`select count(*)::int as n from bilan where empreinte_relecture = $1 or empreinte = $1`, [jr])).n, 0, 'le jeton n’est pas enregistré');
+  assert.deepEqual([b.prepares.length, b.envois.length, mails.length], [0, 0, 0]);
+  const v = (await aValider()).a_valider.find((x) => x.organisation === 'Commune de Saint-Ivenec');
+  // aperçu ouvert depuis Hors-champ : la page montre le bilan, sans aucune action
+  const jr = 'R'.repeat(43);
+  await connecteur(); await db.query(`select bilan_relire($1, $2)`, [v.id, await R2.empreinte(jr)]); await serveur();
   const vue = (await appeler({ action: 'lire', r: jr })).d;
-  assert.deepEqual([vue.etat, vue.mode, vue.referent, vue.envoye_le, vue.donnees.suggestions.length, vue.donnees.organisation.nom], ['ouvert', 'relecture', 'Yann Le Gall', null, 3, 'Commune de Saint-Ivenec']);
-  assert.equal((await appeler({ action: 'lire', j: jr })).statut, 404, 'un lien de relecture ne s’ouvre pas comme un lien de partage');
-  // accord de Fill, une suggestion retirée : le mail part au référent, une fois
-  const ok = await appeler({ action: 'approuver', r: jr, retirer: [vue.donnees.suggestions[1].cle] });
-  assert.deepEqual(ok, { statut: 200, d: { ok: true, envoye: true, a: 'Yann Le Gall' } });
-  assert.deepEqual(mails.slice(1).map((m) => [m.a, m.sujet]), [['yann@exemple.fr', 'Votre mois avec Fill : du 12 octobre au 11 novembre 2026']]);
-  const html = mails[1].html;
+  assert.deepEqual([vue.etat, vue.mode, vue.referent, vue.envoye_le, vue.donnees.suggestions.length], ['ouvert', 'relecture', 'Yann Le Gall', null, 3]);
+  assert.equal((await appeler({ action: 'lire', j: jr })).statut, 404, 'un aperçu ne s’ouvre pas comme un lien de partage');
+  // accord, une suggestion retirée : la base demande l'envoi, la fonction l'exécute aussitôt
+  await valider(v.id, [v.donnees.suggestions[1].cle]);
+  const [r] = await pgnet();
+  assert.deepEqual(r, { statut: 200, d: { envoye: true, a: 'Yann Le Gall' } });
+  assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['yann@exemple.fr', 'Votre mois avec Fill : du 12 octobre au 11 novembre 2026']]);
+  const html = mails[0].html;
   assert.ok(html.includes('>3</span>&nbsp; demandes livrées') && html.includes('>11</span>&nbsp; unités utilisées sur 12') && html.includes('>1 sur 2</span>&nbsp; livrées à la date annoncée'));
   assert.equal((html.match(/Lancer cette demande/g) ?? []).length, 2, 'la suggestion retirée n’est pas dans le mail');
   assert.equal(/undefined|null|NaN|—|–/.test(html.replace(/<[^>]+>/g, ' ')), false);
@@ -829,14 +888,14 @@ await test('fonction, relecture puis envoi : un lien pour Fill, un seul mail au 
   const partage = (await appeler({ action: 'lire', j: jp })).d;
   assert.deepEqual([partage.etat, partage.mode, partage.donnees.suggestions.length, partage.espace, 'referent' in partage], ['ouvert', 'partage', 2, 'https://fill.studioes.fr/espace', false]);
   assert.equal((await appeler({ action: 'lire', r: jp })).statut, 404);
-  assert.equal((await appeler({ action: 'approuver', j: jp })).statut, 403, 'un lien de partage ne permet aucune action');
-  // ni un second accord, ni les passages suivants ne renvoient le bilan
-  assert.equal((await appeler({ action: 'approuver', r: jr })).statut, 409);
+  // un second appel (pg_net qui rejoue, ou double geste) et les passages suivants ne renvoient rien
+  assert.deepEqual(await appeler({ action: 'envoyer', bilan: v.id }, { cle: CLE }), { statut: 409, d: { envoye: false, motif: 'sans_objet' } });
   horloge(VENDREDI);
   const c = (await quotidien()).d;
-  assert.deepEqual([c.prepares.length, c.relectures.length, c.envois.length, c.bloques.length, mails.length], [0, 0, 0, 0, 2]);
+  assert.deepEqual([c.prepares.length, c.envois.length, c.bloques.length, mails.length], [0, 0, 0, 1]);
   assert.deepEqual(await un(`select envoye_a, (select count(*)::int from bilan where organisation_id = $1) as n from bilan where organisation_id = $1`, [s.o]), { envoye_a: 'yann@exemple.fr', n: 1 });
   assert.equal((await appeler({ action: 'lire', r: jr })).d.envoye_le !== null, true);
+  assert.equal((await aValider()).a_valider.length, 0);
 });
 
 await test('fonction, envoi automatique (pilote_bilan) : le mail part sans relecture, une seule fois ; « [Test] » pour un compte d’essai', async () => {
@@ -844,7 +903,8 @@ await test('fonction, envoi automatique (pilote_bilan) : le mail part sans relec
   await db.query(`update parametre set pilote_bilan = true`);
   await db.query(`update organisation set essai = true where id = $1`, [s.o]);
   const a = (await quotidien()).d;
-  assert.deepEqual([a.prepares.length, a.relectures.length, a.envois.map((e) => e.etat)], [1, 0, ['envoye']]);
+  assert.deepEqual([a.prepares.length, a.envois.map((e) => e.etat)], [1, ['envoye']]);
+  assert.equal((await aValider()).a_valider.length, 0, 'en envoi automatique, rien n’attend dans Hors-champ');
   assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['yann@exemple.fr', '[Test] Votre mois avec Fill : du 12 octobre au 11 novembre 2026']]);
   for (const jour of [JEUDI, VENDREDI]) { horloge(jour); await quotidien(); }
   assert.equal(mails.length, 1);
@@ -880,38 +940,48 @@ await test('fonction : un refus du service d’envoi libère le bilan, qui repar
 });
 
 await test('fonction : un accord donné hors plage part au passage suivant ; sans service d’envoi, rien n’est perdu', async () => {
-  await depart();
+  const s = await depart();
   await quotidien();
-  const jr = jetonDe(mails[0].html, 'r');
   horloge(SAMEDI);
-  assert.deepEqual((await appeler({ action: 'approuver', r: jr })).d, { ok: true, envoye: false, motif: 'hors_plage' });
-  assert.equal(mails.length, 1);
+  await valider(await bilanDe(s));
+  assert.deepEqual((await pgnet()).map((r) => r.d), [{ envoye: false, motif: 'hors_plage' }]);
+  assert.equal(mails.length, 0);
   horloge('2026-11-16T08:30:00+01:00');
   assert.deepEqual((await quotidien()).d.envois.map((e) => e.etat), ['envoye']);
-  assert.equal(mails.length, 2);
-  // clé du service d'envoi absente : le bilan est figé, le lien de relecture sera envoyé plus tard
-  await depart();
+  assert.equal(mails.length, 1);
+  // clé du service d'envoi absente au moment de l'accord : rien ne part, le bilan reste validé et repart ensuite
+  const t2 = await depart();
+  await quotidien();
   delete env.BREVO_API_KEY;
-  const a = (await quotidien()).d;
-  assert.deepEqual([a.prepares.length, a.relectures.map((r) => r.etat), mails.length], [1, ['refuse'], 0]);
+  await valider(await bilanDe(t2));
+  assert.deepEqual((await pgnet()).map((r) => r.d), [{ envoye: false, motif: 'refuse' }]);
+  assert.equal(mails.length, 0);
   env.BREVO_API_KEY = 'cle-brevo';
-  assert.deepEqual((await quotidien()).d.relectures.map((r) => r.etat), ['parti']);
+  assert.deepEqual((await quotidien()).d.envois.map((e) => e.etat), ['envoye']);
   assert.equal(mails.length, 1);
 });
 
-await test('fonction : un lien de relecture sans réponse claire du service d’envoi est refait au passage suivant, jamais perdu', async () => {
-  await depart();
-  brevo = () => 'panne';
-  const a = (await quotidien()).d;
-  assert.deepEqual(a.relectures.map((r) => r.etat), ['inconnu']);
-  const premier = jetonDe(mails[0].html, 'r');
-  brevo = () => 201;
-  const b = (await quotidien()).d;
-  assert.deepEqual([b.prepares.length, b.relectures.map((r) => r.etat)], [0, ['parti']]);
-  const second = jetonDe(mails.at(-1).html, 'r');
-  assert.ok(second && second !== premier);
-  assert.equal((await appeler({ action: 'lire', r: premier })).statut, 404, 'le premier lien ne vaut plus rien');
-  assert.equal((await appeler({ action: 'lire', r: second })).d.etat, 'ouvert');
+await test('fonction : un refus à l’accord est signalé à Fill tout de suite, et l’envoi bloqué se règle depuis Hors-champ', async () => {
+  const s = await depart();
+  await quotidien();
+  brevo = (c) => (c.to[0].email === 'yann@exemple.fr' ? 400 : 201);
+  await valider(await bilanDe(s));
+  assert.deepEqual((await pgnet()).map((r) => r.d), [{ envoye: false, motif: 'refuse' }]);
+  assert.deepEqual(mails.map((m) => [m.a, m.sujet]), [['yann@exemple.fr', 'Votre mois avec Fill : du 12 octobre au 11 novembre 2026'], ['fill@exemple.fr', 'Mail mensuel : 1 point à vérifier']]);
+  // réponse incertaine : bloqué ; Hors-champ le montre après dix minutes et « Il est arrivé » l'enregistre
+  const t2 = await depart();
+  await quotidien();
+  brevo = (c) => (c.to[0].email === 'yann@exemple.fr' ? 500 : 201);
+  const id = await bilanDe(t2);
+  await valider(id);
+  assert.equal((await pgnet())[0].statut, 200);
+  await db.query(`update bilan set envoi_reserve_le = now() - interval '11 minutes' where id = $1`, [id]);
+  const bl = (await aValider()).bloques;
+  assert.deepEqual(bl.map((x) => [x.id, x.referent.email]), [[id, 'yann@exemple.fr']]);
+  await connecteur();
+  assert.equal((await un(`select bilan_confirmer_envoi($1, $2) as v`, [id, bl[0].referent.email])).v, true, 'Hors-champ passe par le connecteur');
+  await serveur();
+  assert.deepEqual((await aValider()).bloques, []);
 });
 
 await test('fonction : le mail est parti mais la base ne l’enregistre pas : Fill est prévenu, rien ne repart', async () => {
@@ -942,12 +1012,12 @@ await test('fonction : accord donné le lendemain, la suggestion dont la date li
   const s = await depart();
   await demande(s, 'Téléthon', { unites: 6, etat: 'reserve', periode: '2026-11', etapes: [['confirmee', '2026-09-02 10:00']], creee: '2026-09-01 09:00' });
   const a = (await quotidien()).d;                                  // jeudi 12 : la lettre du 22 est à déposer le jour même
-  const jr = jetonDe(mails[0].html, 'r');
-  const avant = (await appeler({ action: 'lire', r: jr })).d.donnees.suggestions.map((x) => [x.titre, x.limite]);
+  const avant = (await aValider()).a_valider[0].donnees.suggestions.map((x) => [x.titre, x.limite]);
   assert.deepEqual(avant, [['Lettre de fin d’année', '2026-11-12'], ['Horaires des fêtes', '2026-12-10']], 'le Téléthon, déjà en cours depuis septembre, n’est pas proposé');
   assert.equal(a.prepares[0].suggestions, 2);
   horloge(VENDREDI);
-  assert.equal((await appeler({ action: 'approuver', r: jr })).d.envoye, true);
+  await valider(await bilanDe(s));
+  assert.equal((await pgnet())[0].d.envoye, true);
   const html = mails.at(-1).html;
   assert.equal(html.includes('Lettre de fin d’année'), false);
   assert.equal((html.match(/Lancer cette demande/g) ?? []).length, 1);

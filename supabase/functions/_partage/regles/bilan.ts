@@ -158,6 +158,7 @@ export const plageOuverte = (instant = new Date()) => {
 // les jetons voyagent dans le fragment de l'adresse : ils ne sont transmis à aucun serveur à l'ouverture de la page
 const base = (site) => String(site).replace(/\/$/, "");
 export const lienBilan = (site, jeton) => `${base(site)}/bilan/#j=${jeton}`;
+// aperçu pour Fill, ouvert depuis Hors-champ (le jeton y est tiré)
 export const lienRelecture = (site, jeton) => `${base(site)}/bilan/#r=${jeton}`;
 // « Lancer » : la nouvelle demande pré-remplie dans l'Espace (lue par espace-src/src/routeur.js)
 export const lienLancer = (site, s) =>
@@ -219,20 +220,6 @@ export const mailMensuel = ({ donnees: d, lien, site }) => {
   };
 };
 
-// le mail de Fill, avant envoi : rien ne part au client sans accord
-export const mailRelecture = ({ donnees: d, lien, referent }) => {
-  const n = (d.suggestions ?? []).length;
-  return {
-    sujet: `Bilan à relire : ${d.organisation.nom}, ${libellePeriode(d.debut, d.fin)}`,
-    titre: `Bilan prêt : ${echap(d.organisation.nom)}`,
-    texte: [
-      `Période ${libellePeriode(d.debut, d.fin)} : ${troisChiffres(d).map((c) => `<b>${echap(c.valeur)}</b> ${echap(c.libelle)}`).join(", ")}.`,
-      `${n ? `${n} ${pluriel(n, "suggestion")} pour la période suivante.` : "Aucune suggestion pour la période suivante."} Rien ne part à ${echap(referent ?? "votre client")} sans votre accord : relisez la page, retirez une suggestion si besoin, puis envoyez.`,
-    ],
-    bouton: { libelle: "Relire et envoyer", lien },
-  };
-};
-
 // alerte à Fill : un envoi dont l'issue est inconnue n'est jamais retenté seul.
 // confirme : le service d'envoi a accepté le mail, mais la base n'a pas pu l'enregistrer.
 export const mailBloque = ({ organisation, periode, id, a, confirme = false }) => ({
@@ -243,8 +230,8 @@ export const mailBloque = ({ organisation, periode, id, a, confirme = false }) =
       ? `Le mail mensuel de la période ${periode} est parti à ${echap(a)}, mais son envoi n’a pas pu être enregistré : tant qu’il ne l’est pas, le lien du bilan ne s’ouvre pas chez votre client.`
       : `Le mail mensuel de la période ${periode} est parti vers le service d’envoi sans réponse claire. Pour ne jamais l’envoyer deux fois, il n’est pas retenté.`,
     confirme
-      ? `À faire : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code>`
-      : `Vérifiez dans le journal du service d’envoi s’il est arrivé à ${echap(a)}. S’il est arrivé : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code> S’il n’est pas parti : <code>select bilan_liberer_envoi('${id}');</code> et il repartira au passage suivant.`,
+      ? `Hors-champ vous propose de l’enregistrer d’un geste. À défaut : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code>`
+      : `Vérifiez dans le journal du service d’envoi s’il est arrivé à ${echap(a)}, puis répondez dans Hors-champ : « Il est arrivé » ou « Le renvoyer ». À défaut : <code>select bilan_confirmer_envoi('${id}', '${echap(a)}');</code> s’il est arrivé, <code>select bilan_liberer_envoi('${id}');</code> sinon.`,
   ],
   bouton: null,
 });
