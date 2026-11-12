@@ -382,6 +382,31 @@ begin
   return chemins;
 end $function$;
 
+-- 8. Secret du webhook -------------------------------------------------------------------------------
+-- Brevo présente ce secret à chaque mail remis. Il est généré ici, dans le coffre de la base (Vault), et lu par
+-- la seule fonction « reception » : personne ne le saisit ni ne le lit. Le réglage RECEPTION_CLE, s'il est posé
+-- dans les secrets des fonctions, passe devant.
+create or replace function public.reception_cle() returns text
+language plpgsql security definer set search_path to 'public'
+as $function$
+declare c text;
+begin
+  if auth.role() <> 'service_role' then raise exception 'Réservé au serveur'; end if;
+  if not exists (select 1 from pg_namespace where nspname = 'vault') then return null; end if;
+  execute 'select decrypted_secret from vault.decrypted_secrets where name = ''reception_cle'' limit 1' into c;
+  return c;
+end $function$;
+
+do $$
+begin
+  if exists (select 1 from pg_namespace where nspname = 'vault') then
+    execute $v$
+      select vault.create_secret(replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
+                                 'reception_cle', 'Secret du webhook Brevo de la fonction reception')
+       where not exists (select 1 from vault.secrets where name = 'reception_cle')$v$;
+  end if;
+end $$;
+
 revoke all on function public.alias_mail_libre(text, uuid) from public, anon, authenticated;
 revoke all on function public._organisation_alias_mail() from public, anon, authenticated;
 revoke all on function public._mail_pieces_vers_demande(public.mail_recu) from public, anon, authenticated;
@@ -392,7 +417,9 @@ revoke all on function public.mail_pieces(uuid, jsonb) from public, anon, authen
 revoke all on function public.mail_repondu(uuid) from public, anon, authenticated;
 revoke all on function public.mail_rattacher(uuid, uuid) from public, anon;
 revoke all on function public.mail_purger(integer) from public, anon, authenticated;
+revoke all on function public.reception_cle() from public, anon, authenticated;
 grant execute on function public.alias_mail_libre(text, uuid) to service_role;
+grant execute on function public.reception_cle() to service_role;
 grant execute on function public.mail_ouvrir(text, text, text[], text, text) to service_role;
 grant execute on function public.mail_deposer(uuid, text, jsonb, date, text) to service_role;
 grant execute on function public.mail_classer(uuid, text, text, text, text, date, jsonb) to service_role;

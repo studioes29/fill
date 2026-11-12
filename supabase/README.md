@@ -67,6 +67,13 @@ Réglages : `RECEPTION_CLE` (secret du webhook, 24 caractères au moins, obligat
 
 Mise en service, dans l'ordre : enregistrements MX du sous-domaine (10 `inbound1.sendinblue.com`, 20 `inbound2.sendinblue.com`), secret `RECEPTION_CLE`, migration `migrations/2026-11-adresse-de-transfert.sql`, déploiement de `reception` (`verify_jwt: false`), action `{"action":"webhook","creer":true}`, fusion (publie l'Espace), essai réel, puis déploiement de `notifier` et `alerte`, qui montrent l'adresse aux clients. Après chaque déploiement, copier `.assemblees/<fonction>.ts` dans `deploye/`.
 
+État au 12 novembre 2026 (branche `transfert-secret-au-coffre`, posée sur `lot-adresse-transfert`) :
+
+- le secret du webhook n'a plus à être saisi : la migration le génère dans le coffre de la base (Vault, secret `reception_cle`) et la fonction le lit par `reception_cle()` quand `RECEPTION_CLE` n'est pas réglé. La fonction `reception_cle` et le secret existent déjà en base ; la version 4 en ligne ne les lit pas encore (elle répond 503), la version de cette branche oui ;
+- Brevo répond 400 `document_not_found` à la lecture des webhooks tant qu'il n'en existe aucun : l'action `webhook` le traite comme une liste vide (champ `lecture` de la réponse) ;
+- Brevo refuse pour l'instant la création du webhook : `Domain is not found or is inactive`. Les enregistrements MX sont visibles (`mx_ok: true`) ; seul `studioes.fr` est déclaré dans Brevo. À faire dans Brevo : déclarer `demandes.studioes.fr` (Expéditeurs, domaines), puis relancer `{"action":"webhook","creer":true}` ;
+- le contrôle d'origine lit `Authentication-Results`. L'exemple de la documentation de Brevo ne montre que `Received-SPF`, `DKIM-Signature` et `ARC-Authentication-Results` : au premier mail réel, la ligne `reception, origine : … ; serveur : …` du journal de la fonction dit ce que Brevo transmet. Sans cet en-tête, tout mail passe par le lien pré-rempli (motif `origine_non_prouvee`), jamais par le dépôt direct.
+
 Suivi : `select recu, expediteur, sujet, issue, motif, demande_id from mail_recu order by recu desc`.
 
 Tests : `node tests/reception.test.mjs` (base embarquée, 43 tests : migration, règles en base, analyse de mails réalistes de `tests/mails-exemples.mjs`, déroulé complet, fonction assemblée) et `node ../espace-src/tests/transfert.mjs` (lien pré-rempli dans un navigateur, 6 contrôles).

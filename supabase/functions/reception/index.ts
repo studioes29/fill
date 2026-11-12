@@ -12,7 +12,8 @@
 //
 // Base : organisation.alias_mail, table mail_recu et fonctions mail_* (migration 2026-11-adresse-de-transfert.sql).
 // Règles : _partage/regles/reception.ts (analyse) et traiter.ts (déroulé), testées par tests/reception.test.mjs.
-// Secrets : clés Supabase, BREVO_API_KEY, RECEPTION_CLE, EXPEDITEUR_EMAIL, ALERTE_EMAIL, SITE_URL ;
+// Secrets : clés Supabase, BREVO_API_KEY, EXPEDITEUR_EMAIL, ALERTE_EMAIL, SITE_URL ; RECEPTION_CLE, ou à défaut le secret
+// « reception_cle » généré dans le coffre de la base par la migration (personne ne le saisit ni ne le lit) ;
 // DOMAINE_RECEPTION si le sous-domaine n'est pas demandes.studioes.fr ;
 // RECEPTION_ORIGINE=adresse pour qu'un mail se dépose sur la seule foi de son adresse d'expéditeur. Sans ce réglage,
 // le dépôt direct exige une preuve d'origine (en-tête Authentication-Results) ; à défaut, le lien pré-rempli.
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erreur: "Méthode refusée" }, 405);
   const url = Deno.env.get("SUPABASE_URL");
   const domaine = (Deno.env.get("DOMAINE_RECEPTION") ?? DOMAINE_DEFAUT).trim().toLowerCase();
-  const cleWebhook = Deno.env.get("RECEPTION_CLE") ?? "";
+  let cleWebhook = Deno.env.get("RECEPTION_CLE") ?? "";
   const cleBrevo = Deno.env.get("BREVO_API_KEY") ?? "";
   const expediteur = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
@@ -48,6 +49,8 @@ Deno.serve(async (req) => {
   let s;
   try { s = await req.json(); } catch { s = null; }
   const admin = createClient(url, CLE_SECRETE, { auth: { persistSession: false } });
+  // sans réglage RECEPTION_CLE, le secret du webhook est celui que garde le coffre de la base (fonction reception_cle)
+  if (!cleWebhook) cleWebhook = String((await admin.rpc("reception_cle").then((r) => r.data, () => null)) ?? "");
 
   // --- administration : le webhook chez Brevo ---------------------------------------------------------
   if (s && typeof s === "object" && typeof s.action === "string") {
@@ -60,8 +63,13 @@ Deno.serve(async (req) => {
     const brevo = (chemin, init = {}) => fetch(`${BREVO}${chemin}`, { ...init, headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" } });
     const masque = (u) => String(u ?? "").replace(/([?&]cle=)[^&]+/, "$1…");
     const lu = await brevo("/webhooks?type=inbound").catch(() => null);
-    if (!lu?.ok) return json({ erreur: "Brevo ne répond pas à la lecture des webhooks", statut: lu?.status ?? null }, 502);
-    const tous = ((await lu.json().catch(() => ({}))).webhooks ?? []).filter((w) => w?.type === "inbound");
+    // tant qu'aucun webhook de ce type n'existe, Brevo répond 400 (« document_not_found ») au lieu d'une liste vide
+    let lecture = null;
+    if (!lu?.ok) {
+      lecture = (await lu?.text().catch(() => null))?.slice(0, 300) ?? null;
+      if (!lu || ![400, 404].includes(lu.status)) return json({ erreur: "Brevo ne répond pas à la lecture des webhooks", statut: lu?.status ?? null, detail: lecture }, 502);
+    }
+    const tous = (lu.ok ? (await lu.json().catch(() => ({}))).webhooks ?? [] : []).filter((w) => w?.type === "inbound");
     const dudomaine = tous.filter((w) => String(w.domain ?? "").toLowerCase() === domaine);
     let conforme = dudomaine.find((w) => w.url === cible) ?? null;
     let fait = "rien";
@@ -83,7 +91,7 @@ Deno.serve(async (req) => {
     const mx = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domaine)}&type=MX`).then((r) => r.json()).then((j) => (j.Answer ?? []).map((a) => String(a.data).toLowerCase().replace(/\.$/, ""))).catch(() => null);
     const attendus = ["10 inbound1.sendinblue.com", "20 inbound2.sendinblue.com"];
     return json({
-      domaine, fait, conforme: Boolean(conforme), webhook: conforme ? { id: conforme.id, url: masque(conforme.url) } : null,
+      domaine, fait, conforme: Boolean(conforme), lecture, webhook: conforme ? { id: conforme.id, url: masque(conforme.url) } : null,
       autres: dudomaine.filter((w) => w.id !== conforme?.id).map((w) => ({ id: w.id, url: masque(w.url) })),
       mx, mx_ok: Array.isArray(mx) ? attendus.every((a) => mx.includes(a)) : null,
       conseil: conforme ? null : dudomaine.length ? "Un webhook existe pour ce domaine avec une autre adresse : relancer avec remplacer:true." : "Aucun webhook pour ce domaine : relancer avec creer:true.",
@@ -104,6 +112,7 @@ Deno.serve(async (req) => {
     adressesFill: [expediteur, pourFill, "contact@studioes.fr"],
     aujourdhui: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }),
     maintenant: () => Date.now(),
+    tracer: (t) => console.log(t),
     rpc: async (nom, args) => await admin.rpc(nom, args),
     unites: async (id) => (await admin.from("demande").select("unites").eq("id", id).single()).data?.unites ?? null,
     telecharger: async (jeton) => {

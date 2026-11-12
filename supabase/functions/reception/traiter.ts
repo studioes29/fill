@@ -42,6 +42,8 @@ export const traiter = async (item, d) => {
   if (!mail) return { issue: "illisible" };
   const ecart = automatique(mail, { domaine: d.domaine, adressesFill: d.adressesFill });
   const origine = authentification(mail.entetes, mail.de);
+  // trace sans donnée personnelle : le résultat du contrôle d'origine et le serveur qui l'a posé (premier en-tête)
+  d.tracer?.(`reception, origine : ${origine} ; serveur : ${(String(mail.entetes["authentication-results"] ?? "").trim().match(/^[\w.-]+/) ?? ["aucun en-tête"])[0]}`);
   const ouv = await d.rpc("mail_ouvrir", {
     p_message_id: mail.id, p_expediteur: mail.de, p_destinataires: mail.destinataires, p_sujet: mail.sujet || null, p_ecarter: ecart,
   });

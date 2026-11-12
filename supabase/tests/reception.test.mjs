@@ -1032,11 +1032,12 @@ const CLE_WEBHOOK = 'cle-de-test-reception-0123456789abcdef';
 const CLE_SERVICE = 'cle-de-service-de-test-0123456789abcdef';
 const env = { SUPABASE_URL: 'https://projet.supabase.test', CLE_SECRETE: CLE_SERVICE, RECEPTION_CLE: CLE_WEBHOOK, BREVO_API_KEY: 'xkeysib-test', SITE_URL: 'https://fill.studioes.fr/espace' };
 let service = null;
+let coffre = null;      // secret gardé par la base (fonction reception_cle), lu quand RECEPTION_CLE n'est pas réglé
 const appels = [];
 let brevo = { webhooks: [], refusEntetes: false };
 globalThis.Deno = { env: { get: (k) => env[k] }, serve: (f) => { service = f; } };
 globalThis.__client = () => ({
-  rpc: (nom, args) => (nom === 'verifier_jeton_pilote' ? Promise.resolve({ data: args.p === 'jeton-pilote-0123456789abcdef0123456789', error: null }) : rpc(nom, args)),
+  rpc: (nom, args) => (nom === 'reception_cle' ? Promise.resolve({ data: coffre, error: null }) : nom === 'verifier_jeton_pilote' ? Promise.resolve({ data: args.p === 'jeton-pilote-0123456789abcdef0123456789', error: null }) : rpc(nom, args)),
   from: (table) => ({ select: () => ({ eq: (_, id) => ({ single: async () => ({ data: await un(`select unites from ${table} where id = $1`, [id]) }) }) }) }),
   storage: { from: () => ({ upload: async (chemin) => { appels.push({ stockage: chemin }); return { error: null }; }, remove: async () => ({ error: null }) }) },
 });
@@ -1044,7 +1045,8 @@ globalThis.fetch = async (url, init = {}) => {
   const u = String(url), corps = init.body ? JSON.parse(init.body) : null;
   appels.push({ url: u, methode: init.method ?? 'GET', corps, cle: init.headers?.['api-key'] ?? null });
   const rep = (c, status = 200) => new Response(typeof c === 'string' ? c : JSON.stringify(c), { status });
-  if (u.endsWith('/webhooks?type=inbound')) return rep({ webhooks: brevo.webhooks });
+  // comme Brevo : sans aucun webhook de ce type, une erreur 400 et non une liste vide
+  if (u.endsWith('/webhooks?type=inbound')) return brevo.webhooks.length ? rep({ webhooks: brevo.webhooks }) : rep({ code: 'document_not_found', message: 'Webhooks not found' }, 400);
   if (u.endsWith('/webhooks') && init.method === 'POST') { brevo.webhooks.push({ id: 77, type: 'inbound', ...corps }); return rep({ id: 77 }, 201); }
   if (/\/webhooks\/\d+$/.test(u) && init.method === 'PUT') { Object.assign(brevo.webhooks[0], corps); return new Response(null, { status: 204 }); }
   if (u.includes('dns.google')) return rep({ Answer: [{ data: '10 inbound1.sendinblue.com.' }, { data: '20 inbound2.sendinblue.com.' }] });
@@ -1082,6 +1084,14 @@ await test('fonction : sans la clé du webhook, rien ne passe ; la clé se prés
   // sans secret configuré, la réception reste fermée
   const garde = env.RECEPTION_CLE; env.RECEPTION_CLE = 'court';
   assert.equal((await appel({ corps: items, requete: '?cle=court' })).statut, 503);
+  // sans réglage, le secret est celui du coffre de la base ; sans coffre non plus, la réception reste fermée
+  delete env.RECEPTION_CLE;
+  assert.equal((await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}` })).statut, 503);
+  coffre = 'secret-du-coffre-0123456789abcdef0123456789';
+  assert.equal((await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}` })).statut, 401);
+  const parCoffre = await appel({ corps: { items: [de(M.afficheFournie(), s.ref, s.alias)] }, requete: `?cle=${coffre}` });
+  assert.deepEqual([parCoffre.statut, parCoffre.json.mails[0].issue], [200, 'deposee']);
+  coffre = null;
   env.RECEPTION_CLE = garde;
 });
 
