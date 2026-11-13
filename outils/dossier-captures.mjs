@@ -85,7 +85,7 @@ const main = async () => {
     await aller(p, base, 'demande-d50'); await prendre(p, 'fiche-deposee');
     await aller(p, base, 'demande-d44'); await prendre(p, 'fiche-relire');
     await prendre(p, 'fiche-relire-2', { roule: 330 });
-    await clic(p, 'Demander une correction'); await prendre(p, 'fiche-correction');
+    await clic(p, 'Demander une correction'); await prendre(p, 'fiche-correction', { roule: 170 });
     await aller(p, base, 'equipe'); await prendre(p, 'equipe');
     await aller(p, base, 'equipe'); await clic(p, 'Inviter un collègue'); await prendre(p, 'equipe-inviter');
     await aller(p, base, 'comptes'); await prendre(p, 'comptes');
@@ -116,7 +116,7 @@ const main = async () => {
   // pages étroites : fenêtre plus petite, pour que le contenu occupe la capture
   await bloc('liens', async () => {
     const c = await contexte(nav, null, 880, 550); const p = await c.newPage();
-    await p.goto(`${base}/espace/relecture/?demo`); await p.waitForTimeout(1300); await prendre(p, 'relecture', { roule: 1010 });
+    await p.goto(`${base}/espace/relecture/?demo`); await p.waitForTimeout(1300); await prendre(p, 'relecture', { roule: 1075 });
     await p.goto(`${base}/espace/bilan/?demo`); await p.waitForTimeout(1300); await prendre(p, 'bilan'); await prendre(p, 'bilan-suite', { vers: 'text=Pour la période qui commence' });
     await c.close();
   });

@@ -57,7 +57,7 @@ const COURT = {
 const NOMS = {
   "Publication réseaux sociaux": `post`, "Actualité sur le site": `actu`, "Agenda en ligne": `agenda`, "Communiqué de presse": `presse`, Newsletter: `news`,
   "Page du site créée ou refaite": `page`, "Visuel sur gabarit": `gabarit`, "Affiche en création": `affiche`, "Flyer ou programme recto verso": `flyer`,
-  "Page de bulletin ou magazine": `bulletin`, "Reportage photo": `photo`, "Réunion supplémentaire": `point`, "Suivi des messages et commentaires": `moder`,
+  "Page de bulletin ou magazine": `bulletin`, Publication: `post`, "Actualité": `actu`, "Lettre d’information": `news`, "Événement à l’agenda": `agenda`, Affiche: `affiche`, Flyer: `flyer`, "Reportage photo": `photo`, "Réunion supplémentaire": `point`, "Suivi des messages et commentaires": `moder`,
 };
 const court = (id, nom, n) => { const c = COURT[id ?? NOMS[nom]]; return c ? c[n >= 2 ? 1 : 0] : String(nom ?? ``).toLowerCase(); };
 const lignes = (l) => (l ?? []).map((x) => `${x.quantite} ${court(x.prestation, x.nom, x.quantite)}`).join(`, `);
@@ -245,25 +245,25 @@ const repondreDemo = async () => {
       organisation: { nom: `Commune de Saint-Ivenec`, type: `collectivite`, formule: `essentiel` },
       periode: debut.slice(0, 7), debut, fin,
       demandes_livrees: 5,
-      unites: { quota: 10, report: 2, ajustements: 0, total: 12, utilisees: 10, reservees: 1, reportees: 2, expirees: 0 },
+      unites: { quota: 15, report: 2, ajustements: 0, total: 17, utilisees: 10, reservees: 1, reportees: 6, expirees: 0 },
       delais: { a_la_date: 4, total: 5, sans_date: 0, validations: 5, validation_jours: 1.3 },
       livrables: [
-        { prestation: `post`, nom: `Publication réseaux sociaux`, quantite: 5 },
-        { prestation: `actu`, nom: `Actualité sur le site`, quantite: 2 },
-        { prestation: `news`, nom: `Newsletter`, quantite: 1 },
+        { prestation: `post`, nom: `Publication`, quantite: 5 },
+        { prestation: `actu`, nom: `Actualité`, quantite: 2 },
+        { prestation: `news`, nom: `Lettre d’information`, quantite: 1 },
       ],
       livre: [
-        { numero: 41, titre: `Forum des associations : annonce`, date: ouvre(jour(-24)), unites: 3, annoncee: ouvre(jour(-26)), remise: ouvre(jour(-26)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication réseaux sociaux`, quantite: 2 }, { prestation: `actu`, nom: `Actualité sur le site`, quantite: 1 }] },
-        { numero: 42, titre: `Travaux de la rue du Stade`, date: apres(annoncee, 3), unites: 2, annoncee, remise: apres(annoncee, 2), retard_jours: 2, lignes: [{ prestation: `post`, nom: `Publication réseaux sociaux`, quantite: 1 }, { prestation: `actu`, nom: `Actualité sur le site`, quantite: 1 }] },
-        { numero: 43, titre: `Lettre aux habitants`, date: ouvre(jour(-9)), unites: 3, annoncee: ouvre(jour(-12)), remise: ouvre(jour(-12)), retard_jours: 0, lignes: [{ prestation: `news`, nom: `Newsletter`, quantite: 1 }] },
-        { numero: 44, titre: `Collecte des encombrants`, date: ouvre(jour(-3)), unites: 1, annoncee: ouvre(jour(-5)), remise: ouvre(jour(-5)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication réseaux sociaux`, quantite: 1 }] },
-        { numero: 45, titre: `Fermeture de la piscine`, date: ouvre(jour(-3)), unites: 1, annoncee: ouvre(jour(-4)), remise: ouvre(jour(-4)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication réseaux sociaux`, quantite: 1 }] },
+        { numero: 41, titre: `Forum des associations : annonce`, date: ouvre(jour(-24)), unites: 3, annoncee: ouvre(jour(-26)), remise: ouvre(jour(-26)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication`, quantite: 2 }, { prestation: `actu`, nom: `Actualité`, quantite: 1 }] },
+        { numero: 42, titre: `Travaux de la rue du Stade`, date: apres(annoncee, 3), unites: 2, annoncee, remise: apres(annoncee, 2), retard_jours: 2, lignes: [{ prestation: `post`, nom: `Publication`, quantite: 1 }, { prestation: `actu`, nom: `Actualité`, quantite: 1 }] },
+        { numero: 43, titre: `Lettre aux habitants`, date: ouvre(jour(-9)), unites: 3, annoncee: ouvre(jour(-12)), remise: ouvre(jour(-12)), retard_jours: 0, lignes: [{ prestation: `news`, nom: `Lettre d’information`, quantite: 1 }] },
+        { numero: 44, titre: `Collecte des encombrants`, date: ouvre(jour(-3)), unites: 1, annoncee: ouvre(jour(-5)), remise: ouvre(jour(-5)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication`, quantite: 1 }] },
+        { numero: 45, titre: `Fermeture de la piscine`, date: ouvre(jour(-3)), unites: 1, annoncee: ouvre(jour(-4)), remise: ouvre(jour(-4)), retard_jours: 0, lignes: [{ prestation: `post`, nom: `Publication`, quantite: 1 }] },
       ],
       en_cours: [{ titre: `Agenda des animations`, statut: `production`, livraison: apres(jour(0), 2) }],
-      suivante: { periode: jour(0).slice(0, 7), debut: jour(0), fin: finSuivante, creditee: true, en_attente: 0, disponible: 12, report: 2 },
+      suivante: { periode: jour(0).slice(0, 7), debut: jour(0), fin: finSuivante, creditee: true, en_attente: 0, disponible: 21, report: 6 },
       suggestions: [
-        { cle: `c-1`, source: `calendrier`, titre: `Lettre aux habitants`, date: jour(16), qte: { news: 1 }, libelle: `Newsletter`, unites: 3, limite: ouvre(jour(7)), pourquoi: `Repère du calendrier type des communes.` },
-        { cle: `h-1`, source: `historique`, titre: `Programme des animations de fin d’année`, date: jour(22), qte: { flyer: 1, post: 1 }, libelle: `Programme recto verso et publication`, unites: 6, limite: ouvre(jour(13)), pourquoi: `Vous l’aviez demandé l’an passé à la même période.` },
+        { cle: `c-1`, source: `calendrier`, titre: `Lettre aux habitants`, date: jour(16), qte: { news: 1 }, libelle: `Lettre d’information`, unites: 3, limite: ouvre(jour(7)), pourquoi: `Repère du calendrier type des communes.` },
+        { cle: `h-1`, source: `historique`, titre: `Programme des animations de fin d’année`, date: jour(22), qte: { flyer: 1, post: 1 }, libelle: `Flyer et publication`, unites: 4, limite: ouvre(jour(13)), pourquoi: `Vous l’aviez demandé l’an passé à la même période.` },
         { cle: `c-2`, source: `calendrier`, titre: `Horaires de la mairie pendant les congés`, date: jour(26), qte: { post: 1, actu: 1 }, libelle: `Publication et actualité`, unites: 2, limite: ouvre(jour(21)), pourquoi: `Repère du calendrier type des communes.` },
       ],
     },
