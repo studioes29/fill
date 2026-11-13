@@ -1,7 +1,7 @@
 -- Offre Black Week 2026 : +50 % d'unités le premier mois (arrondi au supérieur).
 -- Toute organisation activée du 23 au 30 novembre 2026 inclus (date de Paris, prive.aujourdhui())
 -- sur Essentiel, Régulier ou Soutenu reçoit un ajustement « offert » sur sa première période (comme un geste saisi à la main) :
--- 5 unités (Essentiel), 11 (Régulier), 23 (Soutenu).
+-- Avec l'offre du 13 novembre 2026 (quotas 15, 35, 75) : 8 unités (Essentiel), 18 (Régulier), 38 (Soutenu).
 -- Les autres dates et Relais ne changent pas. Le bloc devient inerte après le 30 novembre ;
 -- il peut rester en place ou être retiré en remettant la version précédente de _activer.
 -- Validée par Ewen le 3 novembre 2026, appliquée en production.
