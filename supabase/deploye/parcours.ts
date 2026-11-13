@@ -331,7 +331,7 @@ async function preparerVague(ids: Record<string, number>, exclure: string[]) {
   if (!r.ok) throw new Error("Modèle lancement introuvable");
   // Black Week 2026 : post-scriptum ajouté seulement aux vagues préparées du 23 au 30 novembre (heure de Paris)
   const j = auj(), bw = j >= "2026-11-23" && j <= "2026-11-30";
-  const PS_BW = `<div style="margin:30px 0 0;padding:20px 22px;border-radius:18px;background:rgba(184,164,255,.14)"><p style="margin:0;font-family:'Inter Tight',Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#FFFFFF"><b style="color:#C9B8FF">P.-S. Black Week :</b> pour tout abonnement Essentiel, Régulier ou Soutenu activé jusqu’au 30 novembre, le premier mois compte 50&nbsp;% d’unités en plus (15, 33 ou 68 au lieu de 10, 22 ou 45), au même prix.</p></div>`;
+  const PS_BW = `<div style="margin:30px 0 0;padding:20px 22px;border-radius:18px;background:rgba(184,164,255,.14)"><p style="margin:0;font-family:'Inter Tight',Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;color:#FFFFFF"><b style="color:#C9B8FF">P.-S. Black Week :</b> pour tout abonnement Essentiel, Régulier ou Soutenu activé jusqu’au 30 novembre, le premier mois compte 50&nbsp;% d’unités en plus (23, 53 ou 113 au lieu de 15, 35 ou 75), au même prix.</p></div>`;
   const html = (await r.text()).replace("<!--BLACKWEEK-->", bw ? PS_BW : "");
   const c = await api("/emailCampaigns", { method: "POST", body: JSON.stringify({
     name: `Fill · Lancement, vague ${n}`, subject: "Votre com déborde ? Fill prend le relais",
