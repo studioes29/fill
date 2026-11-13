@@ -64,7 +64,7 @@ export const ouvresNecessaires = (qte, formuleId) => {
   const ids = Object.keys(qte);
   if (ids.includes("bulletin")) return 15;
   if (ids.some((id) => natureDelai(id) === "planifie")) return 5;
-  return (ids.some((id) => natureDelai(id) === "creation") ? OFFRE.delaiCreationJ : formule(formuleId).delai_j) + 1;
+  return (ids.some((id) => natureDelai(id) === "creation") ? (formule(formuleId).creation_j ?? OFFRE.delaiCreationJ) : formule(formuleId).delai_j) + 1;
 };
 
 // dernier jour ouvré de dépôt qui laisse « ouvres » jours ouvrés avant la parution (parution comprise)

@@ -22,6 +22,7 @@ export const FORMULES = [
     prix: f.prix,
     unites: f.unites,
     delai_j: f.delai_j,
+    creation_j: f.creation_j,
     urgences_incluses: f.urgences_incluses,
     mise_en_place: f.mise_en_place,
     suivi: f.suivi,
@@ -33,6 +34,7 @@ export const FORMULES = [
     prix: o.relais.prix_mois,
     unites: o.relais.unites_mois,
     delai_j: 1,
+    creation_j: o.relais.creation_j,
     urgences_incluses: Infinity,
     mise_en_place: o.relais.mise_en_place,
     suivi: "Point chaque semaine",
@@ -47,7 +49,7 @@ export const formule = (id) => {
   return f;
 };
 export const prestation = (id) => CATALOGUE.find((p) => p.id === id);
-export const TYPES_CREATION = ["affiche", "flyer", "news", "page", "video"];
 export const TYPES_PLANIFIES = ["bulletin", "photo"];
+export const TYPES_CREATION = [...CATALOGUE.filter((p) => p.creation && !TYPES_PLANIFIES.includes(p.id)).map((p) => p.id), "video"];
 export const ABONNEMENTS = FORMULES.filter((f) => f.id !== "relais");
 export const ORDRE_FORMULES = ["essentiel", "regulier", "soutenu", "relais"];

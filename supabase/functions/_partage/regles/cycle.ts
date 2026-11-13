@@ -13,8 +13,8 @@ export const T = {
   reprendre: { de: ["attente_client"], vers: "production", roles: [...EQUIPE, "referent", "contributeur"] },
   annuler: { de: ["deposee", "accord_requis", "confirmee", "attente_client"], vers: "annulee", roles: ["admin", "referent", "contributeur"] }
 };
-export const PUBLIEES = ["post", "actu", "agenda", "presse", "news", "page", "video"];
-export const SANS_LIVRABLE = ["point", "moder"];
+export const PUBLIEES = ["post", "story", "videoligne", "actu", "agenda", "majpage", "page", "formulaire", "bandeau", "news", "newsint", "presse", "invitpresse", "annonce", "video"];
+export const SANS_LIVRABLE = ["point", "moder", "impression", "prestataire"];
 export const issue = (lignes) => {
   const pub = lignes.some((l) => PUBLIEES.includes(l.prestation));
   const fic = lignes.some((l) => !PUBLIEES.includes(l.prestation) && !SANS_LIVRABLE.includes(l.prestation));

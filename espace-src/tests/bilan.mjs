@@ -257,7 +257,7 @@ await test('Espace : « Lancer » ouvre la nouvelle demande pré-remplie (titre,
   await page.waitForFunction(() => [...document.querySelectorAll('input')].some((i) => i.value === 'Téléthon & marché'));
   assert.equal(await page.evaluate(() => location.hash), '#nouvelle');
   const texte = await page.evaluate(() => document.body.innerText);
-  assert.match(texte, /Affiche en création/);
+  assert.match(texte, /Création, fichier prêt à imprimer et version écran/);
   assert.equal(await page.evaluate(() => [...document.querySelectorAll('input')].some((i) => i.value === '2027-11-28' || /28\/11\/2027/.test(i.value)) || /28 novembre/.test(document.body.innerText)), true, 'la date de parution est reprise');
   // la visite de bienvenue de la démonstration passe devant le formulaire : on la ferme pour la capture
   const passer = page.getByRole('button', { name: 'Passer la visite' });

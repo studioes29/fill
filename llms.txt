@@ -6,10 +6,10 @@ Ce que Fill réalise : actualités et agenda du site, publications sur les rése
 
 ## Formules et prix publics
 
-- Essentiel : 490 € par mois, 10 unités. Petite commune ou PME qui veut une présence tenue à jour.
-- Régulier : 990 € par mois, 22 unités. Commune de 2 000 à 8 000 habitants, PME active, office de tourisme ; reportage photo possible.
-- Soutenu : 1 890 € par mois, 45 unités. Commune de plus de 8 000 habitants sans service, intercommunalité.
-- Relais : 690 € par semaine (deux semaines au moins) ou 2 490 € par mois, sans abonnement. Remplacement temporaire quand le poste de chargé de communication est vide : vacance pendant un recrutement, départ ou mutation, congé maternité, paternité ou parental, arrêt maladie. Démarrage en 10 jours ouvrés, passation préparée au retour ou à l'arrivée.
+- Essentiel : 490 € par mois, 15 unités. Petite commune ou PME qui veut une présence tenue à jour.
+- Régulier : 990 € par mois, 35 unités. Commune de 2 000 à 8 000 habitants, PME active, office de tourisme ; reportage photo possible.
+- Soutenu : 1 890 € par mois, 75 unités. Commune de plus de 8 000 habitants sans service, intercommunalité.
+- Relais : 690 € par semaine (deux semaines au moins) ou 2 490 € par mois, sans abonnement. Remplacement temporaire quand le poste de chargé de communication est vide : vacance pendant un recrutement, départ ou mutation, congé maternité, paternité ou parental, arrêt maladie. Opérationnel sous 24 h après l'accord, passation préparée au retour ou à l'arrivée.
 - Une seule mensualité, sans frais d’entrée. Premier mois sans engagement : le client peut arrêter à son terme sans autre somme due. Ensuite, 6 mois minimum comptés depuis le premier mois, puis résiliable chaque mois avec un mois de préavis.
 - TVA non applicable (art. 293 B du CGI). Collectivités : facture à terme échu sur Chorus Pro. Entreprises : paiement mensuel par carte.
 
@@ -25,6 +25,7 @@ Ce que Fill réalise : actualités et agenda du site, publications sur les rése
 - [Simulateur de prix](https://fill.studioes.fr/simulateur/): composer son mois et voir le prix mensuel et le coût de la première année
 - [Votre trimestre](https://fill.studioes.fr/calendrier/): les temps forts des trois prochains mois et les supports à prévoir
 - [Guide : la communication communale pendant une absence](https://fill.studioes.fr/guide/): ce qu'il faut préparer, ce qui doit continuer, les solutions possibles, liste de contrôle
+- [Dossier de présentation](https://fill.studioes.fr/dossier/): le document complet, en ligne et en PDF (https://fill.studioes.fr/assets/pj/fill-dossier-de-presentation.pdf) : offre, prix, délais, engagement et chaque étape de l'espace client
 - [Questions fréquentes](https://fill.studioes.fr/questions/)
 - [Conditions générales](https://fill.studioes.fr/conditions/)
 - [Contact et rendez-vous](https://fill.studioes.fr/contact/): contact@studioes.fr, 06 51 22 21 07

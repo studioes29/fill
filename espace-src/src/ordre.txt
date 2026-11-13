@@ -65,3 +65,4 @@ gestes.js
 transfert.js
 preferences.js
 livraison.js
+familles.js

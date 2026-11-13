@@ -70,7 +70,7 @@ var estimer = (e, t) => {
       d = e.urgente && !u ? OFFRE.urgenceUnites : 0,
       f = l + d,
       p = null;
-    (c === `courant` && (p = n.delai_j), c === `creation` && (p = OFFRE.delaiCreationJ));
+    (c === `courant` && (p = n.delai_j), c === `creation` && (p = n.creation_j ?? OFFRE.delaiCreationJ));
     let m = p === null ? null : e.urgente ? delaiUrgent(p) : p,
       h = m === null ? null : ajouterOuvres(i, m, r),
       g = p === null ? null : ajouterOuvres(i, delaiUrgent(p), r),

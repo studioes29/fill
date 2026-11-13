@@ -49,9 +49,9 @@ const aujourdhui = () => { const j = new Date(); return `${j.getFullYear()}-${St
 
 // noms courts des prestations, au singulier et au pluriel (catalogue de l'offre)
 const COURT = {
-  post: [`publication`, `publications`], actu: [`actualité`, `actualités`], agenda: [`agenda en ligne`, `agendas en ligne`],
-  presse: [`communiqué`, `communiqués`], news: [`newsletter`, `newsletters`], page: [`page du site`, `pages du site`],
-  gabarit: [`visuel`, `visuels`], affiche: [`affiche`, `affiches`], flyer: [`flyer`, `flyers`], bulletin: [`page de bulletin`, `pages de bulletin`],
+  post: [`publication`, `publications`], actu: [`actualité`, `actualités`], agenda: [`événement à l’agenda`, `événements à l’agenda`], story: [`story`, `stories`], majpage: [`mise à jour de page`, `mises à jour de page`], invitation: [`invitation`, `invitations`], annonce: [`annonce presse`, `annonces presse`],
+  presse: [`communiqué`, `communiqués`], news: [`lettre d’information`, `lettres d’information`], page: [`page du site`, `pages du site`],
+  gabarit: [`déclinaison`, `déclinaisons`], affiche: [`affiche`, `affiches`], flyer: [`flyer`, `flyers`], bulletin: [`page de bulletin`, `pages de bulletin`],
   photo: [`reportage photo`, `reportages photo`], point: [`réunion`, `réunions`], moder: [`suivi des messages`, `suivis des messages`],
 };
 const NOMS = {

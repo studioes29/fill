@@ -8656,3 +8656,12 @@ nav.svelte-1n46o8q ul:where(.svelte-1n46o8q) {
 .gs-coche svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: gs-trait 0.3s cubic-bezier(0.65, 0, 0.35, 1) 0.16s forwards; }
 @keyframes gs-coche { 0% { opacity: 0; transform: scale(0.4); } 22% { opacity: 1; transform: scale(1.08); } 34% { transform: scale(1); } 78% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.94); } }
 @keyframes gs-trait { to { stroke-dashoffset: 0; } }
+
+/* familles repliables de la nouvelle demande (module familles.js) */
+fieldset.etape > .groupe > h3.g-t[role="button"]{cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 2px;border-radius:10px;user-select:none}
+fieldset.etape > .groupe > h3.g-t[role="button"]:focus-visible{outline:3px solid var(--lav-f,#7052B3);outline-offset:2px}
+fieldset.etape > .groupe > h3.g-t[role="button"]::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;opacity:.6}
+fieldset.etape > .groupe > h3.g-t[aria-expanded="true"]::after{transform:rotate(-135deg)}
+fieldset.etape > .groupe > h3.g-t[data-choisis]:not([data-choisis="0"])::before{content:attr(data-choisis);order:2;min-width:22px;height:22px;border-radius:11px;background:#1A1A1A;color:#fff;font:600 12px/22px var(--d,inherit);font-style:normal;text-align:center}
+fieldset.etape > .groupe:has(> h3.g-t[aria-expanded="false"]) > .liste > li:not(:has([aria-pressed="true"])){display:none}
+fieldset.etape > .groupe:has(> h3.g-t[aria-expanded="false"]) > .liste:not(:has([aria-pressed="true"])){display:none}

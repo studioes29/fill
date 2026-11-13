@@ -49,7 +49,7 @@ export const estimer = (e, c) => {
   const unites = unitesBase + unitesUrgence;
   let delaiJ = null;
   if (nature === "courant") delaiJ = f.delai_j;
-  if (nature === "creation") delaiJ = OFFRE.delaiCreationJ;
+  if (nature === "creation") delaiJ = f.creation_j ?? OFFRE.delaiCreationJ;
   const delaiEffectif = delaiJ === null ? null : e.urgente ? delaiUrgent(delaiJ) : delaiJ;
   const livraison = delaiEffectif === null ? null : ajouterOuvres(confirmation, delaiEffectif, fer);
   const livraisonUrgente = delaiJ === null ? null : ajouterOuvres(confirmation, delaiUrgent(delaiJ), fer);

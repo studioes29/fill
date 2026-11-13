@@ -93,7 +93,6 @@
   const resumePanier = p => Object.entries(p || {}).filter(([k, n]) => n > 0 && CAT[k]).map(([k, n]) => {
     const c = CAT[k];
     if (c.bascule) return c.nom;
-    if (k === 'agenda') return `Agenda : ${n * 3} événements`;
     if (k === 'bulletin') return `${n} page${n > 1 ? 's' : ''} de bulletin`;
     return `${n} × ${c.nom.charAt(0).toLowerCase() + c.nom.slice(1)}`;
   });
@@ -771,12 +770,12 @@
   if (fos) {
     const complet = fos.dataset.mode === 'complet';
     // ce que représentent les unités de chaque formule, en supports concrets (même valeur d’unité partout)
-    const CONCRET = { essentiel: 'Par exemple <b>7 publications et 1 newsletter</b> par mois', regulier: 'Par exemple <b>12 publications, 2 newsletters et 1 affiche</b> par mois', soutenu: 'Par exemple <b>20 publications, 2 newsletters, 2 affiches, 1 reportage et 1 actualité</b> par mois' };
+    const CONCRET = { essentiel: 'Par exemple <b>9 publications, 3 actualités et 1 lettre d’information</b> par mois', regulier: 'Par exemple <b>14 publications, 8 actualités ou événements, 2 lettres d’information, 1 affiche et 3 déclinaisons</b> par mois', soutenu: 'Par exemple <b>20 publications, 16 actualités ou événements, 2 lettres d’information, 2 affiches, 1 reportage photo et 6 pages de bulletin</b> par mois' };
     const carte = f => `<article class="fo" data-f="${f.id}">
       <div class="fo-a"><h3>${esc(f.nom)}</h3><p class="fo-c">${esc(f.court)}</p></div>
       <p class="fo-p"><b>${eur(f.prix)}<small>&nbsp;€</small></b><span>par mois</span></p>${CONCRET[f.id] ? `<p class="fo-cc">${CONCRET[f.id]}</p>` : ''}
       <ul class="fo-at">${(f.atouts || []).map((t, k) => `<li style="--k:${k}"><svg class="i" aria-hidden="true"><use href="#ok"/></svg><span>${t}</span></li>`).join('')}</ul>
-      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Engagement</dt><dd>1<sup>er</sup> mois libre, puis ${O.engagement_mois} mois</dd></div><div><dt>Créations</dt><dd>5 jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
+      <div class="fo-det" id="det-${f.id}"><div><dl class="fo-d"><div><dt>Par exemple</dt><dd>${esc((f.exemples[0] || []).slice(0, 3).join(', '))}</dd></div><div><dt>Urgences</dt><dd>${esc(f.urgences)}</dd></div><div><dt>Suivi</dt><dd>${esc(f.suivi)}</dd></div><div><dt>Engagement</dt><dd>1<sup>er</sup> mois libre, puis ${O.engagement_mois} mois</dd></div><div><dt>Créations</dt><dd>${f.creation_j} jours ouvrés</dd></div></dl><p class="fo-ex"><b>Pour qui :</b> ${esc(f.pour)}</p></div></div>
       <div class="fo-act"><a class="bt" href="${U('demande/')}" data-choisit="${f.id}">Choisir ${esc(f.nom)} <span class="ar"><svg class="i"><use href="#ar"/></svg></span></a><button type="button" class="fo-plus" aria-expanded="false" aria-controls="det-${f.id}"><i aria-hidden="true">+</i>Détails</button></div>
     </article>`;
     fos.innerHTML = FORM.map(carte).join('');
