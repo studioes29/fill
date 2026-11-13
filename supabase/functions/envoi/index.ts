@@ -13,6 +13,11 @@ const CLE = lire("CLE_SECRETE") ?? lire("SUPABASE_SECRET_KEY") ?? lire("SUPABASE
 const URL_SB = Deno.env.get("SUPABASE_URL")!;
 const BREVO = Deno.env.get("BREVO_API_KEY") ?? "";
 const EXPEDITEUR = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
+// 14 nov 2026 : adresse d'envoi distincte pour la prospection (sous-domaine authentifié dans Brevo), pour que
+// d'éventuels signalements de mails à froid n'abîment pas la réputation de contact@studioes.fr (devis, clients).
+// Tant que le secret PROSPECTION_EXPEDITEUR n'est pas posé, la prospection part de contact@studioes.fr comme avant.
+// Les réponses vont toujours à contact@studioes.fr (replyTo).
+const EXPEDITEUR_PROSPECTION = (Deno.env.get("PROSPECTION_EXPEDITEUR") ?? "").trim() || EXPEDITEUR;
 const PAR_PASSAGE = 6;      // messages au plus par passage (toutes les 10 minutes)
 const PAR_JOUR = 45;        // plafond quotidien, toutes séquences confondues
 const sb = createClient(URL_SB, CLE, { auth: { persistSession: false } });
@@ -80,21 +85,23 @@ const piecesJointes = (pj: unknown) => (Array.isArray(pj) ? pj : []).map((p: any
 async function envoyer(d: any) {
   const stop = await lienStop(d.email);
   const sig = SIGNATURE[d.marque] ?? SIGNATURE.studio;
-  const pied = d.type === "prospection" ? `\n\nVous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou : ${stop}` : "";
+  // piste « diffusion » (mails d'information, candidatures) : ni pied ni en-tête de désinscription
+  const desinscription = d.type === "prospection" && !d.sans_pied;
+  const pied = desinscription ? `\n\nVous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou : ${stop}` : "";
   const texte = `${d.corps.trim()}\n\n${sig}${pied}`;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
 <div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#141414;max-width:640px;padding:20px 18px 28px">${lierUrls(echap(d.corps.trim())).replace(/\n/g, "<br>")}
 ${signatureHtml(d.marque)}
-${d.type === "prospection" ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
+${desinscription ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
 </div></body></html>`;
   const corps: any = {
-    sender: { name: "Ewen Soupault", email: EXPEDITEUR },
+    sender: { name: "Ewen Soupault", email: d.type === "prospection" ? EXPEDITEUR_PROSPECTION : EXPEDITEUR },
     replyTo: { email: "contact@studioes.fr", name: d.marque === "fill" ? "Ewen Soupault, Fill" : "Ewen Soupault, Studio ES" },
     to: [{ email: d.email, ...(d.nom ? { name: String(d.nom).slice(0, 70) } : {}) }],
     subject: d.objet, textContent: texte, htmlContent: html,
     tags: ["horschamp", d.type, d.marque],
     headers: {
-      ...(d.type === "prospection" ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
+      ...(desinscription ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
       // une relance arrive dans la même conversation que le premier message
       ...(d.precedent ? { "In-Reply-To": d.precedent, "References": d.precedent } : {}),
     },
@@ -132,6 +139,7 @@ async function passage(forcer = false) {
     try {
       // sequence_dus ne renvoie pas (encore) les pièces jointes : on les lit sur le message lui-même
       if (d.pj === undefined) d.pj = (await sb.from("sequence_message").select("pj").eq("id", d.message_id).maybeSingle()).data?.pj ?? null;
+      if (d.sans_pied === undefined) d.sans_pied = (await sb.from("sequence").select("sans_pied").eq("id", d.sequence_id).maybeSingle()).data?.sans_pied === true;
       const id = await envoyer(d);
       await sb.from("sequence_message").update({ statut: "envoye", envoye_le: new Date().toISOString(), brevo_id: id }).eq("id", d.message_id);
       const reste = (await sb.from("sequence_message").select("id").eq("sequence_id", d.sequence_id).eq("statut", "prevu")).data ?? [];
@@ -143,7 +151,7 @@ async function passage(forcer = false) {
       bilan.push({ email: d.email, erreur: String(e) });
     }
   }
-  return { envoyes: bilan };
+  return { envoyes: bilan, expediteur_prospection: EXPEDITEUR_PROSPECTION };
 }
 
 Deno.serve(async (req) => {
