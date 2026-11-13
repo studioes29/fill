@@ -16,7 +16,7 @@
 .bw{position:fixed;z-index:60;right:24px;bottom:24px;width:min(400px,calc(100vw - 32px));background:#0B0B0D;color:#F4F2F7;border-radius:28px;padding:26px 26px 22px;box-shadow:0 24px 60px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);overflow:hidden;font-family:var(--f,"Inter Tight",Arial,sans-serif);transform:translateY(16px);opacity:0;transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .4s}
 .bw.on{transform:none;opacity:1}
 .bw>*{position:relative}
-.bw-h{display:flex;align-items:center;gap:14px;margin:0 0 14px}
+.bw-h{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding-right:30px}
 .bw-pa{flex:none;position:relative;width:64px;height:64px;transform:rotate(-10deg);filter:drop-shadow(0 0 14px rgba(184,164,255,.55)) drop-shadow(0 8px 12px rgba(0,0,0,.5))}
 .bw-k{font:500 16px/1.25 var(--sf,"Urbanist",sans-serif);font-style:italic;color:rgba(244,242,247,.75);margin:0}
 .bw-t{font:800 27px/1.02 var(--d,"Bricolage Grotesque",sans-serif);letter-spacing:-.03em;margin:0 0 10px;padding-right:20px;color:#F4F2F7}
