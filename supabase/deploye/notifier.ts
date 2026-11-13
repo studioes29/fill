@@ -87,8 +87,8 @@ var T = {
   reprendre: { de: ["attente_client"], vers: "production", roles: [...EQUIPE, "referent", "contributeur"] },
   annuler: { de: ["deposee", "accord_requis", "confirmee", "attente_client"], vers: "annulee", roles: ["admin", "referent", "contributeur"] }
 };
-var PUBLIEES = ["post", "actu", "agenda", "presse", "news", "page", "video"];
-var SANS_LIVRABLE = ["point", "moder"];
+var PUBLIEES = ["post", "story", "videoligne", "actu", "agenda", "majpage", "page", "formulaire", "bandeau", "news", "newsint", "presse", "invitpresse", "annonce", "video"];
+var SANS_LIVRABLE = ["point", "moder", "impression", "prestataire"];
 var issue = (lignes) => {
   const pub = lignes.some((l) => PUBLIEES.includes(l.prestation));
   const fic = lignes.some((l) => !PUBLIEES.includes(l.prestation) && !SANS_LIVRABLE.includes(l.prestation));

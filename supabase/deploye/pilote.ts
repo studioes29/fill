@@ -94,15 +94,15 @@ var periodeDe = (s) => s.slice(0, 7);
 
 // supabase/functions/_partage/offre.json
 var offre_default = {
-  version: "2026-11-07",
-  unite_sup: 55,
+  version: "2026-11-13",
+  unite_sup: 39,
   engagement_mois: 6,
   formules: [
     {
       id: "essentiel",
       nom: "Essentiel",
       prix: 490,
-      unites: 10,
+      unites: 15,
       delai: "2 jours ouvr\xE9s",
       delai_j: 2,
       suivi: "Point de 30 minutes chaque trimestre",
@@ -112,35 +112,62 @@ var offre_default = {
       promesse: "Une communication tenue \xE0 jour, au fil de vos actualit\xE9s.",
       exemples: [
         [
-          "4 publications",
-          "3 actualit\xE9s",
-          "1 newsletter"
+          "5 publications",
+          "4 actualit\xE9s",
+          "2 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "1 lettre d\u2019information",
+          "1 story"
+        ],
+        [
+          "1 affiche",
+          "3 d\xE9clinaisons",
+          "1 \xE9v\xE9nement \xE0 l\u2019agenda",
+          "1 actualit\xE9",
+          "2 publications",
+          "1 story",
+          "1 communiqu\xE9 de presse",
+          "1 annonce dans les agendas des m\xE9dias"
+        ],
+        [
+          "6 publications",
+          "3 d\xE9clinaisons",
+          "1 invitation",
+          "1 communiqu\xE9 de presse",
+          "2 actualit\xE9s"
         ]
       ],
       repartitions: [
         {
           nom: "Site et r\xE9seaux",
           panier: {
-            post: 4,
-            actu: 3,
-            news: 1
-          }
-        },
-        {
-          nom: "Visuels",
-          panier: {
-            post: 6,
-            gabarit: 2,
-            presse: 1
+            post: 5,
+            actu: 4,
+            agenda: 2,
+            news: 1,
+            story: 1
           }
         },
         {
           nom: "\xC9v\xE9nement",
           panier: {
             affiche: 1,
-            post: 3,
-            actu: 2,
-            gabarit: 1
+            gabarit: 3,
+            agenda: 1,
+            actu: 1,
+            post: 2,
+            story: 1,
+            presse: 1,
+            annonce: 1
+          }
+        },
+        {
+          nom: "Visuels",
+          panier: {
+            post: 6,
+            gabarit: 3,
+            invitation: 1,
+            presse: 1,
+            actu: 2
           }
         }
       ],
@@ -152,16 +179,17 @@ var offre_default = {
       mise_en_place: 0,
       court: "pr\xE9sence entretenue",
       atouts: [
-        "<b>10 unit\xE9s</b> par mois",
+        "<b>15 unit\xE9s</b> par mois",
         "Point de suivi <b>chaque trimestre</b>",
         "Courant <b>2 j</b> \xB7 cr\xE9ation <b>5 j</b> ouvr\xE9s"
-      ]
+      ],
+      creation_j: 5
     },
     {
       id: "regulier",
       nom: "R\xE9gulier",
       prix: 990,
-      unites: 22,
+      unites: 35,
       delai: "2 jours ouvr\xE9s",
       delai_j: 2,
       suivi: "Point de 30 minutes chaque mois",
@@ -171,75 +199,94 @@ var offre_default = {
       promesse: "Une pr\xE9sence chaque semaine sur vos principaux canaux.",
       exemples: [
         [
-          "8 publications sur les r\xE9seaux",
-          "4 actualit\xE9s sur le site",
-          "1 newsletter",
-          "1 affiche en cr\xE9ation",
-          "agenda du mois en ligne"
+          "10 publications",
+          "6 actualit\xE9s",
+          "4 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "1 lettre d\u2019information",
+          "1 affiche",
+          "2 d\xE9clinaisons",
+          "1 communiqu\xE9 de presse",
+          "2 stories",
+          "2 mises \xE0 jour de page"
         ],
         [
-          "4 pages de bulletin mises en page",
-          "6 publications",
-          "4 actualit\xE9s",
-          "1 communiqu\xE9"
+          "6 pages de bulletin",
+          "8 publications",
+          "5 actualit\xE9s",
+          "3 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "1 communiqu\xE9 de presse",
+          "2 d\xE9clinaisons",
+          "1 \xE9dito",
+          "1 story"
         ],
         [
-          "1 demi-journ\xE9e de reportage photo",
-          "6 publications",
-          "3 actualit\xE9s",
-          "1 newsletter"
+          "1 reportage photo",
+          "8 publications",
+          "5 actualit\xE9s",
+          "3 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "1 lettre d\u2019information",
+          "3 stories"
         ]
       ],
       repartitions: [
         {
           nom: "Tous les canaux",
           panier: {
-            post: 8,
-            actu: 4,
+            post: 10,
+            actu: 6,
+            agenda: 4,
             news: 1,
             affiche: 1,
-            agenda: 2,
-            point: 1
+            gabarit: 2,
+            presse: 1,
+            story: 2,
+            majpage: 2
           }
         },
         {
           nom: "Mois du bulletin",
           panier: {
-            bulletin: 4,
-            post: 6,
-            actu: 4,
+            bulletin: 6,
+            post: 8,
+            actu: 5,
+            agenda: 3,
             presse: 1,
-            gabarit: 2
+            gabarit: 2,
+            edito: 1,
+            story: 1
           }
         },
         {
           nom: "Mois photo",
           panier: {
             photo: 1,
-            post: 6,
-            actu: 3,
-            news: 1
+            post: 8,
+            actu: 5,
+            agenda: 3,
+            news: 1,
+            story: 3
           }
         }
       ],
       points: [
-        "Site, r\xE9seaux et newsletter",
+        "Site, r\xE9seaux et lettre d\u2019information",
         "Demandes courantes en 2 jours ouvr\xE9s",
         "Un point de suivi par mois"
       ],
       mise_en_place: 0,
       court: "pr\xE9sence chaque semaine",
       atouts: [
-        "<b>22 unit\xE9s</b> par mois",
+        "<b>35 unit\xE9s</b> par mois",
         "Point de suivi <b>chaque mois</b>",
         "<b>Reportage photo</b> possible"
-      ]
+      ],
+      creation_j: 5
     },
     {
       id: "soutenu",
       nom: "Soutenu",
       prix: 1890,
-      unites: 45,
+      unites: 75,
       delai: "1 jour ouvr\xE9",
       delai_j: 1,
       suivi: "Point toutes les deux semaines, bilan chaque semestre",
@@ -249,244 +296,676 @@ var offre_default = {
       promesse: "Une production soutenue : bulletin, r\xE9seaux, site et presse.",
       exemples: [
         [
-          "8 pages de bulletin",
-          "12 publications",
-          "6 actualit\xE9s",
-          "2 newsletters",
-          "1 affiche en cr\xE9ation"
+          "12 pages de bulletin",
+          "16 publications",
+          "10 actualit\xE9s",
+          "6 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "2 lettres d\u2019information",
+          "1 affiche",
+          "3 d\xE9clinaisons",
+          "2 communiqu\xE9s de presse",
+          "2 stories"
         ],
         [
           "1 reportage photo",
-          "12 publications",
-          "8 actualit\xE9s",
-          "2 newsletters",
+          "16 publications",
+          "10 actualit\xE9s",
+          "8 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "2 lettres d\u2019information",
+          "1 affiche",
           "1 flyer",
-          "agenda en ligne"
+          "4 d\xE9clinaisons",
+          "2 communiqu\xE9s de presse",
+          "4 stories",
+          "1 invitation presse",
+          "2 annonces dans les agendas des m\xE9dias"
         ],
         [
           "2 reportages photo",
-          "10 publications",
-          "6 actualit\xE9s",
-          "1 newsletter",
-          "1 affiche en cr\xE9ation"
+          "14 publications",
+          "10 actualit\xE9s",
+          "6 \xE9v\xE9nements \xE0 l\u2019agenda",
+          "2 lettres d\u2019information",
+          "1 affiche",
+          "3 d\xE9clinaisons",
+          "4 stories",
+          "1 communiqu\xE9 de presse"
         ]
       ],
       repartitions: [
         {
           nom: "Bulletin et r\xE9seaux",
           panier: {
-            bulletin: 8,
-            post: 12,
-            actu: 6,
+            bulletin: 12,
+            post: 16,
+            actu: 10,
+            agenda: 6,
             news: 2,
             affiche: 1,
-            point: 1
+            gabarit: 3,
+            presse: 2,
+            story: 2
           }
         },
         {
           nom: "Temps fort",
           panier: {
             photo: 1,
-            post: 12,
-            actu: 8,
+            post: 16,
+            actu: 10,
+            agenda: 8,
             news: 2,
+            affiche: 1,
             flyer: 1,
-            agenda: 4
+            gabarit: 4,
+            presse: 2,
+            story: 4,
+            invitpresse: 1,
+            annonce: 2
           }
         },
         {
           nom: "Deux reportages",
           panier: {
             photo: 2,
-            post: 10,
-            actu: 6,
-            news: 1,
-            point: 2,
-            affiche: 1
+            post: 14,
+            actu: 10,
+            agenda: 6,
+            news: 2,
+            affiche: 1,
+            gabarit: 3,
+            story: 4,
+            presse: 1
           }
         }
       ],
       points: [
         "Demandes courantes en 1 jour ouvr\xE9",
-        "Deux urgences par mois incluses",
-        "Un point toutes les deux semaines"
+        "Cr\xE9ations en 3 jours ouvr\xE9s",
+        "Deux urgences par mois incluses"
       ],
       mise_en_place: 0,
       court: "production soutenue",
       atouts: [
-        "<b>45 unit\xE9s</b> par mois",
-        "Courant en <b>1 jour</b> ouvr\xE9",
+        "<b>75 unit\xE9s</b> par mois",
+        "Courant <b>1 j</b> \xB7 cr\xE9ation <b>3 j</b> ouvr\xE9s",
         "<b>2 urgences</b> incluses par mois"
-      ]
+      ],
+      creation_j: 3
     }
   ],
   relais: {
     id: "relais",
     nom: "Relais",
     prix_mois: 2490,
-    unites_mois: 50,
+    unites_mois: 85,
     prix_semaine: 690,
-    unites_semaine: 12,
+    unites_semaine: 20,
     semaines_min: 2,
-    delai_demarrage: "10 jours ouvr\xE9s",
-    delai: "1 jour ouvr\xE9 pour les demandes courantes, urgences sans majoration",
+    delai_demarrage: "24 h",
+    delai: "1 jour ouvr\xE9 pour les demandes courantes, 3 jours ouvr\xE9s pour les cr\xE9ations, urgences sans majoration",
     promesse: "Le poste est vide, la communication continue.",
     points: [
-      "D\xE9marrage en 10 jours ouvr\xE9s",
+      "Op\xE9rationnel sous 24 h apr\xE8s l\u2019accord",
       "Urgences sans majoration",
       "Passation compl\xE8te au retour"
     ],
     mise_en_place: 0,
-    urgences: "Incluses, sans unit\xE9 suppl\xE9mentaire"
+    urgences: "Incluses, sans unit\xE9 suppl\xE9mentaire",
+    creation_j: 3
   },
   categories: [
     {
-      id: "publier",
-      nom: "Publier",
-      it: "ce qui sort chaque semaine"
+      id: "reseaux",
+      nom: "R\xE9seaux sociaux",
+      it: "ce qui se publie sur vos comptes"
     },
     {
-      id: "creer",
-      nom: "Cr\xE9er",
-      it: "les supports"
+      id: "site",
+      nom: "Site internet",
+      it: "ce qui se met en ligne"
     },
     {
-      id: "terrain",
-      nom: "Terrain et suivi",
-      it: "ce qui demande du temps sur place"
+      id: "lettres",
+      nom: "Lettres d\u2019information",
+      it: "ce qui s\u2019envoie \xE0 vos abonn\xE9s"
+    },
+    {
+      id: "presse",
+      nom: "Presse",
+      it: "ce qui part aux r\xE9dactions"
+    },
+    {
+      id: "redaction",
+      nom: "R\xE9daction",
+      it: "les textes"
+    },
+    {
+      id: "petits",
+      nom: "Petits formats",
+      it: "les supports du quotidien"
+    },
+    {
+      id: "affiches",
+      nom: "Affiches et campagnes",
+      it: "les supports d\u2019un \xE9v\xE9nement"
+    },
+    {
+      id: "edition",
+      nom: "\xC9dition",
+      it: "les documents mis en page"
+    },
+    {
+      id: "photo",
+      nom: "Photo et vid\xE9o",
+      it: "les images"
+    },
+    {
+      id: "fabrication",
+      nom: "Fabrication et prestataires",
+      it: "le suivi jusqu\u2019\xE0 la livraison"
     }
   ],
   catalogue: [
     {
       id: "post",
-      cat: "publier",
-      nom: "Publication r\xE9seaux sociaux",
+      cat: "reseaux",
+      nom: "Publication",
       u: 1,
-      detail: "Texte et visuel sur gabarit, publi\xE9s sur deux r\xE9seaux",
-      max: 30,
+      detail: "Texte et visuel (ou carrousel), adapt\xE9s \xE0 chacun de vos comptes, programm\xE9s",
+      max: 40,
       t: "#B9B4FF",
       creation: false
     },
     {
-      id: "actu",
-      cat: "publier",
-      nom: "Actualit\xE9 sur le site",
+      id: "story",
+      cat: "reseaux",
+      nom: "Story",
       u: 1,
-      detail: "R\xE9daction \xE0 partir de vos \xE9l\xE9ments, image, mise en ligne",
+      detail: "Jusqu\u2019\xE0 3 \xE9crans au format vertical",
       max: 20,
+      t: "#B9B4FF",
+      creation: false
+    },
+    {
+      id: "habillage",
+      cat: "reseaux",
+      nom: "Habillage des comptes",
+      u: 2,
+      detail: "Photo de profil et image de couverture, pour tous vos r\xE9seaux",
+      max: 2,
+      t: "#B9B4FF",
+      creation: true
+    },
+    {
+      id: "videoligne",
+      cat: "reseaux",
+      nom: "Mise en ligne d\u2019une vid\xE9o",
+      u: 1,
+      detail: "Titre, description et miniature, sur YouTube ou vos r\xE9seaux",
+      max: 10,
+      t: "#B9B4FF",
+      creation: false
+    },
+    {
+      id: "moder",
+      cat: "reseaux",
+      nom: "Mod\xE9ration, par mois",
+      u: 4,
+      detail: "R\xE9ponses aux commentaires et aux messages, signalement de ce qui vous revient",
+      max: 1,
+      t: "#B9B4FF",
+      creation: false,
+      bascule: true
+    },
+    {
+      id: "actu",
+      cat: "site",
+      nom: "Actualit\xE9",
+      u: 1,
+      detail: "Article r\xE9dig\xE9, illustr\xE9 et mis en ligne",
+      max: 30,
       t: "#9FDCC3",
       creation: false
     },
     {
       id: "agenda",
-      cat: "publier",
-      nom: "Agenda en ligne",
+      cat: "site",
+      nom: "\xC9v\xE9nement \xE0 l\u2019agenda",
       u: 1,
-      detail: "Trois \xE9v\xE9nements saisis sur le site ou l\u2019application",
-      max: 10,
-      pas: "lot de 3",
+      detail: "Fiche compl\xE8te : date, lieu, texte, visuel",
+      max: 30,
       t: "#9FDCC3",
       creation: false
     },
     {
+      id: "majpage",
+      cat: "site",
+      nom: "Mise \xE0 jour d\u2019une page",
+      u: 1,
+      detail: "Texte, horaires, document \xE0 t\xE9l\xE9charger, offre d\u2019emploi",
+      max: 20,
+      t: "#9FDCC3",
+      creation: false
+    },
+    {
+      id: "page",
+      cat: "site",
+      nom: "Nouvelle page",
+      u: 3,
+      detail: "Page r\xE9dig\xE9e, structur\xE9e, illustr\xE9e et mise en ligne",
+      max: 6,
+      t: "#9FDCC3",
+      creation: true
+    },
+    {
+      id: "formulaire",
+      cat: "site",
+      nom: "Formulaire en ligne",
+      u: 2,
+      detail: "Inscription, contact ou sondage, r\xE9ponses envoy\xE9es \xE0 la bonne personne",
+      max: 6,
+      t: "#9FDCC3",
+      creation: true
+    },
+    {
+      id: "bandeau",
+      cat: "site",
+      nom: "Bandeau d\u2019accueil",
+      u: 1,
+      detail: "Visuel \xE0 la une du site, au bon format",
+      max: 10,
+      t: "#9FDCC3",
+      creation: false
+    },
+    {
+      id: "news",
+      cat: "lettres",
+      nom: "Lettre d\u2019information",
+      u: 3,
+      detail: "R\xE9daction, montage et envoi \xE0 vos abonn\xE9s",
+      max: 6,
+      t: "#F6B8C4",
+      creation: true
+    },
+    {
+      id: "newsint",
+      cat: "lettres",
+      nom: "Lettre interne",
+      u: 3,
+      detail: "La m\xEAme chose pour vos agents ou vos \xE9quipes",
+      max: 6,
+      t: "#F6B8C4",
+      creation: true
+    },
+    {
+      id: "modelelettre",
+      cat: "lettres",
+      nom: "Mod\xE8le de lettre",
+      u: 3,
+      detail: "Gabarit \xE0 vos couleurs, r\xE9utilisable \xE0 chaque envoi",
+      max: 2,
+      t: "#F6B8C4",
+      creation: true
+    },
+    {
       id: "presse",
-      cat: "publier",
+      cat: "presse",
       nom: "Communiqu\xE9 de presse",
       u: 2,
-      detail: "R\xE9daction et envoi \xE0 votre liste presse",
+      detail: "R\xE9daction et envoi aux r\xE9dactions",
       max: 8,
       t: "#F6B8C4",
       creation: false
     },
     {
-      id: "news",
-      cat: "publier",
-      nom: "Newsletter",
-      u: 3,
-      detail: "R\xE9daction, mise en page et envoi",
-      max: 6,
+      id: "invitpresse",
+      cat: "presse",
+      nom: "Invitation presse",
+      u: 1,
+      detail: "Invitation \xE0 un point presse ou \xE0 une inauguration, envoy\xE9e aux r\xE9dactions",
+      max: 8,
+      t: "#F6B8C4",
+      creation: false
+    },
+    {
+      id: "dossierpresse",
+      cat: "presse",
+      nom: "Dossier de presse",
+      u: 5,
+      detail: "Jusqu\u2019\xE0 6 pages r\xE9dig\xE9es et mises en page",
+      max: 3,
       t: "#F6B8C4",
       creation: true
     },
     {
-      id: "page",
-      cat: "publier",
-      nom: "Page du site cr\xE9\xE9e ou refaite",
-      u: 3,
-      detail: "Structure, textes et mise en ligne d\u2019une page",
-      max: 6,
-      t: "#9FDCC3",
-      creation: true
-    },
-    {
-      id: "gabarit",
-      cat: "creer",
-      nom: "Visuel sur gabarit",
+      id: "annonce",
+      cat: "presse",
+      nom: "Annonce dans les agendas des m\xE9dias",
       u: 1,
-      detail: "Affiche, \xE9cran d\u2019accueil ou post d\xE9clin\xE9 d\u2019un mod\xE8le existant",
+      detail: "Saisie de votre \xE9v\xE9nement sur les agendas en ligne de la presse locale",
       max: 20,
-      t: "#B9B4FF",
+      t: "#F6B8C4",
       creation: false
     },
     {
-      id: "affiche",
-      cat: "creer",
-      nom: "Affiche en cr\xE9ation",
-      u: 4,
-      detail: "Cr\xE9ation originale, d\xE9clin\xE9e en format r\xE9seaux",
+      id: "revue",
+      cat: "presse",
+      nom: "Revue de presse du mois",
+      u: 2,
+      detail: "Ce qui est paru sur vous, rassembl\xE9 en un document",
+      max: 1,
+      t: "#F6B8C4",
+      creation: false
+    },
+    {
+      id: "article",
+      cat: "redaction",
+      nom: "Article",
+      u: 2,
+      detail: "Jusqu\u2019\xE0 3 000 signes, pour un magazine ou un site",
+      max: 12,
+      t: "#A9CCFF",
+      creation: false
+    },
+    {
+      id: "edito",
+      cat: "redaction",
+      nom: "\xC9dito",
+      u: 2,
+      detail: "Mot du maire, du pr\xE9sident ou du dirigeant",
+      max: 6,
+      t: "#A9CCFF",
+      creation: false
+    },
+    {
+      id: "discours",
+      cat: "redaction",
+      nom: "Discours",
+      u: 2,
+      detail: "Environ 5 minutes de prise de parole",
+      max: 6,
+      t: "#A9CCFF",
+      creation: false
+    },
+    {
+      id: "relecture",
+      cat: "redaction",
+      nom: "Relecture et correction",
+      u: 1,
+      detail: "Jusqu\u2019\xE0 4 pages : orthographe, clart\xE9, coh\xE9rence",
+      max: 12,
+      t: "#A9CCFF",
+      creation: false
+    },
+    {
+      id: "invitation",
+      cat: "petits",
+      nom: "Invitation ou carton",
+      u: 2,
+      detail: "Fichier pr\xEAt \xE0 imprimer et version \xE0 envoyer par mail",
       max: 6,
       t: "#F5D199",
       creation: true
     },
     {
+      id: "cartevisite",
+      cat: "petits",
+      nom: "Carte de visite",
+      u: 2,
+      detail: "Recto verso, d\xE9clinable par personne",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "voeux",
+      cat: "petits",
+      nom: "Carte de v\u0153ux",
+      u: 2,
+      detail: "Version papier et version num\xE9rique",
+      max: 3,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "menu",
+      cat: "petits",
+      nom: "Menu ou carte",
+      u: 2,
+      detail: "Menu de repas, carte de restaurant, programme d\u2019une soir\xE9e",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "signature",
+      cat: "petits",
+      nom: "Signature de mail",
+      u: 2,
+      detail: "Signature \xE0 vos couleurs, avec la marche \xE0 suivre pour l\u2019installer",
+      max: 3,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "couverture",
+      cat: "petits",
+      nom: "Couverture de dossier",
+      u: 2,
+      detail: "Page de garde d\u2019un rapport, d\u2019un dossier ou d\u2019un devis",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "bon",
+      cat: "petits",
+      nom: "Bon d\u2019achat ou carte cadeau",
+      u: 2,
+      detail: "Fichier pr\xEAt \xE0 imprimer",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "chevalet",
+      cat: "petits",
+      nom: "Chevalet, \xE9tiquette ou badge",
+      u: 2,
+      detail: "S\xE9rie pr\xEAte \xE0 imprimer \xE0 partir de votre liste",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "affiche",
+      cat: "affiches",
+      nom: "Affiche",
+      u: 4,
+      detail: "Cr\xE9ation, fichier pr\xEAt \xE0 imprimer et version \xE9cran",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "gabarit",
+      cat: "affiches",
+      nom: "D\xE9clinaison d\u2019un visuel existant",
+      u: 1,
+      detail: "Un format de plus : r\xE9seaux, \xE9cran, A3, nouvelle date",
+      max: 20,
+      t: "#F5D199",
+      creation: false
+    },
+    {
       id: "flyer",
-      cat: "creer",
-      nom: "Flyer ou programme recto verso",
-      u: 5,
-      detail: "Mise en page \xE0 partir de vos contenus, fichier pr\xEAt \xE0 imprimer",
+      cat: "affiches",
+      nom: "Flyer",
+      u: 3,
+      detail: "Recto verso, pr\xEAt \xE0 imprimer",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "depliant",
+      cat: "affiches",
+      nom: "D\xE9pliant",
+      u: 6,
+      detail: "2 ou 3 volets, textes mis en forme",
       max: 4,
       t: "#F5D199",
       creation: true
     },
     {
-      id: "bulletin",
-      cat: "creer",
-      nom: "Page de bulletin ou magazine",
+      id: "grandformat",
+      cat: "affiches",
+      nom: "Grand format",
+      u: 4,
+      detail: "B\xE2che, kak\xE9mono, panneau ou habillage de sc\xE8ne",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "plan",
+      cat: "affiches",
+      nom: "Plan ou carte illustr\xE9e",
+      u: 6,
+      detail: "Plan d\u2019un site, d\u2019un parcours ou d\u2019un \xE9v\xE9nement",
+      max: 3,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "objet",
+      cat: "affiches",
+      nom: "Marquage d\u2019objet",
       u: 2,
-      detail: "Mise en page d\u2019une page, textes fournis. Au-del\xE0 de 12 pages par num\xE9ro : devis",
+      detail: "Sac, plaque, vitrine : fichier adapt\xE9 au fabricant",
+      max: 6,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "identite",
+      cat: "affiches",
+      nom: "Identit\xE9 d\u2019un \xE9v\xE9nement",
+      u: 8,
+      detail: "Nom mis en forme, couleurs, affiche et premiers formats",
+      max: 2,
+      t: "#F5D199",
+      creation: true
+    },
+    {
+      id: "bulletin",
+      cat: "edition",
+      nom: "Bulletin ou magazine, par page",
+      u: 2,
+      detail: "Mise en page, int\xE9gration des textes et des photos. Au-del\xE0 de 12 pages par num\xE9ro : devis",
       max: 12,
       t: "#A9CCFF",
       creation: true
     },
     {
-      id: "photo",
-      cat: "terrain",
-      nom: "Reportage photo",
-      u: 10,
-      detail: "Une demi-journ\xE9e \xE0 moins de 40 km, 30 photos retouch\xE9es. \xC0 partir de la formule R\xE9gulier",
-      max: 3,
-      t: "#D7E8A4",
-      min: "regulier",
+      id: "doclong",
+      cat: "edition",
+      nom: "Document long sur mod\xE8le existant, par page",
+      u: 1,
+      detail: "Rapport d\u2019activit\xE9, guide, livret repris dans votre maquette",
+      max: 40,
+      t: "#A9CCFF",
       creation: true
     },
     {
-      id: "point",
-      cat: "terrain",
-      nom: "R\xE9union suppl\xE9mentaire",
-      u: 1,
-      detail: "30 minutes en visio, en plus du point pr\xE9vu",
+      id: "diaporama",
+      cat: "edition",
+      nom: "Diaporama",
+      u: 3,
+      detail: "Jusqu\u2019\xE0 10 diapositives pour une r\xE9union ou une c\xE9r\xE9monie",
       max: 6,
+      t: "#A9CCFF",
+      creation: true
+    },
+    {
+      id: "modeledoc",
+      cat: "edition",
+      nom: "Mod\xE8le de document",
+      u: 3,
+      detail: "Papier \xE0 en-t\xEAte, mod\xE8le de courrier ou de diaporama",
+      max: 4,
+      t: "#A9CCFF",
+      creation: true
+    },
+    {
+      id: "formulairepdf",
+      cat: "edition",
+      nom: "Formulaire \xE0 remplir",
+      u: 2,
+      detail: "Document \xE0 compl\xE9ter \xE0 l\u2019\xE9cran ou \xE0 la main",
+      max: 6,
+      t: "#A9CCFF",
+      creation: true
+    },
+    {
+      id: "photo",
+      cat: "photo",
+      nom: "Reportage photo",
+      u: 13,
+      detail: "Une demi-journ\xE9e \xE0 moins de 40 km, 30 photos retouch\xE9es. \xC0 partir de la formule R\xE9gulier",
+      max: 3,
+      t: "#D7E8A4",
+      creation: true,
+      min: "regulier"
+    },
+    {
+      id: "retouche",
+      cat: "photo",
+      nom: "Retouche d\u2019un lot de photos",
+      u: 1,
+      detail: "Jusqu\u2019\xE0 10 photos fournies par vous : cadrage, lumi\xE8re, d\xE9tourage",
+      max: 10,
+      t: "#D7E8A4",
+      creation: false
+    },
+    {
+      id: "montage",
+      cat: "photo",
+      nom: "Montage vid\xE9o court",
+      u: 3,
+      detail: "Moins d\u2019une minute, \xE0 partir de vos images, sous-titr\xE9",
+      max: 6,
+      t: "#D7E8A4",
+      creation: true
+    },
+    {
+      id: "animation",
+      cat: "photo",
+      nom: "Animation d\u2019un visuel",
+      u: 2,
+      detail: "Affiche ou annonce anim\xE9e pour les \xE9crans et les r\xE9seaux",
+      max: 6,
+      t: "#D7E8A4",
+      creation: true
+    },
+    {
+      id: "impression",
+      cat: "fabrication",
+      nom: "Devis et suivi d\u2019impression",
+      u: 1,
+      detail: "Demande de devis, envoi des fichiers, suivi jusqu\u2019\xE0 la livraison",
+      max: 10,
       t: "#E6E2D9",
       creation: false
     },
     {
-      id: "moder",
-      cat: "terrain",
-      nom: "Suivi des messages et commentaires",
-      u: 4,
-      detail: "Deux passages par semaine, r\xE9ponses courantes",
-      max: 1,
-      bascule: true,
+      id: "prestataire",
+      cat: "fabrication",
+      nom: "Coordination d\u2019un prestataire",
+      u: 1,
+      detail: "Traduction, distribution, signal\xE9tique : brief et suivi",
+      max: 10,
       t: "#E6E2D9",
       creation: false
     }
@@ -499,8 +978,7 @@ var offre_default = {
       panier: {
         post: 4,
         actu: 3,
-        agenda: 1,
-        news: 0,
+        agenda: 3,
         gabarit: 1
       }
     },
@@ -511,7 +989,7 @@ var offre_default = {
       panier: {
         post: 7,
         actu: 4,
-        agenda: 2,
+        agenda: 4,
         presse: 1,
         news: 1,
         affiche: 1
@@ -524,12 +1002,11 @@ var offre_default = {
       panier: {
         post: 12,
         actu: 6,
-        agenda: 2,
+        agenda: 6,
         presse: 2,
         news: 2,
         affiche: 1,
-        bulletin: 4,
-        point: 1
+        bulletin: 4
       }
     },
     {
@@ -550,12 +1027,14 @@ var offre_default = {
   urgence_unites: 1,
   report: "Les unit\xE9s non utilis\xE9es sont report\xE9es une fois, sur le mois suivant ; elles sont consomm\xE9es en premier",
   delais: {
-    courant: "publication, actualit\xE9, agenda, visuel sur gabarit, communiqu\xE9",
+    courant: "publication, story, actualit\xE9, \xE9v\xE9nement, mise \xE0 jour de page, communiqu\xE9, d\xE9clinaison d\u2019un visuel",
     creation: "5 jours ouvr\xE9s",
-    creation_liste: "affiche, flyer, newsletter, page de site",
+    creation_liste: "affiche, flyer, d\xE9pliant, petits formats, lettre d\u2019information, nouvelle page, dossier de presse, diaporama",
     bulletin: "R\xE9troplanning fix\xE9 ensemble, \xE9l\xE9ments \xE0 fournir trois semaines avant parution",
     photo: "Date convenue ensemble, au moins une semaine \xE0 l\u2019avance",
-    courant_j: "1 \xE0 2 jours ouvr\xE9s"
+    courant_j: "1 \xE0 2 jours ouvr\xE9s",
+    creation_soutenu: "3 jours ouvr\xE9s",
+    demarrage: "Op\xE9rationnel sous 24 h apr\xE8s l\u2019accord"
   }
 };
 
@@ -581,6 +1060,7 @@ var FORMULES = [
     prix: f.prix,
     unites: f.unites,
     delai_j: f.delai_j,
+    creation_j: f.creation_j,
     urgences_incluses: f.urgences_incluses,
     mise_en_place: f.mise_en_place,
     suivi: f.suivi,
@@ -592,6 +1072,7 @@ var FORMULES = [
     prix: o.relais.prix_mois,
     unites: o.relais.unites_mois,
     delai_j: 1,
+    creation_j: o.relais.creation_j,
     urgences_incluses: Infinity,
     mise_en_place: o.relais.mise_en_place,
     suivi: "Point chaque semaine",
@@ -606,8 +1087,8 @@ var formule = (id) => {
   return f;
 };
 var prestation = (id) => CATALOGUE.find((p) => p.id === id);
-var TYPES_CREATION = ["affiche", "flyer", "news", "page", "video"];
 var TYPES_PLANIFIES = ["bulletin", "photo"];
+var TYPES_CREATION = [...CATALOGUE.filter((p) => p.creation && !TYPES_PLANIFIES.includes(p.id)).map((p) => p.id), "video"];
 var ABONNEMENTS = FORMULES.filter((f) => f.id !== "relais");
 var ORDRE_FORMULES = ["essentiel", "regulier", "soutenu", "relais"];
 
@@ -659,7 +1140,7 @@ var estimer = (e, c) => {
   const unites = unitesBase + unitesUrgence;
   let delaiJ = null;
   if (nature === "courant") delaiJ = f.delai_j;
-  if (nature === "creation") delaiJ = OFFRE.delaiCreationJ;
+  if (nature === "creation") delaiJ = f.creation_j ?? OFFRE.delaiCreationJ;
   const delaiEffectif = delaiJ === null ? null : e.urgente ? delaiUrgent(delaiJ) : delaiJ;
   const livraison = delaiEffectif === null ? null : ajouterOuvres(confirmation, delaiEffectif, fer);
   const livraisonUrgente = delaiJ === null ? null : ajouterOuvres(confirmation, delaiUrgent(delaiJ), fer);
