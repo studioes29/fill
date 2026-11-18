@@ -1086,11 +1086,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .ft ul a{position:relative}
 .ft ul a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1.5px;background:var(--fil);transform:scaleX(0);transform-origin:100% 50%;transition:transform .5s var(--e)}
 @media (hover:hover){.ft ul a:hover::after{transform:scaleX(1);transform-origin:0 50%}}
-.ft .rs{display:flex;align-items:center;gap:10px;margin-top:22px;font-size:13.5px;color:rgba(248,245,242,.5)}
+.ft .rs{display:flex;align-items:center;gap:16px;margin-top:20px;font-size:13.5px;color:rgba(248,245,242,.5)}
 .ft .rs span{margin-right:4px}
-.ft .rs a{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;color:var(--ntx);box-shadow:inset 0 0 0 1px var(--nln);transition:background .3s,color .3s}
-.ft .rs svg{width:17px;height:17px}
-@media (hover:hover){.ft .rs a:hover{background:var(--ntx);color:var(--nuit)}}
+.ft .rs a{display:grid;place-items:center;width:28px;height:28px;color:var(--ntx);opacity:.8;transition:opacity .3s}
+.ft .rs svg{width:21px;height:21px}
+@media (hover:hover){.ft .rs a:hover{opacity:1}}
 .ft .bas{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:22px;border-top:1px solid var(--nln);font-size:13.5px;color:rgba(248,245,242,.5)}
 .ft .bas span{display:flex;gap:18px}
 
@@ -1185,7 +1185,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .ft .h5{margin-bottom:16px}
 .ft ul{gap:11px;font-size:15.5px}
 .ft .bas{margin-top:12px}
-@media (max-width:899px){.ft .w{grid-template-columns:1fr 1fr;gap:40px 20px}.ft-a,.ft .w>div:nth-child(4),.ft .bas{grid-column:1/-1}}
+@media (max-width:899px){.ft .w{grid-template-columns:1fr 1fr;gap:40px 20px}.ft-a,.ft .bas{grid-column:1/-1}.ft .w>div:nth-child(2){grid-column:1;grid-row:2}.ft .w>div:nth-child(3){grid-column:2;grid-row:2/span 2}.ft .w>div:nth-child(4){grid-column:1;grid-row:3}}
 main>.feuille:last-child{padding-bottom:clamp(64px,8vw,110px)}
 
 /* étapes parcourues par le fil : le numéro devient un nœud */
