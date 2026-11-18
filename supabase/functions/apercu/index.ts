@@ -14,6 +14,7 @@
 // POST {action:"purger"}       cron (jeton pilote) : efface fichiers et données des aperçus expirés
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { envoyerSmtp } from "../_partage/smtp.ts";
+import { carteSignature } from "../_partage/signature.ts";
 
 const lire = (nom: string) => {
   const v = Deno.env.get(nom);
@@ -501,10 +502,7 @@ ${photo ? `<img src="${photo}" width="600" alt="" style="display:block;width:100
 <tr><td style="padding:18px 6px 0"><a href="${RDV}" style="display:inline-block;background:#141414;color:#ffffff;font:700 15px/1 Arial,Helvetica,sans-serif;padding:14px 22px;border-radius:999px;text-decoration:none">Réserver 30 minutes</a></td></tr>
 <tr><td style="padding:18px 6px 0;font:13.5px/1.6 Arial,Helvetica,sans-serif;color:#65615A">${esc(T.duree)}</td></tr>
 <tr><td style="padding:16px 6px 0;font:15px/1.6 Arial,Helvetica,sans-serif;color:#141414">Bien cordialement,</td></tr>
-<tr><td style="padding:14px 0 0"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>
-<td bgcolor="#F0EEE9" style="background:#F0EEE9;border-radius:18px 0 0 0;line-height:0"><img src="https://studioes.fr/images/signature-nom.png" width="370" height="84" alt="Ewen Soupault, Studio ES, photographie, sites et applications" style="display:block;width:370px;height:84px;border:0"></td>
-<td rowspan="2" width="130" style="line-height:0;vertical-align:top"><img src="https://studioes.fr/images/signature-filigrane.png" width="130" height="122" alt="" style="display:block;border:0"></td></tr>
-<tr><td bgcolor="#F0EEE9" style="background:#F0EEE9;border-radius:0 0 0 18px;padding:0 0 0 22px;height:38px;vertical-align:top;font:13px/1.4 Arial,Helvetica,sans-serif;color:#141414"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://studioes.fr/" style="color:#141414">studioes.fr</a></td></tr></table></td></tr>
+<tr><td style="padding:0">${carteSignature("studio").replace("margin:26px 0 0", "margin:14px 0 0")}</td></tr>
 <tr><td style="padding:26px 6px 0;font:12px/1.5 Arial,Helvetica,sans-serif;color:#8A8680">Vous recevez ce message parce que vous avez demandé un aperçu sur studioes.fr. Vous ne souhaitez plus recevoir de message de Studio ES ? <a href="${stop}" style="color:#8A8680">Cliquez ici</a>.</td></tr>
 </table></td></tr></table></body></html>`;
 }

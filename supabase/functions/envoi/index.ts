@@ -11,6 +11,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import nodemailer from "npm:nodemailer@6.9.16";
 import { Buffer } from "node:buffer";
+import { carteSignature, cidImage, MORCEAUX, urlImage, type Marque } from "../_partage/signature.ts";
 
 const lire = (nom: string) => {
   const v = Deno.env.get(nom);
@@ -60,33 +61,19 @@ const SIGNATURE: Record<string, string> = {
   studio: "Ewen Soupault\nPhotographie de reportage, sites et applications\n06 51 22 21 07 · studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
   fill: "Ewen Soupault\nFill, service de communication externalisé\n06 51 22 21 07 · fill.studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
 };
-const baseImages = (marque: string) => marque === "fill" ? "https://fill.studioes.fr/assets/mail/signature" : "https://studioes.fr/images/signature";
-const CID_NOM = "signature-nom@studioes.fr";
-const CID_FILIGRANE = "signature-filigrane@studioes.fr";
-// signature HTML : carte aux couleurs de la marque (nom et métier en image pour garder les polices des sites,
-// filigrane du logo à droite), contacts en vrai texte cliquable. joint = images jointes au message (cid).
-// Si une messagerie n'affiche pas les images, le texte de remplacement garde la police et la couleur de la carte.
+// carte de signature : images seulement (_partage/signature.ts), jointes au message (cid) quand l'envoi passe par OVH
 const signatureHtml = (marque: string, joint = false) => {
-  const fill = marque === "fill";
-  const bg = fill ? "#EFE9FF" : "#F0EEE9";
-  const base = baseImages(marque);
-  const nom = joint ? `cid:${CID_NOM}` : `${base}-nom.png`;
-  const filigrane = joint ? `cid:${CID_FILIGRANE}` : `${base}-filigrane.png`;
-  const alt = fill ? "Ewen Soupault, Fill, service de communication externalisé" : "Ewen Soupault, Studio ES, photographie, sites et applications";
-  const site = fill ? ["fill.studioes.fr", "https://fill.studioes.fr/"] : ["studioes.fr", "https://studioes.fr/"];
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-collapse:separate;border-spacing:0">
-<tr><td bgcolor="${bg}" style="background:${bg};border-radius:18px 0 0 0;padding:0;vertical-align:top;line-height:0"><img src="${nom}" width="370" height="84" alt="${alt}" style="display:block;width:370px;height:84px;border:0;font:700 15px/84px Arial,Helvetica,sans-serif;color:#141414;padding-left:0"></td>
-<td rowspan="2" width="130" style="padding:0;vertical-align:top;line-height:0"><img src="${filigrane}" width="130" height="122" alt="" style="display:block;width:130px;height:122px;border:0"></td></tr>
-<tr><td bgcolor="${bg}" style="background:${bg};border-radius:0 0 0 18px;padding:0 0 0 22px;height:38px;vertical-align:top;font:13px/1.4 Arial,Helvetica,sans-serif;color:#141414"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${site[1]}" style="color:#141414;text-decoration:underline">${site[0]}</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://cal.com/studioes/30min" style="color:#141414;text-decoration:underline">Prendre rendez-vous</a></td></tr></table>`;
+  const m: Marque = marque === "fill" ? "fill" : "studio";
+  return carteSignature(m, joint ? (p) => `cid:${cidImage(p)}` : (p) => urlImage(m, p));
 };
 // images de la signature, lues une fois par démarrage de la fonction et jointes à chaque message envoyé par OVH
-const IMAGES: Record<string, Promise<{ nom: Buffer; filigrane: Buffer } | null>> = {};
+const IMAGES: Record<string, Promise<Record<string, Buffer> | null>> = {};
 const imagesSignature = (marque: string) => IMAGES[marque] ??= (async () => {
+  const m: Marque = marque === "fill" ? "fill" : "studio";
   try {
-    const lireImg = async (u: string) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u} : ${r.status}`); return Buffer.from(await r.arrayBuffer()); };
-    const base = baseImages(marque);
-    const [nom, filigrane] = await Promise.all([lireImg(`${base}-nom.png`), lireImg(`${base}-filigrane.png`)]);
-    return { nom, filigrane };
+    const out: Record<string, Buffer> = {};
+    await Promise.all(MORCEAUX.map(async (p) => { const r = await fetch(urlImage(m, p)); if (!r.ok) throw new Error(`${p} : ${r.status}`); out[p] = Buffer.from(await r.arrayBuffer()); }));
+    return out;
   } catch { delete IMAGES[marque]; return null; }
 })();
 
@@ -135,10 +122,7 @@ ${desinscription ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous
   if (smtp) {
     const nomDest = d.nom ? String(d.nom).slice(0, 70).replace(/["<>]/g, "") : "";
     const jointes: any[] = pj.map((p) => ({ filename: p.name, path: p.url }));
-    if (images) jointes.push(
-      { filename: "signature.png", content: images.nom, contentType: "image/png", cid: CID_NOM, contentDisposition: "inline" },
-      { filename: "logo.png", content: images.filigrane, contentType: "image/png", cid: CID_FILIGRANE, contentDisposition: "inline" },
-    );
+    if (images) for (const p of MORCEAUX) jointes.push({ filename: `signature-${p}.png`, content: images[p], contentType: "image/png", cid: cidImage(p), contentDisposition: "inline" });
     const info = await smtp.sendMail({
       from: { name: "Ewen Soupault", address: DE_SMTP || de },
       replyTo: { name: nomRetour, address: "contact@studioes.fr" },
