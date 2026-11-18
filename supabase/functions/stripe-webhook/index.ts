@@ -3,6 +3,7 @@
 // carte cadeau Pierceval (carte:). Seuls les paiements Fill créditent des unités.
 // Commandes Studio ES en plusieurs fois (abonnements Stripe) : chaque échéance payée, refusée, ou l'arrêt de l'abonnement
 // prévient Studio ES par mail (facture Indy par échéance, relance en cas de refus).
+import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -75,12 +76,12 @@ Deno.serve(async (req) => {
     const { data: paye } = await sb.from("acompte").select("id").eq("email", a.email).eq("statut", "paye").gte("paye_le", new Date(Date.now() - 3 * 864e5).toISOString()).limit(1).maybeSingle();
     await sb.from("acompte").update({ statut: "abandonne", reprise_envoyee: new Date().toISOString() }).eq("id", a.id);
     if (paye) return new Response("ok");
-    const cle = lire("BREVO_API_KEY");
-    if (!cle) { console.error("BREVO_API_KEY absente : reprise non envoyée", a.id); return new Response("ok"); }
+    const cle = CLE_ENVOI;
+    if (!cle) { console.error("boîte d'envoi non réglée (CONTACT_SMTP_*) : reprise non envoyée", a.id); return new Response("ok"); }
     const prenom = String(a.nom ?? "").trim().split(/\s+/)[0].replace(/[<>&"]/g, "");
     const lien = `https://studioes.fr/?reprendre=${a.id}`;
     const p = "margin:0 0 16px;font:400 16px/1.6 Arial,Helvetica,sans-serif;color:#2A2926";
-    await fetch("https://api.brevo.com/v3/smtp/email", {
+    await envoyerSmtp({
       method: "POST", headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({
         sender: { name: "Ewen Soupault, Studio ES", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
           `<p style="margin:24px 0 0;font:400 13px/1.5 Arial,Helvetica,sans-serif;color:#97928A">Vous recevez ce message unique parce que vous avez commencé une commande sur studioes.fr. Aucun autre rappel ne suivra.</p></div></body></html>`,
         tags: ["reprise-commande"],
       }),
-    }).catch((e) => console.error("brevo", String(e)));
+    }).catch((e) => console.error("courriel", String(e)));
     return new Response("ok");
   }
   if (evt.type === "invoice.paid" || evt.type === "invoice.payment_failed" || evt.type === "customer.subscription.deleted") {
@@ -115,16 +116,16 @@ Deno.serve(async (req) => {
       : evt.type === "invoice.payment_failed"
       ? [`Échéance refusée : ${qui} (${euros(o.amount_due ?? 0)})`, [`Le prélèvement de l'échéance du devis n° ${devis} a été refusé. Stripe réessaie automatiquement et prévient le client.`, `À faire : écrire au client${a?.email ? " (" + a.email + ")" : ""} si le deuxième essai échoue aussi.`]]
       : [`Abonnement arrêté : ${qui}`, [`L'abonnement du devis n° ${devis} est arrêté (fin normale ou résiliation).`, "À vérifier : toutes les échéances sont-elles réglées ? Le suivi du site continue-t-il ailleurs ?"]];
-    const cle = lire("BREVO_API_KEY");
-    if (cle) await fetch("https://api.brevo.com/v3/smtp/email", {
+    const cle = CLE_ENVOI;
+    if (cle) await envoyerSmtp({
       method: "POST", headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({
         sender: { name: "Studio ES", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
         to: [{ email: Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr" }],
         subject: sujet, textContent: [...lignes, "", lien].join("\n"), tags: ["stripe-echeance"],
       }),
-    }).catch((e) => console.error("brevo", String(e)));
-    else console.error("BREVO_API_KEY absente : alerte non envoyée", sujet);
+    }).catch((e) => console.error("courriel", String(e)));
+    else console.error("boîte d'envoi non réglée (CONTACT_SMTP_*) : alerte non envoyée", sujet);
   }
   return new Response("ok");
 });

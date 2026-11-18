@@ -3,10 +3,11 @@
 // en arrêtant une séquence si l'adresse est en erreur, désinscrite ou a signalé un spam.
 // 18 nov 2026 : Brevo a coupé l'envoi du compte (prospection à froid refusée par sa politique).
 // Les messages partent désormais par la boîte MX Plan d'OVH (SMTP ssl0.ovh.net, port 465) dès que les secrets
-// OVH_SMTP_USER et OVH_SMTP_PASS sont posés dans Supabase. Sans eux, l'ancien chemin Brevo reste en place.
+// OVH_SMTP_USER et OVH_SMTP_PASS sont posés dans Supabase.
 // 18 nov 2026 (suite) : par OVH, les images de la signature sont jointes au message (cid) au lieu d'être chargées
 // depuis les sites : Outlook et les autres messageries bloquent les images distantes d'un expéditeur qu'elles ne
-// connaissent pas encore, ce qui laissait une carte vide.
+// connaissent pas encore, ce qui laissait une carte vide. Plus aucun appel à Brevo (compte clos) ; un message de
+// séquence peut porter un HTML complet (vagues de lancement de Fill), envoyé tel quel avec le lien de désinscription.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import nodemailer from "npm:nodemailer@6.9.16";
 import { Buffer } from "node:buffer";
@@ -19,7 +20,6 @@ const lire = (nom: string) => {
 };
 const CLE = lire("CLE_SECRETE") ?? lire("SUPABASE_SECRET_KEY") ?? lire("SUPABASE_SECRET_KEYS") ?? lire("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const URL_SB = Deno.env.get("SUPABASE_URL")!;
-const BREVO = Deno.env.get("BREVO_API_KEY") ?? "";
 const SMTP_HOTE = (Deno.env.get("OVH_SMTP_HOST") ?? "").trim() || "ssl0.ovh.net";
 const SMTP_USER = (Deno.env.get("OVH_SMTP_USER") ?? "").trim();
 const SMTP_PASS = Deno.env.get("OVH_SMTP_PASS") ?? "";
@@ -81,24 +81,6 @@ const imagesSignature = (marque: string) => IMAGES[marque] ??= (async () => {
   } catch { delete IMAGES[marque]; return null; }
 })();
 
-// Contrôles Brevo (événements d'un message envoyé par Brevo, liste noire) : gardés pour les messages déjà partis par
-// Brevo ; sans clé ou sans réponse, ils ne bloquent rien. Les retours en erreur d'OVH arrivent dans la boîte.
-const MAUVAIS = new Set(["hardBounces", "hard_bounce", "blocked", "spam", "invalid", "unsubscribed", "unsubscribe", "error"]);
-async function evenementsBloquants(messageId: string) {
-  if (!messageId || !BREVO) return null;
-  const r = await fetch(`https://api.brevo.com/v3/smtp/statistics/events?messageId=${encodeURIComponent(messageId)}&limit=50&sort=desc`, { headers: { "api-key": BREVO, accept: "application/json" } }).catch(() => null);
-  if (!r?.ok) return null;
-  const j = await r.json().catch(() => ({}));
-  const ev = (j.events ?? []).find((e: any) => MAUVAIS.has(String(e.event)));
-  return ev ? String(ev.event) : null;
-}
-async function bloqueBrevo(email: string) {
-  if (!BREVO) return false;
-  const r = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, { headers: { "api-key": BREVO, accept: "application/json" } }).catch(() => null);
-  if (!r?.ok) return false;
-  return Boolean((await r.json().catch(() => ({}))).emailBlacklisted);
-}
-
 // pièces jointes (Hors-champ ne les met que sur le premier message) : liens https vers nos sites, PDF ou Word, 2 au plus.
 const PJ_HOTES = new Set(["fill.studioes.fr", "studioes.fr", "www.studioes.fr"]);
 const PJ_EXT = /\.(pdf|docx|doc|odt)$/i;
@@ -119,9 +101,11 @@ async function envoyer(d: any) {
   // piste « diffusion » (mails d'information, candidatures) : ni pied ni en-tête de désinscription
   const desinscription = d.type === "prospection" && !d.sans_pied;
   const pied = desinscription ? `\n\nVous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou : ${stop}` : "";
-  const texte = `${d.corps.trim()}\n\n${sig}${pied}`;
-  const images = smtp ? await imagesSignature(d.marque) : null;
-  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
+  const texte = d.html ? `${d.corps.trim()}${pied}` : `${d.corps.trim()}\n\n${sig}${pied}`;
+  const images = !d.html && smtp ? await imagesSignature(d.marque) : null;
+  // message en HTML complet (vague de lancement) : envoyé tel quel, le lien de désinscription remplace {{ unsubscribe }}
+  const htmlComplet = d.html ? String(d.html).replace(/<a href="\{\{ mirror \}\}"[^>]*>[\s\S]*?<\/a>/g, "").replace(/\{\{\s*unsubscribe\s*\}\}/g, stop) : null;
+  const html = htmlComplet ?? `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
 <div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#141414;max-width:640px;padding:20px 18px 28px">${lierUrls(echap(d.corps.trim())).replace(/\n/g, "<br>")}
 ${signatureHtml(d.marque, Boolean(images))}
 ${desinscription ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
@@ -156,25 +140,7 @@ ${desinscription ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous
     return String(info.messageId ?? "");
   }
 
-  if (!BREVO) throw new Error("ni boîte OVH (OVH_SMTP_USER, OVH_SMTP_PASS) ni clé Brevo");
-  const corps: any = {
-    sender: { name: "Ewen Soupault", email: de },
-    replyTo: { email: "contact@studioes.fr", name: nomRetour },
-    to: [{ email: d.email, ...(d.nom ? { name: String(d.nom).slice(0, 70) } : {}) }],
-    subject: d.objet, textContent: texte, htmlContent: html,
-    tags: ["horschamp", d.type, d.marque],
-    headers: enTetes,
-  };
-  // Brevo refuse un objet « headers » vide (400 « headers is blank ») : cas d'un premier message hors prospection
-  if (!Object.keys(corps.headers).length) delete corps.headers;
-  if (d.cc) corps.cc = [{ email: d.cc }];
-  if (pj.length) corps.attachment = pj;
-  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST", headers: { "api-key": BREVO, "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(corps),
-  });
-  const t = await r.text();
-  if (!r.ok) throw new Error(`Brevo ${r.status} : ${t.slice(0, 200)}`);
-  try { return JSON.parse(t).messageId as string; } catch { return ""; }
+  throw new Error("boîte OVH non réglée (OVH_SMTP_USER, OVH_SMTP_PASS)");
 }
 
 async function passage(forcer = false) {
@@ -189,14 +155,13 @@ async function passage(forcer = false) {
   const bilan: any[] = [];
   for (const d of dus ?? []) {
     const stop = (await sb.from("mail_stop").select("email").eq("email", d.email).maybeSingle()).data;
-    if (stop || await bloqueBrevo(d.email)) { await sb.rpc("sequence_arreter", { p_email: d.email, p_statut: "desinscrit", p_raison: "ne souhaite plus de mails" }); bilan.push({ email: d.email, arrete: "desinscrit" }); continue; }
-    if (d.precedent) {
-      const ev = await evenementsBloquants(d.precedent);
-      if (ev) { await sb.rpc("sequence_arreter", { p_email: d.email, p_statut: ev === "unsubscribed" || ev === "spam" ? "desinscrit" : "erreur", p_raison: `Brevo : ${ev}` }); bilan.push({ email: d.email, arrete: ev }); continue; }
-    }
+    if (stop) { await sb.rpc("sequence_arreter", { p_email: d.email, p_statut: "desinscrit", p_raison: "ne souhaite plus de mails" }); bilan.push({ email: d.email, arrete: "desinscrit" }); continue; }
     try {
       // sequence_dus ne renvoie pas (encore) les pièces jointes : on les lit sur le message lui-même
-      if (d.pj === undefined) d.pj = (await sb.from("sequence_message").select("pj").eq("id", d.message_id).maybeSingle()).data?.pj ?? null;
+      if (d.pj === undefined || d.html === undefined) {
+        const m = (await sb.from("sequence_message").select("pj, html").eq("id", d.message_id).maybeSingle()).data;
+        d.pj ??= m?.pj ?? null; d.html ??= m?.html ?? null;
+      }
       if (d.sans_pied === undefined) d.sans_pied = (await sb.from("sequence").select("sans_pied").eq("id", d.sequence_id).maybeSingle()).data?.sans_pied === true;
       const id = await envoyer(d);
       await sb.from("sequence_message").update({ statut: "envoye", envoye_le: new Date().toISOString(), brevo_id: id }).eq("id", d.message_id);
@@ -209,14 +174,14 @@ async function passage(forcer = false) {
       bilan.push({ email: d.email, erreur: String(e) });
     }
   }
-  return { envoyes: bilan, voie: smtp ? "ovh" : "brevo", expediteur_prospection: EXPEDITEUR_PROSPECTION };
+  return { envoyes: bilan, voie: "ovh", expediteur_prospection: EXPEDITEUR_PROSPECTION };
 }
 
 Deno.serve(async (req) => {
   const jeton = (req.headers.get("Authorization") ?? "").replace(/^Bearer /, "");
   const ok = Boolean(CLE) && jeton.length >= 32 && (jeton === CLE || (await sb.rpc("verifier_jeton_pilote", { p: jeton })).data === true);
   if (!ok) return new Response("Réservé au serveur", { status: 401 });
-  if (!smtp && !BREVO) return new Response(JSON.stringify({ erreur: "ni boîte OVH ni clé Brevo" }), { status: 500 });
+  if (!smtp) return new Response(JSON.stringify({ erreur: "boîte OVH non réglée" }), { status: 500 });
   const corps = await req.json().catch(() => ({}));
   // { "test": "adresse", "marque"?: "studio" | "fill", "type"?: "prospection" } : un message d'essai par la voie en
   // place, sans toucher aux séquences
@@ -224,8 +189,8 @@ Deno.serve(async (req) => {
     const marque = corps.marque === "fill" ? "fill" : "studio";
     try {
       const id = await envoyer({ email: corps.test, marque, type: corps.type === "prospection" ? "prospection" : "test", objet: `Essai d'envoi Hors-champ (${marque === "fill" ? "Fill" : "Studio ES"})`, corps: "Bonjour,\n\nCeci est un essai d'envoi automatique depuis Hors-champ.\n\nBien cordialement" });
-      return new Response(JSON.stringify({ test: "ok", voie: smtp ? "ovh" : "brevo", marque, signature_jointe: Boolean(smtp && await imagesSignature(marque)), id }), { headers: { "content-type": "application/json" } });
-    } catch (e) { return new Response(JSON.stringify({ test: "echec", voie: smtp ? "ovh" : "brevo", erreur: String(e) }), { status: 500, headers: { "content-type": "application/json" } }); }
+      return new Response(JSON.stringify({ test: "ok", voie: "ovh", marque, signature_jointe: Boolean(smtp && await imagesSignature(marque)), id }), { headers: { "content-type": "application/json" } });
+    } catch (e) { return new Response(JSON.stringify({ test: "echec", voie: "ovh", erreur: String(e) }), { status: 500, headers: { "content-type": "application/json" } }); }
   }
   try { return new Response(JSON.stringify(await passage(corps.forcer === true)), { headers: { "content-type": "application/json" } }); }
   catch (e) { return new Response(JSON.stringify({ erreur: String(e) }), { status: 500, headers: { "content-type": "application/json" } }); }

@@ -1,9 +1,10 @@
 // Formulaires des sites (studioes.fr, fill.studioes.fr, dossiers.studioes.fr, piercevaltattoo.fr), à la place de FormSubmit.
-// Chaque message est d'abord enregistré (table formulaire_message), puis envoyé par mail via Brevo.
+// Chaque message est d'abord enregistré (table formulaire_message), puis envoyé par mail depuis la boîte OVH contact@studioes.fr (_partage/smtp.ts).
 // POST JSON ou multipart (pièces jointes) : champs libres ; champs réservés :
 //   _subject (objet du mail), _honey (piège à robots), _next (redirection après un envoi de formulaire classique),
 //   _dest ("studio" par défaut, ou "pierceval"), _replyto, _autoresponse (bons de commande), _template et _captcha ignorés.
 // Réponse JSON {success:"true"} comme FormSubmit, ou redirection 303 vers _next pour un formulaire HTML classique.
+import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
 const lire = (nom: string) => {
@@ -58,10 +59,10 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const propre = (s: unknown, n = 5000) => String(s ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").trim().slice(0, n);
 const b64 = (u: Uint8Array) => { let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
 
-async function brevo(corps: Record<string, unknown>) {
-  const cle = Deno.env.get("BREVO_API_KEY");
+async function courriel(corps: Record<string, unknown>) {
+  const cle = CLE_ENVOI;
   if (!cle) return false;
-  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+  const r = await envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify(corps),
@@ -122,7 +123,7 @@ Deno.serve(async (req) => {
   const texte = visibles.map(([k, v]) => `${k}: ${v}`).join("\n");
   const expediteur = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
 
-  const ok = await brevo({
+  const ok = await courriel({
     sender: { name: d.nom, email: expediteur },
     to: [{ email: d.to }],
     ...(email && MAIL.test(email) ? { replyTo: { email, ...(nom ? { name: nom.slice(0, 70) } : {}) } } : {}),
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
   // limité aux bons de commande des dossiers pour ne pas servir de relais d'envoi.
   const ar = propre(champs._autoresponse, 2500);
   if (ar && cle === "studio" && origine === "https://dossiers.studioes.fr" && /^commande/i.test(sujet) && email && MAIL.test(email)) {
-    await brevo({
+    await courriel({
       sender: { name: "Studio ES", email: expediteur },
       to: [{ email }], replyTo: { email: "contact@studioes.fr", name: "Ewen Soupault, Studio ES" },
       subject: sujet, textContent: ar,
@@ -145,7 +146,7 @@ Deno.serve(async (req) => {
   // pour qu'il garde une trace de sa demande et puisse réserver un appel sans attendre la réponse.
   const accuse = ACCUSES[origine];
   if (accuse && cle === "studio" && email && MAIL.test(email)) {
-    await brevo({
+    await courriel({
       sender: { name: accuse.marque, email: expediteur },
       to: [{ email }], replyTo: { email: "contact@studioes.fr", name: `Ewen Soupault, ${accuse.marque}` },
       subject: "Votre demande est bien arrivée",

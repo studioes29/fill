@@ -1,3 +1,4 @@
+import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { CLE_PUBLIABLE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { adresseTransfert } from '../_partage/regles/transfert.ts';
@@ -12,10 +13,10 @@ Deno.serve(async (req) => {
   const { data: o } = await sb.from("organisation").select("id, nom, type, formule, engagement_mois, siret, statut, creee, bon_commande").eq("id", organisation).single();
   const { data: p } = await sb.from("profil").select("nom, email, fonction, telephone").eq("id", u.user.id).single();
   if (!o || !p) return new Response("Rien à signaler", { status: 404, headers: cors });
-  const cle = Deno.env.get("BREVO_API_KEY");
+  const cle = CLE_ENVOI;
   if (!cle) return new Response("Envoi non configuré", { status: 503, headers: cors });
   const site = SITE;
-  const envoyer = (corps) => fetch("https://api.brevo.com/v3/smtp/email", {
+  const envoyer = (corps) => envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ sender: { name: "Fill", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" }, ...corps })

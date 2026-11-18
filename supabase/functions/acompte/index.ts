@@ -7,6 +7,7 @@
 // Chaque échéance donne lieu à sa propre facture.
 // GET  ?session=cs_...  -> état du paiement pour la page de retour du dossier
 // GET  ?reprendre=<id>   -> les choix d'une commande de studioes.fr non payée (lien de l'e-mail « Reprendre ma commande »)
+import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -92,11 +93,11 @@ const lienInterne = (dossier: unknown): { libelle: string; lien: string } => dos
 const aVerifier = (dossier: unknown) => dossier && dossier !== "commander" ? ["Montant calculé par la page du dossier : vérifie qu'il correspond au devis envoyé avant de facturer."] : [];
 
 async function courriel(a: { email: string; name?: string }[], sujet: string, titre: string, texte: string[], bouton?: { libelle: string; lien: string }, repondreA?: { email: string; name?: string }) {
-  const cle = Deno.env.get("BREVO_API_KEY");
+  const cle = CLE_ENVOI;
   if (!cle || !a.length) return;
   const P = "margin:0 0 16px;font:400 16px/1.6 Arial,Helvetica,sans-serif;color:#3D3A36";
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titre}</title></head><body style="margin:0;background:#F0EEE9"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0EEE9"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px"><tr><td style="padding:0 8px 18px;font:800 20px Arial,Helvetica,sans-serif;color:#141414">Studio ES</td></tr><tr><td style="background:#FFFFFF;border-radius:22px;padding:36px 32px 30px"><h1 style="margin:0 0 18px;font:700 24px/1.2 Arial,Helvetica,sans-serif;color:#141414">${titre}</h1>${texte.map((t) => `<p style="${P}">${t}</p>`).join("")}${bouton ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 8px"><tr><td style="border-radius:999px;background:#141414"><a href="${bouton.lien}" style="display:inline-block;padding:15px 28px;font:700 15px Arial,Helvetica,sans-serif;color:#F0EEE9;text-decoration:none">${bouton.libelle}</a></td></tr></table>` : ""}<p style="margin:24px 0 0;font:400 15px/1.5 Arial,Helvetica,sans-serif;color:#141414">Ewen Soupault<br><span style="color:#6B6560">Studio ES</span></p></td></tr><tr><td style="padding:18px 8px 0;font:400 13px/1.6 Arial,Helvetica,sans-serif;color:#8A847D">Studio ES, photographie et web en Bretagne · <a href="https://studioes.fr" style="color:#8A847D">studioes.fr</a> · <a href="mailto:contact@studioes.fr" style="color:#8A847D">contact@studioes.fr</a></td></tr></table></td></tr></table></body></html>`;
-  await fetch("https://api.brevo.com/v3/smtp/email", {
+  await envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({

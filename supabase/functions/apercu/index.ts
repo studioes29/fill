@@ -3,16 +3,17 @@
 // GET  ?a=<id>                 lecture d'un aperçu (page studioes.fr/apercu/voir/), 410 s'il a expiré
 // POST {action:"chercher"}     fiches Google correspondant au nom et à la ville (Text Search centré sur la commune)
 // POST {action:"preparer"}     visiteur de studioes.fr : génère l'aperçu dès le choix de la fiche, verrouillé (3 par connexion et par jour)
-// POST {action:"debloquer"}    visiteur : donne son e-mail ; un seul essai par adresse, aperçu déverrouillé, mail, contact Brevo, alerte
+// POST {action:"debloquer"}    visiteur : donne son e-mail ; un seul essai par adresse, aperçu déverrouillé, mail, alerte
 // POST {action:"prospect"}     Hors-champ (jeton pilote) : aperçu pour un prospect, sans mail ; fiche Google par place_id,
 //                              par recherche texte (identifiants seuls, gratuit) ou données fournies à la main
 //
-// Secrets : GOOGLE_PLACES_KEY (obligatoire pour Google), ANTHROPIC_API_KEY (textes, sinon gabarit), BREVO_API_KEY,
-// facultatifs : APERCU_MODELE (claude-haiku-5-5), BREVO_LISTE_APERCU (identifiant de liste), ALERTE_EMAIL, EXPEDITEUR_EMAIL.
+// Secrets : GOOGLE_PLACES_KEY (obligatoire pour Google), ANTHROPIC_API_KEY (textes, sinon gabarit), CONTACT_SMTP_USER et CONTACT_SMTP_PASS (_partage/smtp.ts),
+// facultatifs : APERCU_MODELE (claude-haiku-5-5), ALERTE_EMAIL, EXPEDITEUR_EMAIL.
 // Conditions de Google : le contenu (photos, avis, horaires) n'est gardé que 30 jours, puis effacé par l'action « purger » (cron apercu-purge).
 // POST {action:"reperer"}     cron (jeton pilote) : établissements d'un métier autour d'une commune, pour le vivier Studio ES
 // POST {action:"purger"}       cron (jeton pilote) : efface fichiers et données des aperçus expirés
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import { envoyerSmtp } from "../_partage/smtp.ts";
 
 const lire = (nom: string) => {
   const v = Deno.env.get(nom);
@@ -25,8 +26,6 @@ const URL_SB = Deno.env.get("SUPABASE_URL")!;
 const GOOGLE = Deno.env.get("GOOGLE_PLACES_KEY") ?? "";
 const ANTHROPIC = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const MODELE = Deno.env.get("APERCU_MODELE") ?? "claude-haiku-5-5";
-const BREVO = Deno.env.get("BREVO_API_KEY") ?? "";
-const LISTE = Number(Deno.env.get("BREVO_LISTE_APERCU") ?? "") || 0;
 const EXPEDITEUR = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
 const ALERTE = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
 const VOIR = "https://studioes.fr/apercu/voir/?a=";
@@ -466,21 +465,9 @@ const signer = async (txt: string) => {
   return btoa(String.fromCharCode(...s)).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" } as Record<string, string>)[c]).slice(0, 32);
 };
 const lienStop = async (email: string) => `${URL_SB}/functions/v1/parcours?a=stop&e=${encodeURIComponent(email)}&s=${await signer("stop:" + email)}`;
-// liste « Aperçus de site » (dossier des listes Studio ES/Fill) : retrouvée ou créée au premier essai
-let listeApercu = LISTE;
-async function liste() {
-  if (listeApercu || !BREVO) return listeApercu;
-  const h = { "api-key": BREVO, accept: "application/json", "content-type": "application/json" };
-  const r = await fetch("https://api.brevo.com/v3/contacts/lists?limit=50", { headers: h }).catch(() => null);
-  const l = r?.ok ? ((await r.json()).lists ?? []).find((x: any) => x.name === "Aperçus de site") : null;
-  if (l) return (listeApercu = l.id);
-  const c = await fetch("https://api.brevo.com/v3/contacts/lists", { method: "POST", headers: h, body: JSON.stringify({ name: "Aperçus de site", folderId: 3 }) }).catch(() => null);
-  if (c?.ok) listeApercu = (await c.json()).id ?? 0;
-  return listeApercu;
-}
-async function brevo(chemin: string, corps: unknown, methode = "POST") {
-  if (!BREVO) return false;
-  const r = await fetch(`https://api.brevo.com/v3/${chemin}`, { method: methode, headers: { "api-key": BREVO, "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(corps) }).catch(() => null);
+// envoi depuis la boîte OVH contact@studioes.fr (plus de Brevo depuis le 18 nov 2026)
+async function courriel(corps: unknown) {
+  const r = await envoyerSmtp(corps as any).catch(() => null);
   return Boolean(r?.ok);
 }
 // textes du mail envoyé au visiteur : chaleureux, concrets, la suite clairement proposée
@@ -525,7 +512,7 @@ async function envoyerApercu(row: any) {
   const url = VOIR + row.id, nom = row.donnees.nom, exp = dateFr(new Date(row.expire)), stop = await lienStop(row.email);
   const T = mailTextes(nom, row.activite ?? row.donnees.activite ?? "", row.donnees.ville ?? "", exp);
   const texte = `Bonjour,\n\n${T.intro}\n\n${url}\n\n${T.suite}\n\n${T.appel}\n${RDV}\n\n${T.duree}\n\nBien cordialement,\nEwen Soupault\nPhotographie de reportage, sites et applications\n06 51 22 21 07 · studioes.fr\n\nVous ne souhaitez plus recevoir de message de Studio ES ? ${stop}`;
-  return await brevo("smtp/email", {
+  return await courriel({
     sender: { name: "Ewen Soupault, Studio ES", email: EXPEDITEUR },
     replyTo: { email: "contact@studioes.fr", name: "Ewen Soupault, Studio ES" },
     to: [{ email: row.email }],
@@ -675,10 +662,8 @@ Deno.serve(async (req) => {
       if (error) return json(req, { erreur: "Un aperçu a déjà été préparé pour cette adresse.", deja: true }, 409);
       row.email = email;
       const envoye = await envoyerApercu(row);
-      const lid = await liste();
-      const contact = await brevo("contacts", { email, updateEnabled: true, ...(lid ? { listIds: [lid] } : {}) });
-      await sb.from("apercu").update({ mail_envoye: envoye, brevo: contact }).eq("id", id);
-      await brevo("smtp/email", {
+      await sb.from("apercu").update({ mail_envoye: envoye }).eq("id", id);
+      await courriel({
         sender: { name: "Studio ES", email: EXPEDITEUR }, to: [{ email: ALERTE }], replyTo: { email },
         subject: `Nouvel aperçu : ${row.donnees.nom}`,
         textContent: `${row.donnees.nom} (${row.activite ?? row.donnees.activite ?? "activité ?"}, ${row.donnees.ville ?? "?"})\n${email}\n${VOIR + id}\n\nLa fiche est dans Hors-champ, étape « À contacter ».`,

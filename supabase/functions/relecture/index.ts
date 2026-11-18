@@ -10,7 +10,8 @@
 //   {action:"creer", demande, usage, nom, fonction, email}   depuis l'Espace (session du référent ou de son suppléant)
 //
 // Base : table lien_relecture et fonctions relecture_* (migration 2026-11-relecture-par-lien.sql).
-// Secrets : clés Supabase, BREVO_API_KEY, EXPEDITEUR_EMAIL, SITE_URL.
+// Secrets : clés Supabase, CONTACT_SMTP_USER et CONTACT_SMTP_PASS (_partage/smtp.ts), EXPEDITEUR_EMAIL, SITE_URL.
+import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { CLE_PUBLIABLE, CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { DUREE_JOURS, JETON, empreinte, invitation, lienPage, mailInvitation, mailRetour, nouveauJeton, peutInviter, reponse } from '../_partage/regles/relecture.ts';
@@ -32,9 +33,9 @@ Deno.serve(async (req) => {
   const admin = createClient(url, CLE_SECRETE, { auth: { persistSession: false } });
 
   const envoyer = async (org, m) => {
-    const cle = Deno.env.get("BREVO_API_KEY");
+    const cle = CLE_ENVOI;
     if (!cle || !m?.a?.length) return false;
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const r = await envoyerSmtp({
       method: "POST",
       headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({

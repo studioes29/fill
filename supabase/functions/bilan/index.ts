@@ -12,7 +12,8 @@
 //   {action:"lire", r}           la même page, en aperçu pour Fill (lien ouvert depuis Hors-champ), sans aucune action
 //
 // Base : table bilan et fonctions bilan_* (migration 2026-11-bilan-mensuel.sql).
-// Secrets : clés Supabase, BREVO_API_KEY, ALERTE_EMAIL, EXPEDITEUR_EMAIL, SITE_URL.
+// Secrets : clés Supabase, CONTACT_SMTP_USER et CONTACT_SMTP_PASS (boîte OVH contact@, _partage/smtp.ts), ALERTE_EMAIL, EXPEDITEUR_EMAIL, SITE_URL.
+import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { lienBilan, mailAnomalies, mailBloque, mailMensuel, plageOuverte, suggerer } from '../_partage/regles/bilan.ts';
@@ -31,16 +32,16 @@ Deno.serve(async (req) => {
   try { s = await req.json(); } catch { return refus("Requête illisible", 400); }
   const url = Deno.env.get("SUPABASE_URL");
   const admin = createClient(url, CLE_SECRETE, { auth: { persistSession: false } });
-  const cleBrevo = Deno.env.get("BREVO_API_KEY");
+  const cleEnvoi = CLE_ENVOI;
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
 
   // « parti » : accepté par le service d'envoi ; « refuse » : rien n'est parti ; « inconnu » : pas de réponse claire
   const envoyer = async (essai, a, m) => {
-    if (!cleBrevo) return "refuse";
+    if (!cleEnvoi) return "refuse";
     try {
-      const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+      const r = await envoyerSmtp({
         method: "POST",
-        headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" },
+        headers: { "api-key": cleEnvoi, "content-type": "application/json", accept: "application/json" },
         body: JSON.stringify({
           sender: { name: "Fill", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
           to: a,

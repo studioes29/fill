@@ -1,3 +1,4 @@
+import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { CLE_PUBLIABLE, CLE_SECRETE, cors, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { issue } from '../_partage/regles/cycle.ts';
@@ -23,7 +24,7 @@ Deno.serve(async (req) => {
     moi = (await admin.from("profil").select("id, nom, email, role, organisation_id, actif").eq("id", u.user.id).single()).data;
     if (!moi?.actif) return new Response("Accès refusé", { status: 403, headers: cors });
   }
-  const cle = Deno.env.get("BREVO_API_KEY");
+  const cle = CLE_ENVOI;
   if (!cle) return new Response("Envoi non configuré", { status: 503, headers: cors });
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
   const { evenement, demande: demandeId, commande: commandeId, organisation: orgId, canal } = await req.json();
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
       }
     } else return new Response("Événement inconnu", { status: 400, headers: cors });
   }
-  const envois = mails.filter((m) => m.a.length).map((m) => fetch("https://api.brevo.com/v3/smtp/email", {
+  const envois = mails.filter((m) => m.a.length).map((m) => envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({

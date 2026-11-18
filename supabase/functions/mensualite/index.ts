@@ -7,6 +7,7 @@
 // POST {action:"reglee", resultat}       (clé serveur, appelé par stripe-webhook) : prévient Fill
 // POST {action:"attente", organisations:[{id, periode}], toujours:[{id, periode}]} (jeton pilote, appelé chaque jour
 //      par traiter_echeances quand une période s'ouvre sans être réglée) : récapitulatif à Fill
+import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -86,9 +87,9 @@ const gabarit = (c: { titre: string; texte: string[]; bouton?: { libelle: string
 </body></html>`;
 
 const envoyer = async (sujet: string, titre: string, texte: string[], bouton?: { libelle: string; lien: string }) => {
-  const cle = Deno.env.get("BREVO_API_KEY");
+  const cle = CLE_ENVOI;
   if (!cle) return false;
-  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+  const r = await envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({

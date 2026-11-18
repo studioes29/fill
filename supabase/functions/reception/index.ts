@@ -19,6 +19,7 @@
 // le dépôt direct exige une preuve d'origine (en-tête Authentication-Results) ; à défaut, le lien pré-rempli.
 import { CLE_SECRETE, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
+import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { LIMITES } from '../_partage/regles/reception.ts';
 import { DOMAINE_DEFAUT } from '../_partage/regles/transfert.ts';
 import { estPanne, traiter } from './traiter.ts';
@@ -125,7 +126,7 @@ Deno.serve(async (req) => {
     ranger: async (chemin, octets, type) => !(await admin.storage.from("fichiers").upload(chemin, octets, { contentType: type, upsert: false })).error,
     notifier: (corps) => fetch(`${url}/functions/v1/notifier`, { method: "POST", headers: { Authorization: `Bearer ${CLE_SECRETE}`, "content-type": "application/json" }, body: JSON.stringify(corps) }),
     envoyer: async (m) => {
-      if (!cleBrevo || !m?.a?.length) return false;
+      if (!CLE_ENVOI || !m?.a?.length) return false;
       const corps = {
         sender: { name: "Fill", email: expediteur },
         to: m.a,
@@ -135,16 +136,12 @@ Deno.serve(async (req) => {
       };
       // réponse automatique déclarée comme telle (aucun répondeur ne doit y répondre), rangée dans le fil du mail reçu
       const entetes = { "Auto-Submitted": "auto-replied", "X-Auto-Response-Suppress": "All", ...(m.enReponseA ? { "In-Reply-To": m.enReponseA, References: m.enReponseA } : {}) };
-      const poster = (c) => fetch(`${BREVO}/smtp/email`, { method: "POST", headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(c) }).catch(() => null);
-      let r = await poster({ ...corps, headers: entetes });
-      if (r && !r.ok && r.status === 400) r = await poster(corps);      // en-têtes refusés : le message part sans eux
+      const r = await envoyerSmtp({ ...corps, headers: entetes }).catch(() => null);
       return Boolean(r?.ok);
     },
     alerter: async (m) => {
-      if (!cleBrevo) return false;
-      const r = await fetch(`${BREVO}/smtp/email`, {
-        method: "POST",
-        headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" },
+      if (!CLE_ENVOI) return false;
+      const r = await envoyerSmtp({
         body: JSON.stringify({
           sender: { name: "Fill", email: expediteur }, to: [{ email: pourFill }], replyTo: m.repondreA,
           subject: `${m.essai ? "[Test] " : ""}${m.sujet}`,

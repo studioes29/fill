@@ -4,6 +4,7 @@
 // GET  ?action=verify-gift&session=cs_...                        -> {ok, code, amount, pour, de, msg, date, until}
 // GET  ?action=gift-check&code=PT-XXXX-XXXX                       -> {found, paid, used, amount, pour, date}
 // POST {action:"gift-check", code, pin}                           -> {ok} (marque utilisée)
+import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
@@ -30,11 +31,11 @@ const nouveauCode = () => {
 };
 
 async function prevenirSalon(c: Record<string, unknown>) {
-  const cle = Deno.env.get("BREVO_API_KEY");
+  const cle = CLE_ENVOI;
   const salon = Deno.env.get("PIERCEVAL_EMAIL") ?? "piercevaltattoo@gmail.com";
   if (!cle) return;
   const t = `Carte n° ${c.code}, ${c.montant} €, pour ${net(c.beneficiaire)}${c.offert_par ? `, de la part de ${net(c.offert_par)}` : ""}. Valable jusqu'au ${new Date(String(c.expire_le)).toLocaleDateString("fr-FR")}. Paiement confirmé par Stripe.`;
-  await fetch("https://api.brevo.com/v3/smtp/email", {
+  await envoyerSmtp({
     method: "POST",
     headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
