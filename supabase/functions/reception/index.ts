@@ -1,110 +1,94 @@
-// Réception des mails envoyés aux adresses de transfert (nom-de-la-structure@demandes.studioes.fr).
+// Réception des demandes envoyées par mail à fill@studioes.fr (boîte MX Plan d'OVH).
 //
-// Brevo reçoit les mails du sous-domaine (enregistrements MX vers inbound1 et inbound2.sendinblue.com), puis les
-// remet ici en JSON (webhook « inbound »). Un mail d'un membre reconnu devient une demande déposée, par les
-// règles de deposer_demande ; sinon le client reçoit une réponse courte et un lien vers la demande pré-remplie.
+// Depuis le 18 nov 2026 (fin de Brevo) : la boîte est relevée en IMAP toutes les 15 minutes (tâche pg_cron
+// « fill-reception ») ; chaque message non lu est mis au format qu'utilisaient les règles (champs de l'ancien webhook
+// Brevo : From, To, Cc, Subject, RawTextBody, RawHtmlBody, Headers, Attachments…), traité, puis marqué lu. Un mail
+// d'un membre reconnu devient une demande déposée, par les règles de deposer_demande ; sinon le client reçoit une
+// réponse courte et un lien vers la demande pré-remplie.
 //
-//   POST ?cle=<RECEPTION_CLE>  {items:[…]}        webhook de Brevo (la clé peut aussi venir dans l'en-tête
-//                                                 x-reception-cle ou en « Authorization: Bearer »)
-//   POST {action:"webhook"}                       administration, protégée comme le pilote (clé secrète ou jeton
-//                                                 verifier_jeton_pilote) : vérifie le webhook chez Brevo et les MX
-//   POST {action:"webhook", creer:true}           le crée s'il manque ({remplacer:true} pour corriger son adresse)
+//   POST {action:"relever"}     protégée comme le pilote (clé secrète ou jeton verifier_jeton_pilote)
 //
-// Base : organisation.alias_mail, table mail_recu et fonctions mail_* (migration 2026-11-adresse-de-transfert.sql).
+// Base : table mail_recu et fonctions mail_* (migrations 2026-11-adresse-de-transfert.sql et 2026-11-18-sans-brevo.sql).
 // Règles : _partage/regles/reception.ts (analyse) et traiter.ts (déroulé), testées par tests/reception.test.mjs.
-// Secrets : clés Supabase, BREVO_API_KEY, EXPEDITEUR_EMAIL, ALERTE_EMAIL, SITE_URL ; RECEPTION_CLE, ou à défaut le secret
-// « reception_cle » généré dans le coffre de la base par la migration (personne ne le saisit ni ne le lit) ;
-// DOMAINE_RECEPTION si le sous-domaine n'est pas demandes.studioes.fr ;
+// Secrets : clés Supabase, FILL_IMAP_USER (fill@studioes.fr) et FILL_IMAP_PASS, CONTACT_SMTP_USER et CONTACT_SMTP_PASS
+// (réponses, _partage/smtp.ts), EXPEDITEUR_EMAIL, ALERTE_EMAIL, SITE_URL ;
 // RECEPTION_ORIGINE=adresse pour qu'un mail se dépose sur la seule foi de son adresse d'expéditeur. Sans ce réglage,
 // le dépôt direct exige une preuve d'origine (en-tête Authentication-Results) ; à défaut, le lien pré-rempli.
 import { CLE_SECRETE, SITE } from '../_partage/cles.ts';
 import { gabarit } from '../_partage/courriel.ts';
 import { CLE_ENVOI, envoyerSmtp } from '../_partage/smtp.ts';
 import { LIMITES } from '../_partage/regles/reception.ts';
-import { DOMAINE_DEFAUT } from '../_partage/regles/transfert.ts';
+import { ADRESSE_DEMANDES, DOMAINE_DEFAUT } from '../_partage/regles/transfert.ts';
 import { estPanne, traiter } from './traiter.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import { ImapFlow } from "npm:imapflow@1.0.164";
+import { simpleParser } from "npm:mailparser@3.7.1";
 
 const echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const json = (corps, status = 200) => new Response(JSON.stringify(corps), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
-const BREVO = "https://api.brevo.com/v3";
 
-// comparaison sans fuite de durée : les deux valeurs passent par SHA-256
-const egales = async (a, b) => {
-  const h = async (t) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(t))));
-  const [x, y] = await Promise.all([h(a), h(b)]);
-  let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
-  return diff === 0;
+// message IMAP analysé → élément au format des règles (champs de l'ancien webhook Brevo)
+const versItem = (p, pieces) => {
+  const adr = (a) => (a?.value ?? []).map((x) => ({ Address: x.address ?? "", Name: x.name ?? "" })).filter((x) => x.Address);
+  const entetes = {};
+  for (const h of p.headerLines ?? []) {
+    const k = String(h.key ?? "").toLowerCase(), v = String(h.line ?? "").replace(/^[^:]*:\s?/, "").replace(/\r?\n\s+/g, " ");
+    entetes[k] = entetes[k] ? `${entetes[k]}\n${v}` : v;
+  }
+  const spam = Number(String(entetes["x-spam-score"] ?? entetes["x-vr-spamscore"] ?? "").replace(",", "."));
+  return {
+    From: adr(p.from)[0] ?? null, To: adr(p.to), Cc: adr(p.cc),
+    // tout ce qui arrive dans la boîte lui était adressé, même en copie cachée
+    Recipients: [ADRESSE_DEMANDES, ...adr(p.to), ...adr(p.cc)].map((x) => typeof x === "string" ? x : x.Address),
+    Subject: p.subject ?? "", RawTextBody: p.text ?? "", RawHtmlBody: typeof p.html === "string" ? p.html : "",
+    Headers: entetes, SentAtDate: p.date ? p.date.toISOString() : "", MessageId: p.messageId ?? "",
+    ...(Number.isFinite(spam) ? { SpamScore: spam } : {}),
+    Attachments: (p.attachments ?? []).map((a) => {
+      const jeton = crypto.randomUUID();
+      pieces.set(jeton, new Uint8Array(a.content));
+      return { Name: a.filename ?? "piece-jointe", ContentType: a.contentType ?? "", ContentLength: a.size ?? a.content?.length ?? 0, ContentID: a.related ? (a.cid ?? "") : "", DownloadToken: jeton };
+    }),
+  };
 };
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erreur: "Méthode refusée" }, 405);
   const url = Deno.env.get("SUPABASE_URL");
   const domaine = (Deno.env.get("DOMAINE_RECEPTION") ?? DOMAINE_DEFAUT).trim().toLowerCase();
-  let cleWebhook = Deno.env.get("RECEPTION_CLE") ?? "";
-  const cleBrevo = Deno.env.get("BREVO_API_KEY") ?? "";
   const expediteur = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
   const pourFill = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
   const porteur = (req.headers.get("Authorization") ?? "").replace(/^Bearer /, "");
   let s;
   try { s = await req.json(); } catch { s = null; }
   const admin = createClient(url, CLE_SECRETE, { auth: { persistSession: false } });
-  // sans réglage RECEPTION_CLE, le secret du webhook est celui que garde le coffre de la base (fonction reception_cle)
-  if (!cleWebhook) cleWebhook = String((await admin.rpc("reception_cle").then((r) => r.data, () => null)) ?? "");
+  const autorise = Boolean(CLE_SECRETE) && porteur.length >= 32 && (porteur === CLE_SECRETE || (await admin.rpc("verifier_jeton_pilote", { p: porteur })).data === true);
+  if (!autorise) return json({ erreur: "Réservé au serveur" }, 401);
+  if (s?.action !== "relever") return json({ erreur: "Action inconnue" }, 400);
 
-  // --- administration : le webhook chez Brevo ---------------------------------------------------------
-  if (s && typeof s === "object" && typeof s.action === "string") {
-    const autorise = Boolean(CLE_SECRETE) && porteur.length >= 32 && (porteur === CLE_SECRETE || (await admin.rpc("verifier_jeton_pilote", { p: porteur })).data === true);
-    if (!autorise) return json({ erreur: "Réservé au serveur" }, 401);
-    if (s.action !== "webhook") return json({ erreur: "Action inconnue" }, 400);
-    if (!cleBrevo) return json({ erreur: "BREVO_API_KEY manquante" }, 503);
-    if (cleWebhook.length < 24) return json({ erreur: "Secret RECEPTION_CLE manquant ou trop court (24 caractères au moins)" }, 503);
-    const cible = `${url}/functions/v1/reception?cle=${encodeURIComponent(cleWebhook)}`;
-    const brevo = (chemin, init = {}) => fetch(`${BREVO}${chemin}`, { ...init, headers: { "api-key": cleBrevo, "content-type": "application/json", accept: "application/json" } });
-    const masque = (u) => String(u ?? "").replace(/([?&]cle=)[^&]+/, "$1…");
-    const lu = await brevo("/webhooks?type=inbound").catch(() => null);
-    // tant qu'aucun webhook de ce type n'existe, Brevo répond 400 (« document_not_found ») au lieu d'une liste vide
-    let lecture = null;
-    if (!lu?.ok) {
-      lecture = (await lu?.text().catch(() => null))?.slice(0, 300) ?? null;
-      if (!lu || ![400, 404].includes(lu.status)) return json({ erreur: "Brevo ne répond pas à la lecture des webhooks", statut: lu?.status ?? null, detail: lecture }, 502);
+  // --- relève de la boîte fill@studioes.fr -----------------------------------------------------------
+  const boite = (Deno.env.get("FILL_IMAP_USER") ?? "").trim() || "fill@studioes.fr";
+  const motDePasse = Deno.env.get("FILL_IMAP_PASS") ?? "";
+  if (!motDePasse) return json({ erreur: "Boîte fill@ non réglée (FILL_IMAP_PASS)" }, 503);
+  const imap = new ImapFlow({ host: (Deno.env.get("OVH_IMAP_HOST") ?? "").trim() || "ssl0.ovh.net", port: 993, secure: true, auth: { user: boite, pass: motDePasse }, logger: false });
+  const pieces = new Map();
+  const lus = [];         // [{uid, item}]
+  try {
+    await imap.connect();
+  } catch (e) { return json({ erreur: "Connexion IMAP impossible", detail: String(e).slice(0, 200) }, 502); }
+  const verrou = await imap.getMailboxLock("INBOX");
+  try {
+    const uids = ((await imap.search({ seen: false }, { uid: true })) || []).slice(0, LIMITES.mails);
+    for (const uid of uids) {
+      const m = await imap.fetchOne(String(uid), { source: true }, { uid: true });
+      if (!m?.source) continue;
+      if (m.source.length > 25 * 1024 * 1024) { lus.push({ uid, item: null, trop: true }); continue; }
+      lus.push({ uid, item: versItem(await simpleParser(m.source), pieces) });
     }
-    const tous = (lu.ok ? (await lu.json().catch(() => ({}))).webhooks ?? [] : []).filter((w) => w?.type === "inbound");
-    const dudomaine = tous.filter((w) => String(w.domain ?? "").toLowerCase() === domaine);
-    let conforme = dudomaine.find((w) => w.url === cible) ?? null;
-    let fait = "rien";
-    if (!conforme && s.creer === true) {
-      const corps = { type: "inbound", events: ["inboundEmailProcessed"], url: cible, domain: domaine, description: "Fill : adresses de transfert" };
-      if (!dudomaine.length) {
-        const r = await brevo("/webhooks", { method: "POST", body: JSON.stringify(corps) }).catch(() => null);
-        if (!r?.ok) return json({ erreur: "Brevo a refusé la création du webhook", statut: r?.status ?? null, detail: await r?.text().catch(() => null) }, 502);
-        conforme = { id: (await r.json().catch(() => ({}))).id ?? null, url: cible };
-        fait = "cree";
-      } else if (s.remplacer === true) {
-        const r = await brevo(`/webhooks/${dudomaine[0].id}`, { method: "PUT", body: JSON.stringify({ url: cible, events: corps.events, domain: domaine, description: corps.description }) }).catch(() => null);
-        if (!r?.ok) return json({ erreur: "Brevo a refusé la mise à jour du webhook", statut: r?.status ?? null, detail: await r?.text().catch(() => null) }, 502);
-        conforme = { id: dudomaine[0].id, url: cible };
-        fait = "remplace";
-      }
-    }
-    // enregistrements MX du sous-domaine, pour information (résolveur public)
-    const mx = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domaine)}&type=MX`).then((r) => r.json()).then((j) => (j.Answer ?? []).map((a) => String(a.data).toLowerCase().replace(/\.$/, ""))).catch(() => null);
-    const attendus = ["10 inbound1.sendinblue.com", "20 inbound2.sendinblue.com"];
-    return json({
-      domaine, fait, conforme: Boolean(conforme), lecture, webhook: conforme ? { id: conforme.id, url: masque(conforme.url) } : null,
-      autres: dudomaine.filter((w) => w.id !== conforme?.id).map((w) => ({ id: w.id, url: masque(w.url) })),
-      mx, mx_ok: Array.isArray(mx) ? attendus.every((a) => mx.includes(a)) : null,
-      conseil: conforme ? null : dudomaine.length ? "Un webhook existe pour ce domaine avec une autre adresse : relancer avec remplacer:true." : "Aucun webhook pour ce domaine : relancer avec creer:true.",
-    });
+  } catch (e) {
+    console.error("reception, lecture IMAP :", e?.message ?? e);
   }
-
-  // --- webhook de Brevo ---------------------------------------------------------------------------------
-  const presentee = new URL(req.url).searchParams.get("cle") ?? req.headers.get("x-reception-cle") ?? porteur;
-  if (cleWebhook.length < 24) return json({ erreur: "Réception non configurée" }, 503);
-  if (!presentee || !(await egales(presentee, cleWebhook))) return json({ erreur: "Accès refusé" }, 401);
-  const items = Array.isArray(s?.items) ? s.items : s && typeof s === "object" && s.From ? [s] : [];
-  if (!items.length) return json({ ok: true, mails: [] });      // corps illisible ou vide : rien à refaire
+  const items = lus.filter((x) => x.item).map((x) => x.item);
+  if (!lus.length) { verrou.release(); await imap.logout().catch(() => null); return json({ ok: true, mails: [] }); }
 
   // « alerter » écrit à Fill quand le mail d'un membre n'est pas devenu une demande
   const d = {
@@ -117,11 +101,9 @@ Deno.serve(async (req) => {
     rpc: async (nom, args) => await admin.rpc(nom, args),
     unites: async (id) => (await admin.from("demande").select("unites").eq("id", id).single()).data?.unites ?? null,
     telecharger: async (jeton) => {
-      if (!cleBrevo || !jeton) return null;
-      const r = await fetch(`${BREVO}/inbound/attachments/${encodeURIComponent(jeton)}`, { headers: { "api-key": cleBrevo } });
-      if (!r.ok) return null;
-      if (Number(r.headers.get("content-length") ?? 0) > LIMITES.octetsPiece) { await r.body?.cancel(); return new Uint8Array(LIMITES.octetsPiece + 1); }
-      return new Uint8Array(await r.arrayBuffer());
+      const o = jeton ? pieces.get(jeton) : null;
+      if (!o) return null;
+      return o.length > LIMITES.octetsPiece ? new Uint8Array(LIMITES.octetsPiece + 1) : o;
     },
     ranger: async (chemin, octets, type) => !(await admin.storage.from("fichiers").upload(chemin, octets, { contentType: type, upsert: false })).error,
     notifier: (corps) => fetch(`${url}/functions/v1/notifier`, { method: "POST", headers: { Authorization: `Bearer ${CLE_SECRETE}`, "content-type": "application/json" }, body: JSON.stringify(corps) }),
@@ -152,27 +134,33 @@ Deno.serve(async (req) => {
     },
   };
 
-  const bilan = [], suites = [];
+  const bilan = [], suites = [], lusOk = [];
   let panne = false;
-  if (items.length > LIMITES.mails) console.error(`reception : ${items.length} mails dans un même appel, ${LIMITES.mails} traités`);
-  for (const item of items.slice(0, LIMITES.mails)) {
+  for (const x of lus) {
+    if (!x.item) { lusOk.push(x.uid); bilan.push({ issue: "illisible", motif: x.trop ? "trop lourd" : null }); continue; }
     try {
-      const r = await traiter(item, d);
+      const r = await traiter(x.item, d);
       if (r.suite) suites.push(r.suite.catch((e) => console.error("reception, suite :", e?.message ?? e)));
       bilan.push({ issue: r.issue, motif: r.motif ?? null });
+      lusOk.push(x.uid);
     } catch (e) {
-      // panne de la base : Brevo représentera le mail ; une erreur de lecture ne se rattrape pas en réessayant
-      if (estPanne(e)) panne = true;
+      // panne de la base : le message reste non lu et sera repris au passage suivant ; une erreur de lecture ne se
+      // rattrape pas en réessayant, le message est alors marqué lu
+      if (estPanne(e)) panne = true; else lusOk.push(x.uid);
       console.error("reception :", e?.message ?? e);
       bilan.push({ issue: "erreur" });
     }
   }
+  try { if (lusOk.length) await imap.messageFlagsAdd(lusOk.map(String).join(","), ["\\Seen"], { uid: true }); }
+  catch (e) { console.error("reception, marquage lu :", e?.message ?? e); }
+  verrou.release();
+  await imap.logout().catch(() => null);
   // ménage, sans jamais gêner la réception
   suites.push((async () => {
     const { data: chemins } = await admin.rpc("mail_purger", { p_jours: LIMITES.joursLien });
     for (let i = 0; Array.isArray(chemins) && i < chemins.length; i += 100) await admin.storage.from("fichiers").remove(chemins.slice(i, i + 100));
   })().catch(() => null));
-  // pièces jointes, alerte à Fill et réponses finissent après la réponse à Brevo
+  // pièces jointes, alerte à Fill et réponses finissent après la réponse
   const fin = Promise.all(suites);
   const tache = globalThis.EdgeRuntime?.waitUntil;
   if (typeof tache === "function") tache.call(globalThis.EdgeRuntime, fin); else await fin;

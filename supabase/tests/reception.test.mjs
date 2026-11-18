@@ -7,7 +7,7 @@
 //    _urgence, _verifier_place, place_libre, periode_org…) relevés dans la base réelle le 11 novembre 2026.
 // 2. Les règles d'analyse (functions/_partage/regles/reception.ts) lisent des mails réalistes (mails-exemples.mjs).
 // 3. Le déroulé complet (functions/reception/traiter.ts) : du JSON de Brevo à la demande en base.
-// 4. La fonction serveur assemblée (functions/reception/index.ts) : contrôle d'accès, corps mal formés, webhook.
+// 4. La fonction serveur : relève IMAP de fill@studioes.fr, sans test automatique (voir la section 4).
 import { PGlite } from '@electric-sql/pglite';
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
@@ -220,6 +220,8 @@ await db.exec(`
 
 const migration = readFileSync(join(ici, '..', 'migrations', '2026-11-adresse-de-transfert.sql'), 'utf8');
 await db.exec(migration);
+const migrationFill = readFileSync(join(ici, '..', 'migrations', '2026-11-18-adresse-fill.sql'), 'utf8');
+await db.exec(migrationFill);
 
 const un = async (q, p = []) => (await db.query(q, p)).rows[0];
 const tous = async (q, p = []) => (await db.query(q, p)).rows;
@@ -285,6 +287,7 @@ await test('migration : chaque organisation existante reçoit une adresse lisibl
 await test('migration : rejouée, elle ne change rien et ne lève pas d’erreur', async () => {
   const avant = await tous(`select id, alias_mail from organisation order by id`);
   await db.exec(migration);
+  await db.exec(migrationFill);
   await serveur();
   assert.deepEqual(await tous(`select id, alias_mail from organisation order by id`), avant);
 });
@@ -357,6 +360,14 @@ await test('mail_ouvrir : adresse mal recopiée par un membre reconnu, la struct
   assert.deepEqual([r.cas, r.alias_inconnu, r.organisation.id], ['ok', true, s.o]);
   const deux = await ok('mail_ouvrir', { p_message_id: '<deux@test>', p_expediteur: s.ref.email, p_destinataires: [autre.alias, s.alias], p_sujet: null, p_ecarter: null });
   assert.deepEqual([deux.cas, deux.organisation.id], ['ok', s.o]);
+});
+
+await test('mail_ouvrir : fill@studioes.fr, adresse unique : la structure est celle de l’expéditeur, un inconnu reçoit la réponse', async () => {
+  const s = await scene();
+  const r = await ouvrir(s.ref.email, 'fill');
+  assert.deepEqual([r.cas, r.repondre, r.alias_inconnu, r.organisation.id], ['ok', true, false, s.o]);
+  const inc = await ouvrir('personne-fill@ailleurs.fr', 'fill');
+  assert.deepEqual([inc.cas, inc.repondre], ['inconnu', true]);
 });
 
 await test('mail_ouvrir : un message n’est traité qu’une fois ; resté en plan, il reprend après deux minutes', async () => {
@@ -812,9 +823,9 @@ await test('mails mal formés : jamais d’exception', async () => {
 });
 
 await test('adresse et phrases montrées au client', async () => {
-  assert.equal(A.adresseTransfert('commune-de-saint-ivenec'), 'commune-de-saint-ivenec@demandes.studioes.fr');
-  assert.equal(A.adresseTransfert('Mairie-De-X', 'Courrier.Exemple.fr'), 'mairie-de-x@courrier.exemple.fr');
-  assert.deepEqual([A.adresseTransfert(null), A.adresseTransfert(''), A.adresseTransfert('a b'), A.adresseTransfert(undefined, 'x.fr')], [null, null, null, null]);
+  assert.equal(A.adresseTransfert('commune-de-saint-ivenec'), 'fill@studioes.fr');
+  assert.equal(A.adresseTransfert('Mairie-De-X', 'Courrier.Exemple.fr'), 'fill@studioes.fr');
+  assert.deepEqual([A.adresseTransfert(null), A.adresseTransfert(''), A.adresseTransfert('a b'), A.adresseTransfert(undefined, 'x.fr')], Array(4).fill('fill@studioes.fr'));
   for (const t of [A.phraseBienvenue('a@demandes.studioes.fr'), A.phraseConfirmee('a@demandes.studioes.fr')]) {
     assert.ok(t.includes('a@demandes.studioes.fr') && t.length < 330 && !/[—–]/.test(t) && !/\bIA\b|Brevo|Claude/i.test(t));
   }
@@ -954,7 +965,7 @@ await test('de bout en bout : expéditeur inconnu, une réponse puis le silence 
   assert.deepEqual([lec.motif, m.envois[1].titre], ['lecteur', 'Votre compte permet de suivre, pas de demander']);
   const ail = await passer(de(M.afficheFournie(), s.ref, autre.alias), m);
   assert.equal(ail.motif, 'autre_structure');
-  assert.match(m.envois[2].texte[1], new RegExp(`Renvoyez votre mail à ${s.alias}@demandes\\.studioes\\.fr\\.`));
+  assert.match(m.envois[2].texte[1], /Renvoyez votre mail à fill@studioes\.fr\./);
   assert.equal((await un(`select count(*)::int as n from demande where organisation_id in ($1, $2)`, [s.o, autre.o])).n, 0);
 });
 
@@ -1026,139 +1037,9 @@ await test('de bout en bout : contenus hostiles échappés dans la réponse ; ma
 });
 
 // ---------------------------------------------------------------------------------------------------
-// 4. La fonction serveur assemblée : contrôle d'accès, corps mal formés, webhook chez Brevo
+// 4. La fonction serveur : depuis le 18 nov 2026, elle relève la boîte fill@studioes.fr en IMAP (plus de webhook
+// Brevo). La relève elle-même n'a pas de test automatique ici (il faudrait simuler un serveur IMAP) : elle se vérifie
+// par un mail réel envoyé à fill@studioes.fr depuis un compte de test de l'Espace, puis « select * from mail_recu ».
 // ---------------------------------------------------------------------------------------------------
-const CLE_WEBHOOK = 'cle-de-test-reception-0123456789abcdef';
-const CLE_SERVICE = 'cle-de-service-de-test-0123456789abcdef';
-const env = { SUPABASE_URL: 'https://projet.supabase.test', CLE_SECRETE: CLE_SERVICE, RECEPTION_CLE: CLE_WEBHOOK, BREVO_API_KEY: 'xkeysib-test', SITE_URL: 'https://fill.studioes.fr/espace' };
-let service = null;
-let coffre = null;      // secret gardé par la base (fonction reception_cle), lu quand RECEPTION_CLE n'est pas réglé
-const appels = [];
-let brevo = { webhooks: [], refusEntetes: false };
-globalThis.Deno = { env: { get: (k) => env[k] }, serve: (f) => { service = f; } };
-globalThis.__client = () => ({
-  rpc: (nom, args) => (nom === 'reception_cle' ? Promise.resolve({ data: coffre, error: null }) : nom === 'verifier_jeton_pilote' ? Promise.resolve({ data: args.p === 'jeton-pilote-0123456789abcdef0123456789', error: null }) : rpc(nom, args)),
-  from: (table) => ({ select: () => ({ eq: (_, id) => ({ single: async () => ({ data: await un(`select unites from ${table} where id = $1`, [id]) }) }) }) }),
-  storage: { from: () => ({ upload: async (chemin) => { appels.push({ stockage: chemin }); return { error: null }; }, remove: async () => ({ error: null }) }) },
-});
-globalThis.fetch = async (url, init = {}) => {
-  const u = String(url), corps = init.body ? JSON.parse(init.body) : null;
-  appels.push({ url: u, methode: init.method ?? 'GET', corps, cle: init.headers?.['api-key'] ?? null });
-  const rep = (c, status = 200) => new Response(typeof c === 'string' ? c : JSON.stringify(c), { status });
-  // comme Brevo : sans aucun webhook de ce type, une erreur 400 et non une liste vide
-  if (u.endsWith('/webhooks?type=inbound')) return brevo.webhooks.length ? rep({ webhooks: brevo.webhooks }) : rep({ code: 'document_not_found', message: 'Webhooks not found' }, 400);
-  if (u.endsWith('/webhooks') && init.method === 'POST') { brevo.webhooks.push({ id: 77, type: 'inbound', ...corps }); return rep({ id: 77 }, 201); }
-  if (/\/webhooks\/\d+$/.test(u) && init.method === 'PUT') { Object.assign(brevo.webhooks[0], corps); return new Response(null, { status: 204 }); }
-  if (u.includes('dns.google')) return rep({ Answer: [{ data: '10 inbound1.sendinblue.com.' }, { data: '20 inbound2.sendinblue.com.' }] });
-  if (u.includes('/inbound/attachments/')) return new Response(new Uint8Array(2048), { status: 200 });
-  if (u.endsWith('/smtp/email')) return corps.headers && brevo.refusEntetes ? rep({ code: 'invalid_parameter' }, 400) : rep({ messageId: '<x@brevo>' }, 201);
-  if (u.includes('/functions/v1/notifier')) return rep('ok');
-  return rep('inconnu', 404);
-};
-await assembler(['reception', 'index.ts'], 'index.mjs', [{
-  name: 'client-supabase-de-test',
-  setup(b) {
-    b.onResolve({ filter: /^npm:@supabase\/supabase-js/ }, () => ({ path: 'client', namespace: 'test' }));
-    b.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const createClient = (...a) => globalThis.__client(...a);', loader: 'js' }));
-  },
-}]);
-const appel = async (c = {}) => {
-  const r = await service(new Request(`https://projet.supabase.test/functions/v1/reception${c.requete ?? ''}`, { method: c.methode ?? 'POST', headers: c.entetes ?? {}, body: c.methode === 'GET' ? undefined : (typeof c.corps === 'string' ? c.corps : JSON.stringify(c.corps ?? {})) }));
-  return { statut: r.status, json: await r.json().catch(() => null) };
-};
-
-await test('fonction : sans la clé du webhook, rien ne passe ; la clé se présente dans l’adresse ou en en-tête', async () => {
-  const s = await scene();
-  const items = { items: [de(M.afficheFournie(), s.ref, s.alias)] };
-  assert.equal((await appel({ methode: 'GET' })).statut, 405);
-  assert.equal((await appel({ corps: items })).statut, 401);
-  assert.equal((await appel({ corps: items, requete: '?cle=mauvaise' })).statut, 401);
-  assert.equal((await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}x` })).statut, 401);
-  assert.equal((await appel({ corps: items, entetes: { Authorization: `Bearer ${CLE_SERVICE}` } })).statut, 401);     // la clé secrète n'ouvre pas le webhook
-  assert.equal((await un(`select count(*)::int as n from mail_recu where organisation_id = $1`, [s.o])).n, 0);
-  const r = await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}` });
-  assert.deepEqual([r.statut, r.json], [200, { ok: true, mails: [{ issue: 'deposee', motif: null }] }]);
-  const par = { items: [de(M.afficheFournie(), s.ref, s.alias)] };
-  assert.equal((await appel({ corps: par, entetes: { 'x-reception-cle': CLE_WEBHOOK } })).json.mails[0].issue, 'deposee');
-  assert.equal((await appel({ corps: { items: [de(M.afficheFournie(), s.ref, s.alias)] }, entetes: { Authorization: `Bearer ${CLE_WEBHOOK}` } })).json.mails[0].issue, 'deposee');
-  // sans secret configuré, la réception reste fermée
-  const garde = env.RECEPTION_CLE; env.RECEPTION_CLE = 'court';
-  assert.equal((await appel({ corps: items, requete: '?cle=court' })).statut, 503);
-  // sans réglage, le secret est celui du coffre de la base ; sans coffre non plus, la réception reste fermée
-  delete env.RECEPTION_CLE;
-  assert.equal((await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}` })).statut, 503);
-  coffre = 'secret-du-coffre-0123456789abcdef0123456789';
-  assert.equal((await appel({ corps: items, requete: `?cle=${CLE_WEBHOOK}` })).statut, 401);
-  const parCoffre = await appel({ corps: { items: [de(M.afficheFournie(), s.ref, s.alias)] }, requete: `?cle=${coffre}` });
-  assert.deepEqual([parCoffre.statut, parCoffre.json.mails[0].issue], [200, 'deposee']);
-  coffre = null;
-  env.RECEPTION_CLE = garde;
-});
-
-await test('fonction : pièce téléchargée chez Brevo avec la clé API, réponse rangée dans le fil, repli si les en-têtes sont refusés', async () => {
-  const s = await scene();
-  appels.length = 0; brevo.refusEntetes = true;
-  const item = de(M.afficheFournie(), s.ref, s.alias);
-  const r = await appel({ corps: { items: [item] }, requete: `?cle=${CLE_WEBHOOK}` });
-  assert.equal(r.json.mails[0].issue, 'deposee');
-  const pj = appels.find((a) => a.url?.includes('/inbound/attachments/'));
-  assert.deepEqual([pj.url, pj.cle], ['https://api.brevo.com/v3/inbound/attachments/jeton-affiche', 'xkeysib-test']);
-  assert.ok(appels.some((a) => a.stockage?.startsWith(`${s.o}/`) && a.stockage.endsWith('-affiche-bagad.jpg')));
-  assert.ok(appels.some((a) => a.url?.endsWith('/functions/v1/notifier') && a.corps.evenement === 'depot'));
-  const envois = appels.filter((a) => a.url?.endsWith('/smtp/email'));
-  assert.equal(envois.length, 2);                                               // refusé avec en-têtes, reparti sans
-  assert.deepEqual(envois[0].corps.headers, { 'Auto-Submitted': 'auto-replied', 'X-Auto-Response-Suppress': 'All', 'In-Reply-To': item.MessageId, References: item.MessageId });
-  assert.equal(envois[1].corps.headers, undefined);
-  assert.deepEqual([envois[1].corps.to[0].email, envois[1].corps.sender.email, envois[1].corps.replyTo.email, envois[1].corps.subject], [s.ref.email, 'contact@studioes.fr', 'contact@studioes.fr', 'Bien reçu : Concert du bagad']);
-  assert.match(envois[1].corps.htmlContent, /Votre demande est enregistrée/);
-  assert.ok(!/\bIA\b|Brevo|Claude|Anthropic/.test(envois[1].corps.htmlContent.replace(/<[^>]+>/g, ' ')));
-  brevo.refusEntetes = false;
-});
-
-await test('fonction : corps illisible, vide ou mal formé, toujours une réponse propre', async () => {
-  const q = `?cle=${CLE_WEBHOOK}`;
-  for (const corps of ['', 'pas du json', '[]', '{"items":"x"}', '{"items":[]}', 'null', '42']) {
-    const r = await appel({ corps, requete: q });
-    assert.deepEqual([r.statut, r.json], [200, { ok: true, mails: [] }], corps);
-  }
-  const r = await appel({ corps: { items: M.malFormes() }, requete: q });
-  assert.equal(r.statut, 200);
-  assert.deepEqual(r.json.mails.map((m) => m.issue), ['illisible', 'illisible', 'illisible', 'illisible', 'illisible', 'illisible', 'refuse', 'ignore']);
-  // au plus vingt-cinq mails par appel
-  const s = await scene();
-  const lot = await appel({ corps: { items: Array.from({ length: 30 }, () => de(M.sansObjet(), s.ref, s.alias)) }, requete: q });
-  assert.equal(lot.json.mails.length, 25);
-});
-
-await test('fonction : action « webhook » réservée au serveur ; vérifie, crée une seule fois, ne remplace que sur demande', async () => {
-  const admin = (corps, jeton = CLE_SERVICE) => appel({ corps, entetes: { Authorization: `Bearer ${jeton}` } });
-  assert.equal((await appel({ corps: { action: 'webhook' } })).statut, 401);
-  assert.equal((await appel({ corps: { action: 'webhook' }, requete: `?cle=${CLE_WEBHOOK}` })).statut, 401);       // la clé du webhook n'administre rien
-  assert.equal((await admin({ action: 'webhook' }, 'x'.repeat(40))).statut, 401);
-  assert.equal((await admin({ action: 'autre' })).statut, 400);
-  appels.length = 0;
-  const etat = await admin({ action: 'webhook' }, 'jeton-pilote-0123456789abcdef0123456789');
-  assert.deepEqual([etat.statut, etat.json.conforme, etat.json.fait, etat.json.domaine, etat.json.mx_ok], [200, false, 'rien', 'demandes.studioes.fr', true]);
-  assert.match(etat.json.conseil, /creer:true/);
-  assert.ok(!appels.some((a) => a.methode === 'POST' && a.url.endsWith('/webhooks')));                             // vérifier ne crée rien
-  const cree = await admin({ action: 'webhook', creer: true });
-  assert.deepEqual([cree.json.fait, cree.json.conforme, cree.json.webhook.id], ['cree', true, 77]);
-  const envoye = appels.find((a) => a.methode === 'POST' && a.url === 'https://api.brevo.com/v3/webhooks');
-  assert.deepEqual(envoye.corps, { type: 'inbound', events: ['inboundEmailProcessed'], url: `https://projet.supabase.test/functions/v1/reception?cle=${CLE_WEBHOOK}`, domain: 'demandes.studioes.fr', description: 'Fill : adresses de transfert' });
-  assert.equal(envoye.cle, 'xkeysib-test');
-  assert.ok(!JSON.stringify(cree.json).includes(CLE_WEBHOOK));                                                      // le secret ne ressort jamais
-  const encore = await admin({ action: 'webhook', creer: true });
-  assert.deepEqual([encore.json.fait, encore.json.conforme, brevo.webhooks.length], ['rien', true, 1]);
-  // le secret change : l'ancien webhook est signalé, corrigé seulement avec remplacer:true
-  env.RECEPTION_CLE = `${CLE_WEBHOOK}-nouvelle`;
-  const ecart = await admin({ action: 'webhook', creer: true });
-  assert.deepEqual([ecart.json.conforme, ecart.json.fait, ecart.json.autres.length], [false, 'rien', 1]);
-  const corrige = await admin({ action: 'webhook', creer: true, remplacer: true });
-  assert.deepEqual([corrige.json.conforme, corrige.json.fait, brevo.webhooks[0].url.endsWith('-nouvelle')], [true, 'remplace', true]);
-  env.RECEPTION_CLE = CLE_WEBHOOK;
-  delete env.BREVO_API_KEY;
-  assert.equal((await admin({ action: 'webhook' })).statut, 503);
-  env.BREVO_API_KEY = 'xkeysib-test';
-});
 
 console.log(`\n${passes} tests passés${process.exitCode ? ', des échecs ci-dessus' : ''}`);

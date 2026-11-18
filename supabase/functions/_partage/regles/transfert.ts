@@ -1,13 +1,13 @@
-// Adresse de transfert d'une organisation : nom-de-la-structure@demandes.studioes.fr.
-// La partie avant le « @ » est en base (organisation.alias_mail) ; le domaine se règle par DOMAINE_RECEPTION.
+// Adresse de transfert des demandes de Fill : une seule boîte, fill@studioes.fr (MX Plan d'OVH, relevée par la fonction
+// « reception » toutes les 15 minutes). La structure est reconnue par l'adresse de l'expéditeur (membre de l'Espace).
+// Jusqu'au 18 nov 2026 : une adresse par structure (alias@demandes.studioes.fr), reçue par Brevo ; organisation.alias_mail
+// reste en base mais ne sert plus à l'adresse.
 // Ce module ne porte que l'adresse et les deux phrases qui la montrent au client (« alerte » et « notifier »).
-export const DOMAINE_DEFAUT = "demandes.studioes.fr";
+export const ADRESSE_DEMANDES = "fill@studioes.fr";
+export const DOMAINE_DEFAUT = "studioes.fr";
 
-export const adresseTransfert = (alias, domaine) => {
-  const a = String(alias ?? "").trim().toLowerCase();
-  const d = String(domaine || DOMAINE_DEFAUT).trim().toLowerCase();
-  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(a) ? `${a}@${d}` : null;
-};
+// garde la signature d'avant (alias, domaine) : l'adresse est la même pour toutes les structures
+export const adresseTransfert = (_alias, _domaine) => ADRESSE_DEMANDES;
 
 // mail de bienvenue : une ligne discrète, sous le bouton
 export const phraseBienvenue = (adresse) =>
