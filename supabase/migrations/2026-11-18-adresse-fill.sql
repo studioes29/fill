@@ -84,3 +84,9 @@ begin
     'organisation', case when cas in ('ok', 'lecteur', 'resiliee', 'autre_structure')
       then jsonb_build_object('id', o.id, 'nom', o.nom, 'alias', o.alias_mail, 'statut', o.statut, 'essai', o.essai, 'type', o.type) end);
 end $function$;
+
+-- relevé de fill@studioes.fr toutes les 15 minutes (appliqué le 18 nov 2026, job fill-reception-imap)
+-- select cron.schedule('fill-reception-imap', '*/15 * * * *', $$ select net.http_post(
+--   url := 'https://nfnbseonwgmtouxsaajd.supabase.co/functions/v1/reception',
+--   headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'jeton_pilote'), 'Content-Type', 'application/json'),
+--   body := '{"action":"relever"}'::jsonb, timeout_milliseconds := 60000) $$);
