@@ -1,7 +1,15 @@
 // Envois automatiques de Hors-champ (prospection, campagnes, parcours clients).
-// Appelée par pg_cron toutes les 10 minutes en semaine : envoie les messages arrivés à échéance via Brevo,
+// Appelée par pg_cron toutes les 10 minutes en semaine : envoie les messages arrivés à échéance,
 // en arrêtant une séquence si l'adresse est en erreur, désinscrite ou a signalé un spam.
+// 18 nov 2026 : Brevo a coupé l'envoi du compte (prospection à froid refusée par sa politique).
+// Les messages partent désormais par la boîte MX Plan d'OVH (SMTP ssl0.ovh.net, port 465) dès que les secrets
+// OVH_SMTP_USER et OVH_SMTP_PASS sont posés dans Supabase. Sans eux, l'ancien chemin Brevo reste en place.
+// 18 nov 2026 (suite) : par OVH, les images de la signature sont jointes au message (cid) au lieu d'être chargées
+// depuis les sites : Outlook et les autres messageries bloquent les images distantes d'un expéditeur qu'elles ne
+// connaissent pas encore, ce qui laissait une carte vide.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import nodemailer from "npm:nodemailer@6.9.16";
+import { Buffer } from "node:buffer";
 
 const lire = (nom: string) => {
   const v = Deno.env.get(nom);
@@ -12,15 +20,20 @@ const lire = (nom: string) => {
 const CLE = lire("CLE_SECRETE") ?? lire("SUPABASE_SECRET_KEY") ?? lire("SUPABASE_SECRET_KEYS") ?? lire("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const URL_SB = Deno.env.get("SUPABASE_URL")!;
 const BREVO = Deno.env.get("BREVO_API_KEY") ?? "";
+const SMTP_HOTE = (Deno.env.get("OVH_SMTP_HOST") ?? "").trim() || "ssl0.ovh.net";
+const SMTP_USER = (Deno.env.get("OVH_SMTP_USER") ?? "").trim();
+const SMTP_PASS = Deno.env.get("OVH_SMTP_PASS") ?? "";
+const PAR_SMTP = Boolean(SMTP_USER && SMTP_PASS);
 const EXPEDITEUR = Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr";
-// 14 nov 2026 : adresse d'envoi distincte pour la prospection (sous-domaine authentifié dans Brevo), pour que
-// d'éventuels signalements de mails à froid n'abîment pas la réputation de contact@studioes.fr (devis, clients).
-// Tant que le secret PROSPECTION_EXPEDITEUR n'est pas posé, la prospection part de contact@studioes.fr comme avant.
-// Les réponses vont toujours à contact@studioes.fr (replyTo).
+// Adresse d'envoi distincte pour la prospection si le secret PROSPECTION_EXPEDITEUR est posé (avec OVH, ce doit être
+// la même boîte que OVH_SMTP_USER ou un alias de celle-ci). Les réponses vont toujours à contact@studioes.fr (replyTo).
 const EXPEDITEUR_PROSPECTION = (Deno.env.get("PROSPECTION_EXPEDITEUR") ?? "").trim() || EXPEDITEUR;
+// Avec OVH, l'adresse d'envoi doit être la boîte authentifiée : sinon le message est refusé ou part mal signé.
+const DE_SMTP = SMTP_USER;
 const PAR_PASSAGE = 6;      // messages au plus par passage (toutes les 10 minutes)
 const PAR_JOUR = 45;        // plafond quotidien, toutes séquences confondues
 const sb = createClient(URL_SB, CLE, { auth: { persistSession: false } });
+const smtp = PAR_SMTP ? nodemailer.createTransport({ host: SMTP_HOTE, port: 465, secure: true, auth: { user: SMTP_USER, pass: SMTP_PASS } }) : null;
 
 const enc = new TextEncoder();
 const signer = async (txt: string) => {
@@ -38,23 +51,41 @@ const SIGNATURE: Record<string, string> = {
   studio: "Ewen Soupault\nPhotographie de reportage, sites et applications\n06 51 22 21 07 · studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
   fill: "Ewen Soupault\nFill, service de communication externalisé\n06 51 22 21 07 · fill.studioes.fr · Prendre rendez-vous : https://cal.com/studioes/30min",
 };
+const baseImages = (marque: string) => marque === "fill" ? "https://fill.studioes.fr/assets/mail/signature" : "https://studioes.fr/images/signature";
+const CID_NOM = "signature-nom@studioes.fr";
+const CID_FILIGRANE = "signature-filigrane@studioes.fr";
 // signature HTML : carte aux couleurs de la marque (nom et métier en image pour garder les polices des sites,
-// filigrane du logo à droite), contacts en vrai texte cliquable
-const signatureHtml = (marque: string) => {
+// filigrane du logo à droite), contacts en vrai texte cliquable. joint = images jointes au message (cid).
+// Si une messagerie n'affiche pas les images, le texte de remplacement garde la police et la couleur de la carte.
+const signatureHtml = (marque: string, joint = false) => {
   const fill = marque === "fill";
   const bg = fill ? "#EFE9FF" : "#F0EEE9";
-  const base = fill ? "https://fill.studioes.fr/assets/mail/signature" : "https://studioes.fr/images/signature";
+  const base = baseImages(marque);
+  const nom = joint ? `cid:${CID_NOM}` : `${base}-nom.png`;
+  const filigrane = joint ? `cid:${CID_FILIGRANE}` : `${base}-filigrane.png`;
   const alt = fill ? "Ewen Soupault, Fill, service de communication externalisé" : "Ewen Soupault, Studio ES, photographie, sites et applications";
   const site = fill ? ["fill.studioes.fr", "https://fill.studioes.fr/"] : ["studioes.fr", "https://studioes.fr/"];
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;border-collapse:separate;border-spacing:0">
-<tr><td bgcolor="${bg}" style="background:${bg};border-radius:18px 0 0 0;padding:0;vertical-align:top;line-height:0"><img src="${base}-nom.png" width="370" height="84" alt="${alt}" style="display:block;width:370px;height:84px;border:0"></td>
-<td rowspan="2" width="130" style="padding:0;vertical-align:top;line-height:0"><img src="${base}-filigrane.png" width="130" height="122" alt="" style="display:block;width:130px;height:122px;border:0"></td></tr>
+<tr><td bgcolor="${bg}" style="background:${bg};border-radius:18px 0 0 0;padding:0;vertical-align:top;line-height:0"><img src="${nom}" width="370" height="84" alt="${alt}" style="display:block;width:370px;height:84px;border:0;font:700 15px/84px Arial,Helvetica,sans-serif;color:#141414;padding-left:0"></td>
+<td rowspan="2" width="130" style="padding:0;vertical-align:top;line-height:0"><img src="${filigrane}" width="130" height="122" alt="" style="display:block;width:130px;height:122px;border:0"></td></tr>
 <tr><td bgcolor="${bg}" style="background:${bg};border-radius:0 0 0 18px;padding:0 0 0 22px;height:38px;vertical-align:top;font:13px/1.4 Arial,Helvetica,sans-serif;color:#141414"><a href="tel:+33651222107" style="color:#141414;text-decoration:none">06 51 22 21 07</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${site[1]}" style="color:#141414;text-decoration:underline">${site[0]}</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://cal.com/studioes/30min" style="color:#141414;text-decoration:underline">Prendre rendez-vous</a></td></tr></table>`;
 };
+// images de la signature, lues une fois par démarrage de la fonction et jointes à chaque message envoyé par OVH
+const IMAGES: Record<string, Promise<{ nom: Buffer; filigrane: Buffer } | null>> = {};
+const imagesSignature = (marque: string) => IMAGES[marque] ??= (async () => {
+  try {
+    const lireImg = async (u: string) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u} : ${r.status}`); return Buffer.from(await r.arrayBuffer()); };
+    const base = baseImages(marque);
+    const [nom, filigrane] = await Promise.all([lireImg(`${base}-nom.png`), lireImg(`${base}-filigrane.png`)]);
+    return { nom, filigrane };
+  } catch { delete IMAGES[marque]; return null; }
+})();
 
+// Contrôles Brevo (événements d'un message envoyé par Brevo, liste noire) : gardés pour les messages déjà partis par
+// Brevo ; sans clé ou sans réponse, ils ne bloquent rien. Les retours en erreur d'OVH arrivent dans la boîte.
 const MAUVAIS = new Set(["hardBounces", "hard_bounce", "blocked", "spam", "invalid", "unsubscribed", "unsubscribe", "error"]);
 async function evenementsBloquants(messageId: string) {
-  if (!messageId) return null;
+  if (!messageId || !BREVO) return null;
   const r = await fetch(`https://api.brevo.com/v3/smtp/statistics/events?messageId=${encodeURIComponent(messageId)}&limit=50&sort=desc`, { headers: { "api-key": BREVO, accept: "application/json" } }).catch(() => null);
   if (!r?.ok) return null;
   const j = await r.json().catch(() => ({}));
@@ -62,13 +93,13 @@ async function evenementsBloquants(messageId: string) {
   return ev ? String(ev.event) : null;
 }
 async function bloqueBrevo(email: string) {
+  if (!BREVO) return false;
   const r = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, { headers: { "api-key": BREVO, accept: "application/json" } }).catch(() => null);
   if (!r?.ok) return false;
   return Boolean((await r.json().catch(() => ({}))).emailBlacklisted);
 }
 
 // pièces jointes (Hors-champ ne les met que sur le premier message) : liens https vers nos sites, PDF ou Word, 2 au plus.
-// Brevo, /v3/smtp/email : attachment = [{ url, name }], url absolue, extension du nom dans sa liste autorisée.
 const PJ_HOTES = new Set(["fill.studioes.fr", "studioes.fr", "www.studioes.fr"]);
 const PJ_EXT = /\.(pdf|docx|doc|odt)$/i;
 const piecesJointes = (pj: unknown) => (Array.isArray(pj) ? pj : []).map((p: any) => {
@@ -89,27 +120,54 @@ async function envoyer(d: any) {
   const desinscription = d.type === "prospection" && !d.sans_pied;
   const pied = desinscription ? `\n\nVous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou : ${stop}` : "";
   const texte = `${d.corps.trim()}\n\n${sig}${pied}`;
+  const images = smtp ? await imagesSignature(d.marque) : null;
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body style="margin:0;padding:0">
 <div style="font:15px/1.55 Arial,Helvetica,sans-serif;color:#141414;max-width:640px;padding:20px 18px 28px">${lierUrls(echap(d.corps.trim())).replace(/\n/g, "<br>")}
-${signatureHtml(d.marque)}
+${signatureHtml(d.marque, Boolean(images))}
 ${desinscription ? `<p style="margin:28px 0 0;font-size:12px;color:#8A8680">Vous ne souhaitez plus recevoir de message de Studio ES ni de Fill ? Répondez simplement « stop », ou <a href="${stop}" style="color:#8A8680">cliquez ici</a>.</p>` : ""}
 </div></body></html>`;
+  const de = d.type === "prospection" ? EXPEDITEUR_PROSPECTION : EXPEDITEUR;
+  const nomRetour = d.marque === "fill" ? "Ewen Soupault, Fill" : "Ewen Soupault, Studio ES";
+  const enTetes: Record<string, string> = {
+    ...(desinscription ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
+    // une relance arrive dans la même conversation que le premier message
+    ...(d.precedent ? { "In-Reply-To": d.precedent, "References": d.precedent } : {}),
+  };
+  const pj = piecesJointes(d.pj);
+
+  if (smtp) {
+    const nomDest = d.nom ? String(d.nom).slice(0, 70).replace(/["<>]/g, "") : "";
+    const jointes: any[] = pj.map((p) => ({ filename: p.name, path: p.url }));
+    if (images) jointes.push(
+      { filename: "signature.png", content: images.nom, contentType: "image/png", cid: CID_NOM, contentDisposition: "inline" },
+      { filename: "logo.png", content: images.filigrane, contentType: "image/png", cid: CID_FILIGRANE, contentDisposition: "inline" },
+    );
+    const info = await smtp.sendMail({
+      from: { name: "Ewen Soupault", address: DE_SMTP || de },
+      replyTo: { name: nomRetour, address: "contact@studioes.fr" },
+      to: nomDest ? { name: nomDest, address: d.email } : d.email,
+      ...(d.cc ? { cc: d.cc } : {}),
+      subject: d.objet, text: texte, html,
+      headers: enTetes,
+      ...(jointes.length ? { attachments: jointes } : {}),
+    });
+    const refuses = (info.rejected ?? []) as unknown[];
+    if (refuses.length) throw new Error(`OVH : adresse refusée (${refuses.join(", ").slice(0, 150)})`);
+    return String(info.messageId ?? "");
+  }
+
+  if (!BREVO) throw new Error("ni boîte OVH (OVH_SMTP_USER, OVH_SMTP_PASS) ni clé Brevo");
   const corps: any = {
-    sender: { name: "Ewen Soupault", email: d.type === "prospection" ? EXPEDITEUR_PROSPECTION : EXPEDITEUR },
-    replyTo: { email: "contact@studioes.fr", name: d.marque === "fill" ? "Ewen Soupault, Fill" : "Ewen Soupault, Studio ES" },
+    sender: { name: "Ewen Soupault", email: de },
+    replyTo: { email: "contact@studioes.fr", name: nomRetour },
     to: [{ email: d.email, ...(d.nom ? { name: String(d.nom).slice(0, 70) } : {}) }],
     subject: d.objet, textContent: texte, htmlContent: html,
     tags: ["horschamp", d.type, d.marque],
-    headers: {
-      ...(desinscription ? { "List-Unsubscribe": `<${stop}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
-      // une relance arrive dans la même conversation que le premier message
-      ...(d.precedent ? { "In-Reply-To": d.precedent, "References": d.precedent } : {}),
-    },
+    headers: enTetes,
   };
   // Brevo refuse un objet « headers » vide (400 « headers is blank ») : cas d'un premier message hors prospection
   if (!Object.keys(corps.headers).length) delete corps.headers;
   if (d.cc) corps.cc = [{ email: d.cc }];
-  const pj = piecesJointes(d.pj);
   if (pj.length) corps.attachment = pj;
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST", headers: { "api-key": BREVO, "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(corps),
@@ -151,15 +209,24 @@ async function passage(forcer = false) {
       bilan.push({ email: d.email, erreur: String(e) });
     }
   }
-  return { envoyes: bilan, expediteur_prospection: EXPEDITEUR_PROSPECTION };
+  return { envoyes: bilan, voie: smtp ? "ovh" : "brevo", expediteur_prospection: EXPEDITEUR_PROSPECTION };
 }
 
 Deno.serve(async (req) => {
   const jeton = (req.headers.get("Authorization") ?? "").replace(/^Bearer /, "");
   const ok = Boolean(CLE) && jeton.length >= 32 && (jeton === CLE || (await sb.rpc("verifier_jeton_pilote", { p: jeton })).data === true);
   if (!ok) return new Response("Réservé au serveur", { status: 401 });
-  if (!BREVO) return new Response(JSON.stringify({ erreur: "clé Brevo absente" }), { status: 500 });
+  if (!smtp && !BREVO) return new Response(JSON.stringify({ erreur: "ni boîte OVH ni clé Brevo" }), { status: 500 });
   const corps = await req.json().catch(() => ({}));
+  // { "test": "adresse", "marque"?: "studio" | "fill", "type"?: "prospection" } : un message d'essai par la voie en
+  // place, sans toucher aux séquences
+  if (typeof corps.test === "string" && corps.test.includes("@")) {
+    const marque = corps.marque === "fill" ? "fill" : "studio";
+    try {
+      const id = await envoyer({ email: corps.test, marque, type: corps.type === "prospection" ? "prospection" : "test", objet: `Essai d'envoi Hors-champ (${marque === "fill" ? "Fill" : "Studio ES"})`, corps: "Bonjour,\n\nCeci est un essai d'envoi automatique depuis Hors-champ.\n\nBien cordialement" });
+      return new Response(JSON.stringify({ test: "ok", voie: smtp ? "ovh" : "brevo", marque, signature_jointe: Boolean(smtp && await imagesSignature(marque)), id }), { headers: { "content-type": "application/json" } });
+    } catch (e) { return new Response(JSON.stringify({ test: "echec", voie: smtp ? "ovh" : "brevo", erreur: String(e) }), { status: 500, headers: { "content-type": "application/json" } }); }
+  }
   try { return new Response(JSON.stringify(await passage(corps.forcer === true)), { headers: { "content-type": "application/json" } }); }
   catch (e) { return new Response(JSON.stringify({ erreur: String(e) }), { status: 500, headers: { "content-type": "application/json" } }); }
 });
