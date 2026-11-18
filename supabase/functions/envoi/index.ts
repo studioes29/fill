@@ -45,6 +45,15 @@ const signer = async (txt: string) => {
 // messageries cliquent sur tous les liens) et n'inscrit dans mail_stop que sur POST (bouton ou désabonnement en un clic)
 const lienStop = async (email: string) => `${URL_SB}/functions/v1/desinscription?e=${encodeURIComponent(email)}&s=${await signer("stop:" + email)}`;
 const echap = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" } as Record<string, string>)[c]);
+// mesure des clics sans Brevo : les liens vers nos sites portent utm_source=prospection (ou la marque du suivi client),
+// que GoatCounter range comme référent ; il ne compte que les visites qui exécutent la page, donc peu de robots.
+const NOS_SITES = /^https:\/\/(www\.)?(studioes\.fr|fill\.studioes\.fr|dossiers\.studioes\.fr)(\/|$)/i;
+const avecUtm = (u: string, source: string, campagne: string) => {
+  if (!NOS_SITES.test(u) || /[?&]utm_source=/.test(u)) return u;
+  const [base, frag] = u.split("#");
+  return `${base}${base.includes("?") ? "&" : "?"}utm_source=${source}&utm_campaign=${encodeURIComponent(campagne)}${frag !== undefined ? "#" + frag : ""}`;
+};
+const marquerLiens = (t: string, source: string, campagne: string) => t.replace(/https?:\/\/[^\s<)"]+[^\s<).,;:!?"]/g, (u) => avecUtm(u, source, campagne));
 const lierUrls = (t: string) => t.replace(/https?:\/\/[^\s<)]+[^\s<).,;:!?]/g, (u) => `<a href="${u}" style="color:#141414">${u}</a>`);
 
 const SIGNATURE: Record<string, string> = {
@@ -97,6 +106,10 @@ const piecesJointes = (pj: unknown) => (Array.isArray(pj) ? pj : []).map((p: any
 
 async function envoyer(d: any) {
   const stop = await lienStop(d.email);
+  // liens de nos sites marqués pour GoatCounter : prospection ou suivi client, campagne = la marque et le rang du message
+  const source = d.type === "prospection" ? "prospection" : "suivi";
+  const campagne = `${d.marque === "fill" ? "fill" : "studio"}-${d.rang ?? 1}`;
+  d = { ...d, corps: marquerLiens(String(d.corps ?? ""), source, campagne), ...(d.html ? { html: marquerLiens(String(d.html), source, campagne) } : {}) };
   const sig = SIGNATURE[d.marque] ?? SIGNATURE.studio;
   // piste « diffusion » (mails d'information, candidatures) : ni pied ni en-tête de désinscription
   const desinscription = d.type === "prospection" && !d.sans_pied;
