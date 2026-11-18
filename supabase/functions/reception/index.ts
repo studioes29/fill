@@ -74,15 +74,19 @@ Deno.serve(async (req) => {
   const lus = [];         // [{uid, item}]
   try {
     await imap.connect();
+    console.log("reception : connecté");
   } catch (e) { return json({ erreur: "Connexion IMAP impossible", detail: String(e).slice(0, 200) }, 502); }
   const verrou = await imap.getMailboxLock("INBOX");
   try {
     const uids = ((await imap.search({ seen: false }, { uid: true })) || []).slice(0, LIMITES.mails);
+    console.log("reception : non lus", uids.length);
     for (const uid of uids) {
       const m = await imap.fetchOne(String(uid), { source: true }, { uid: true });
+      console.log("reception : récupéré", uid, m?.source?.length ?? 0);
       if (!m?.source) continue;
       if (m.source.length > 25 * 1024 * 1024) { lus.push({ uid, item: null, trop: true }); continue; }
       lus.push({ uid, item: versItem(await simpleParser(m.source), pieces) });
+      console.log("reception : analysé", uid);
     }
   } catch (e) {
     console.error("reception, lecture IMAP :", e?.message ?? e);
@@ -139,7 +143,9 @@ Deno.serve(async (req) => {
   for (const x of lus) {
     if (!x.item) { lusOk.push(x.uid); bilan.push({ issue: "illisible", motif: x.trop ? "trop lourd" : null }); continue; }
     try {
+      console.log("reception : traitement", x.uid);
       const r = await traiter(x.item, d);
+      console.log("reception : traité", x.uid, r.issue);
       if (r.suite) suites.push(r.suite.catch((e) => console.error("reception, suite :", e?.message ?? e)));
       bilan.push({ issue: r.issue, motif: r.motif ?? null });
       lusOk.push(x.uid);
