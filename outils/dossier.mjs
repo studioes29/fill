@@ -255,7 +255,7 @@ page('rubriques', 'Les rubriques <i>de votre espace</i>', '', `
 page('deux-demander', 'Deux façons <i>de demander</i>', 'Vous choisissez l\'une ou l\'autre pour chaque sujet. Le résultat est le même.', `
 <div class="g g2">
   <div class="c lv">${fil()}<h2>Dans votre espace</h2>${liste(['Vous remplissez le formulaire : le sujet, les supports, la date', 'Le coût en unités s\'affiche avant l\'envoi', 'Adapté à une demande à plusieurs supports'], 'pt')}</div>
-  <div class="c">${fil()}<h2>Par mail</h2>${liste(['Vous écrivez à votre adresse de transfert, ou vous y transférez une information reçue', 'Une demande simple est déposée directement, sinon un lien ouvre la demande déjà remplie', 'Adapté à une information à relayer vite'], 'pt')}</div>
+  <div class="c">${fil()}<h2>Par mail</h2>${liste(['Vous écrivez à fill@studioes.fr, ou vous y transférez une information reçue', 'Une demande simple est déposée directement, sinon un lien ouvre la demande déjà remplie', 'Adapté à une information à relayer vite'], 'pt')}</div>
 </div>
 <p class="note">Dans les deux cas, vous êtes averti par mail à chaque étape : demande reçue, confirmée, à relire, publiée ou livrée.</p>`);
 
@@ -266,11 +266,11 @@ duo('demande', 'Déposer <i>une demande</i>', 'Une demande, un seul sujet. Toute
   ['L\'envoi', 'Le récapitulatif montre le coût et les dates. Un mail « Demande reçue » confirme le dépôt.'],
 ], cap('nouvelle-sujet', 'Le sujet : vous donnez l\'information, Fill rédige.') + cap('nouvelle-supports', 'Les supports : chacun affiche son coût.'));
 
-solo('mail', 'Demander <i>par mail</i>', 'Chaque structure reçoit une adresse de transfert à son nom. Vous y écrivez, ou vous y transférez une information reçue.', [
-  ['Depuis l\'adresse de votre compte', 'L\'adresse de transfert figure dans le mail de bienvenue.'],
+solo('mail', 'Demander <i>par mail</i>', 'Vous écrivez à fill@studioes.fr, ou vous y transférez une information reçue.', [
+  ['Depuis l\'adresse de votre compte', 'Fill reconnaît votre structure à l\'adresse d\'envoi.'],
   ['Une demande simple est déposée directement', 'Si votre consigne nomme une publication, une actualité ou un événement à l\'agenda.'],
   ['Sinon, vous recevez un lien', 'Il ouvre la demande déjà remplie : le total s\'affiche, vous envoyez.'],
-], `<div class="mail"><div class="en"><span>De</span><b>Yann Le Gall, mairie de Saint-Ivenec</b><span>À</span><b class="ad">commune-de-saint-ivenec@demandes.studioes.fr</b><span>Objet</span><b>TR : Marché de Noël du 12 décembre</b></div>
+], `<div class="mail"><div class="en"><span>De</span><b>Yann Le Gall, mairie de Saint-Ivenec</b><span>À</span><b class="ad">fill@studioes.fr</b><span>Objet</span><b>TR : Marché de Noël du 12 décembre</b></div>
 <div class="co"><p>Bonjour,</p><p>Pouvez-vous publier cette information sur Facebook et sur le site internet ? À paraître avant le 5 décembre si possible.</p><p>Merci d'avance,<br>Yann Le Gall</p><div class="tr">De : Comité des fêtes<br>Le marché de Noël aura lieu le samedi 12 décembre, de 10 h à 19 h, place de l'Église…</div><span class="pj">affiche-marche-noel.pdf</span></div></div><p class="leg">Exemple de mail transféré, données fictives.</p>`);
 
 duo('traitement', 'Ce que fait Fill <i>de votre demande</i>', 'Chaque demande suit le même fil, visible sur sa fiche : déposée, confirmée, en production, à valider, publiée ou livrée.', [
