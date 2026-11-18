@@ -21,7 +21,8 @@ import { LIMITES } from '../_partage/regles/reception.ts';
 import { ADRESSE_DEMANDES, DOMAINE_DEFAUT } from '../_partage/regles/transfert.ts';
 import { estPanne, traiter } from './traiter.ts';
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
-import { ImapFlow } from "npm:imapflow@1.0.164";
+import { Imap } from "./imap.ts";
+import { Buffer } from "node:buffer";
 import { simpleParser } from "npm:mailparser@3.7.1";
 
 const echap = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -69,30 +70,30 @@ Deno.serve(async (req) => {
   const boite = (Deno.env.get("FILL_IMAP_USER") ?? "").trim() || "fill@studioes.fr";
   const motDePasse = Deno.env.get("FILL_IMAP_PASS") ?? "";
   if (!motDePasse) return json({ erreur: "Boîte fill@ non réglée (FILL_IMAP_PASS)" }, 503);
-  const imap = new ImapFlow({ host: (Deno.env.get("OVH_IMAP_HOST") ?? "").trim() || "ssl0.ovh.net", port: 993, secure: true, auth: { user: boite, pass: motDePasse }, logger: false });
+  const imap = new Imap();
   const pieces = new Map();
   const lus = [];         // [{uid, item}]
   try {
-    await imap.connect();
+    await imap.connecter((Deno.env.get("OVH_IMAP_HOST") ?? "").trim() || "ssl0.ovh.net");
+    await imap.connexion(boite, motDePasse);
     console.log("reception : connecté");
   } catch (e) { return json({ erreur: "Connexion IMAP impossible", detail: String(e).slice(0, 200) }, 502); }
-  const verrou = await imap.getMailboxLock("INBOX");
   try {
-    const uids = ((await imap.search({ seen: false }, { uid: true })) || []).slice(0, LIMITES.mails);
+    const uids = (await imap.nonLus()).slice(0, LIMITES.mails);
     console.log("reception : non lus", uids.length);
     for (const uid of uids) {
-      const m = await imap.fetchOne(String(uid), { source: true }, { uid: true });
-      console.log("reception : récupéré", uid, m?.source?.length ?? 0);
-      if (!m?.source) continue;
-      if (m.source.length > 25 * 1024 * 1024) { lus.push({ uid, item: null, trop: true }); continue; }
-      lus.push({ uid, item: versItem(await simpleParser(m.source), pieces) });
+      const source = await imap.source(uid);
+      console.log("reception : récupéré", uid, source?.length ?? 0);
+      if (!source) continue;
+      if (source.length > 25 * 1024 * 1024) { lus.push({ uid, item: null, trop: true }); continue; }
+      lus.push({ uid, item: versItem(await simpleParser(Buffer.from(source)), pieces) });
       console.log("reception : analysé", uid);
     }
   } catch (e) {
     console.error("reception, lecture IMAP :", e?.message ?? e);
   }
   const items = lus.filter((x) => x.item).map((x) => x.item);
-  if (!lus.length) { verrou.release(); await imap.logout().catch(() => null); return json({ ok: true, mails: [] }); }
+  if (!lus.length) { await imap.fermer(); return json({ ok: true, mails: [] }); }
 
   // « alerter » écrit à Fill quand le mail d'un membre n'est pas devenu une demande
   const d = {
@@ -157,10 +158,9 @@ Deno.serve(async (req) => {
       bilan.push({ issue: "erreur" });
     }
   }
-  try { if (lusOk.length) await imap.messageFlagsAdd(lusOk.map(String).join(","), ["\\Seen"], { uid: true }); }
+  try { await imap.marquerLus(lusOk); }
   catch (e) { console.error("reception, marquage lu :", e?.message ?? e); }
-  verrou.release();
-  await imap.logout().catch(() => null);
+  await imap.fermer();
   // ménage, sans jamais gêner la réception
   suites.push((async () => {
     const { data: chemins } = await admin.rpc("mail_purger", { p_jours: LIMITES.joursLien });
