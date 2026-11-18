@@ -8665,3 +8665,61 @@ fieldset.etape > .groupe > h3.g-t[aria-expanded="true"]::after{transform:rotate(
 fieldset.etape > .groupe > h3.g-t[data-choisis]:not([data-choisis="0"])::before{content:attr(data-choisis);order:2;min-width:22px;height:22px;border-radius:11px;background:#1A1A1A;color:#fff;font:600 12px/22px var(--d,inherit);font-style:normal;text-align:center}
 fieldset.etape > .groupe:has(> h3.g-t[aria-expanded="false"]) > .liste > li:not(:has([aria-pressed="true"])){display:none}
 fieldset.etape > .groupe:has(> h3.g-t[aria-expanded="false"]) > .liste:not(:has([aria-pressed="true"])){display:none}
+
+/* ---------- module physique (src/physique.js) ---------- */
+/* l'interrupteur : la pastille s'étire sous le doigt, comme une matière souple, puis reprend sa forme de l'autre côté */
+.inter:after {
+  transition:
+    transform 0.45s var(--sp),
+    width 0.28s var(--e),
+    border-radius 0.28s var(--e);
+}
+.inter:active:after {
+  width: 31px;
+}
+.inter[aria-checked="true"]:active:after {
+  transform: translate(13px);
+}
+/* la zone de dépôt : elle se réveille quand un fichier survole la fenêtre, et une trame de points suit le fichier */
+label.depot {
+  position: relative;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.45s var(--sp),
+    box-shadow 0.3s;
+}
+label.depot:before {
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(var(--c-f) 1.15px, #0000 1.6px) 0 0 / 11px 11px;
+  -webkit-mask-image: radial-gradient(circle 120px at var(--px, 50%) var(--py, 50%), #000 0, #0000 100%);
+  mask-image: radial-gradient(circle 120px at var(--px, 50%) var(--py, 50%), #000 0, #0000 100%);
+  transition: opacity 0.25s;
+  position: absolute;
+  inset: 0;
+}
+label.depot.ph-eveil {
+  border-color: var(--c-f);
+  background: var(--c-c);
+  transform: scale(1.012);
+}
+label.depot.ph-sur {
+  border-style: solid;
+  transform: scale(1.03);
+  box-shadow: 0 18px 30px -22px var(--c-f);
+}
+label.depot.ph-sur:before {
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: reduce) {
+  .inter:active:after {
+    width: 24px;
+  }
+  label.depot.ph-eveil,
+  label.depot.ph-sur {
+    transform: none;
+  }
+}
