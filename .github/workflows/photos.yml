@@ -1,0 +1,21 @@
+name: photos
+on:
+  push:
+    branches: [photos]
+    paths: [liste.txt]
+permissions:
+  contents: write
+jobs:
+  dl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p img
+          while read n id; do
+            [ -z "$n" ] && continue
+            curl -sSfL -o "img/$n.jpg" "https://images.unsplash.com/$id?ixlib=rb-4.1.0&q=85&fm=jpg&crop=entropy&cs=srgb&w=1800"
+          done < liste.txt
+          ls -la img
+          git config user.name "photos-bot"; git config user.email "photos-bot@users.noreply.github.com"
+          git add img && git commit -m "Photos" && git push
