@@ -8,13 +8,16 @@ PH = {k: f'file:///home/claude/photos/{k}.jpg' for k in ['mairie', 'bureau', 'at
 
 FONTS = """@font-face{font-family:'Bricolage Grotesque';font-weight:200 800;src:url(file:///home/claude/studioes29/fill/assets/f/br.woff2)}
 @font-face{font-family:'Inter Tight';font-weight:100 900;src:url(file:///home/claude/studioes29/fill/assets/f/it.woff2)}
-@font-face{font-family:'Urbanist';font-style:italic;font-weight:100 900;src:url(file:///home/claude/studioes29/fill/assets/f/ur-i.woff2)}"""
+@font-face{font-family:'Urbanist';font-style:italic;font-weight:100 900;src:url(file:///home/claude/studioes29/fill/assets/f/ur-i.woff2)}
+@font-face{font-family:'Bricolage Grotesque X';font-weight:200 800;src:url(file:///home/claude/studioes29/fill/assets/f/br-ext.woff2)}
+@font-face{font-family:'Inter Tight X';font-weight:100 900;src:url(file:///home/claude/studioes29/fill/assets/f/it-ext.woff2)}
+@font-face{font-family:'Urbanist X';font-style:italic;font-weight:100 900;src:url(file:///home/claude/studioes29/fill/assets/f/ur-i-ext.woff2)}"""
 
 CSS = FONTS + """
 *{box-sizing:border-box}body{margin:0;background:#000}
-.pg{position:relative;width:1080px;height:1350px;overflow:hidden;font-family:'Inter Tight',sans-serif;color:#1A1A1A}
-.D{font-family:'Bricolage Grotesque',sans-serif}.I{font-family:'Urbanist',sans-serif;font-style:italic;font-weight:300}
-.ttl{position:absolute;left:88px;right:88px;top:168px;font-family:'Bricolage Grotesque';font-weight:650;font-size:100px;line-height:.96;letter-spacing:-.04em}
+.pg{position:relative;width:1080px;height:1350px;overflow:hidden;font-family:'Inter Tight','Inter Tight X',sans-serif;color:#1A1A1A}
+.D{font-family:'Bricolage Grotesque','Bricolage Grotesque X',sans-serif}.I{font-family:'Urbanist','Urbanist X',sans-serif;font-style:italic;font-weight:300}
+.ttl{position:absolute;left:88px;right:88px;top:168px;font-family:'Bricolage Grotesque','Bricolage Grotesque X';font-weight:650;font-size:100px;line-height:.96;letter-spacing:-.04em}
 .ttl .I{display:block;letter-spacing:-.02em;margin-top:6px}
 .sub{position:absolute;left:88px;right:88px;font-weight:500;font-size:32px;line-height:1.35}
 .card{position:absolute;background:#fff;border-radius:36px;box-shadow:0 50px 90px -45px rgba(26,26,26,.5)}

@@ -8,7 +8,7 @@ for k in ['marche-stands','marche-noel','mairie-nuit','parade-noel','atelier-cou
     PH[k] = f'file://{HD}{k}.jpg'
 PH.update({'marche': PH['marche-stands'], 'atelier': PH['atelier-couronnes'], 'lecture': PH['parade-noel'],
            'photographe': PH['marche-noel'], 'mairie': PH['mairie-nuit'], 'bureau': PH['ville-nuit']})
-F_D = "font-family:'Bricolage Grotesque'"
+F_D = "font-family:'Bricolage Grotesque','Bricolage Grotesque X'"
 
 
 def mot(col):
