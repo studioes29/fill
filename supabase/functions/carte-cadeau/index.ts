@@ -4,6 +4,7 @@
 // GET  ?action=verify-gift&session=cs_...                        -> {ok, code, amount, pour, de, msg, date, until}
 // GET  ?action=gift-check&code=PT-XXXX-XXXX                       -> {found, paid, used, amount, pour, date}
 // POST {action:"gift-check", code, pin}                           -> {ok} (marque utilisée)
+// POST {action:"renvoyer-avis", id} + jeton pilote ou clé secrète -> {ok} (renvoie l'avis au salon, depuis Hors-champ)
 import { CLE_ENVOI, envoyerSmtp } from "../_partage/smtp.ts";
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -30,21 +31,44 @@ const nouveauCode = () => {
   return `PT-${s.slice(0, 4)}-${s.slice(4)}`;
 };
 
-async function prevenirSalon(c: Record<string, unknown>) {
-  const cle = CLE_ENVOI;
+// Avis au salon à chaque carte payée, avec une copie à contact@studioes.fr (Ewen voit passer chaque avis).
+// La date d'envoi est notée (salon_prevenu_le) : une carte sans avis réussi remonte dans Hors-champ.
+const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+async function prevenirSalon(sb: ReturnType<typeof createClient>, c: Record<string, unknown>): Promise<boolean> {
+  if (!CLE_ENVOI) { console.error("carte-cadeau avis : boîte contact non réglée"); return false; }
   const salon = Deno.env.get("PIERCEVAL_EMAIL") ?? "piercevaltattoo@gmail.com";
-  if (!cle) return;
-  const t = `Carte n° ${c.code}, ${c.montant} €, pour ${net(c.beneficiaire)}${c.offert_par ? `, de la part de ${net(c.offert_par)}` : ""}. Valable jusqu'au ${new Date(String(c.expire_le)).toLocaleDateString("fr-FR")}. Paiement confirmé par Stripe.`;
-  await envoyerSmtp({
+  const copie = Deno.env.get("ALERTE_EMAIL") ?? "contact@studioes.fr";
+  const jusquau = new Date(String(c.expire_le)).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+  const le = new Date(String(c.payee_le ?? new Date().toISOString())).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+  const pour = net(c.beneficiaire), de = net(c.offert_par);
+  const lignes = [
+    ["Numéro", String(c.code)],
+    ["Montant", `${Number(c.montant)} €`],
+    ["Pour", pour],
+    ...(de ? [["De la part de", de]] : []),
+    ["Payée le", le],
+    ["Valable jusqu'au", jusquau],
+  ];
+  const texte = `Bonjour,\n\nUne carte cadeau vient d'être achetée sur le site. Le client peut se présenter au studio avec ce numéro.\n\n${lignes.map(([k, v]) => `${k} : ${v}`).join("\n")}\n\nAvant la séance, vérifiez la carte et marquez-la comme utilisée ici : ${SITE}/verifier.html\n\nLe paiement est confirmé par Stripe. Le montant vous est reversé par virement le premier jour du mois suivant.`;
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#1c0f1f;max-width:520px">
+<p>Bonjour,</p><p>Une carte cadeau vient d'être achetée sur le site. Le client peut se présenter au studio avec ce numéro.</p>
+<table style="border-collapse:collapse;margin:16px 0">${lignes.map(([k, v]) => `<tr><td style="padding:4px 16px 4px 0;color:#6b5a6e">${esc(k)}</td><td style="padding:4px 0"><b>${esc(v)}</b></td></tr>`).join("")}</table>
+<p><a href="${SITE}/verifier.html" style="display:inline-block;background:#e68dca;color:#1c0f1f;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:999px">Vérifier la carte</a></p>
+<p style="color:#6b5a6e;font-size:13px">Paiement confirmé par Stripe. Le montant vous est reversé par virement le premier jour du mois suivant.</p></div>`;
+  const r = await envoyerSmtp({
     method: "POST",
-    headers: { "api-key": cle, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
-      sender: { name: "Site Pierceval Tattoo", email: Deno.env.get("EXPEDITEUR_EMAIL") ?? "contact@studioes.fr" },
+      sender: { name: "Site Pierceval Tattoo" },
       to: [{ email: salon }],
-      subject: `Carte cadeau vendue : ${c.montant} € (${c.code})`,
-      textContent: `${t}\n\nVérification au studio : ${SITE}/verifier.html`,
+      bcc: copie && copie !== salon ? [{ email: copie }] : [],
+      subject: `Nouvelle carte cadeau : ${Number(c.montant)} € pour ${pour} (${c.code})`,
+      textContent: texte,
+      htmlContent: html,
     }),
-  }).catch(() => null);
+  }).catch((e) => { console.error("carte-cadeau avis", String(e)); return null; });
+  if (!r || r.status !== 201) { console.error("carte-cadeau avis refusé", r ? r.status + " " + (await r.text().catch(() => "")) : "pas de réponse"); return false; }
+  await sb.from("carte_cadeau").update({ salon_prevenu_le: new Date().toISOString() }).eq("id", String(c.id));
+  return true;
 }
 
 async function confirmer(sb: ReturnType<typeof createClient>, stripe: Stripe, session: string) {
@@ -59,7 +83,7 @@ async function confirmer(sb: ReturnType<typeof createClient>, stripe: Stripe, se
   const { data: v } = await sb.from("carte_cadeau")
     .update({ statut: "valide", montant: paye, payee_le: new Date().toISOString(), expire_le: expire.toISOString().slice(0, 10) })
     .eq("id", c.id).eq("statut", "en_attente").select("*").maybeSingle();
-  if (v) await prevenirSalon(v);
+  if (v) await prevenirSalon(sb, v);
   return v ?? c;
 }
 
@@ -103,10 +127,20 @@ Deno.serve(async (req) => {
   let b: Record<string, unknown>;
   try { b = await req.json(); } catch { return json({ erreur: "Requête illisible" }, 400); }
 
+  if (b.action === "renvoyer-avis") {
+    const jeton = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const ok = Boolean(CLE_SECRETE) && jeton.length >= 32 && (jeton === CLE_SECRETE || (await sb.rpc("verifier_jeton_pilote", { p: jeton })).data === true);
+    if (!ok) return json({ ok: false }, 401);
+    const { data: c } = await sb.from("carte_cadeau").select("*").eq("id", net(b.id, 40)).in("statut", ["valide", "utilisee"]).maybeSingle();
+    if (!c) return json({ ok: false, erreur: "Carte introuvable" }, 404);
+    return json({ ok: await prevenirSalon(sb, c) });
+  }
+
   if (b.action === "gift-check") {
     if (await tropDEssais(sb, req)) return json({ ok: false, erreur: "Trop d'essais" }, 429);
     const pin = Deno.env.get("CODE_SALON");
-    if (!pin || String(b.pin ?? "") !== pin) return json({ ok: false, erreur: "Code du studio incorrect" }, 403);
+    if (!pin) return json({ ok: false, erreur: "Code du studio pas encore réglé" }, 503);
+    if (String(b.pin ?? "") !== pin) return json({ ok: false, erreur: "Code du studio incorrect" }, 403);
     const code = net(b.code, 20).toUpperCase();
     const { data } = await sb.from("carte_cadeau").update({ statut: "utilisee", utilisee_le: new Date().toISOString() })
       .eq("code", code).eq("statut", "valide").select("id").maybeSingle();
