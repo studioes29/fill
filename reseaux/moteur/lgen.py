@@ -44,6 +44,9 @@ window.seek=function(t){
   else if(k==='pop'){o=Math.min(1,p*3);sc=.55+.45*B(p)}
   else if(k==='fall'){o=Math.min(1,p*4);y=-(1-B(p))*420}
   else if(k==='fade'){o=p}
+  else if(k==='zoom'){o=1;sc=1.14-.14*E(p)}
+  else if(k==='out'){o=1-E(p);y=-E(p)*140}
+  else if(k==='drop'){o=Math.min(1,p*3);y=-(1-B(p))*90}
   else if(k==='left'){o=E(p);x=-(1-E(p))*160}
   else if(k==='right'){o=E(p);x=(1-E(p))*160}
   else if(k==='dim'){o=1-.55*p;e.style.opacity=o;return}
