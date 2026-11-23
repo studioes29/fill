@@ -91,17 +91,21 @@ def pied(txt, col='rgba(26,26,26,.78)', fs=32):
     return f'<div style="font-weight:550;font-size:{fs}px;line-height:1.32;color:{col}">{txt}</div>'
 
 
-def mise(titre_html, visuel, h, pied_html='', top=176):
-    """Titre en haut, pied calé sur la marge basse, visuel centré entre les deux : espaces égaux."""
-    return (f'<div style="position:absolute;left:{M}px;right:{M}px;top:{top}px;bottom:{M}px;display:flex;flex-direction:column;justify-content:space-between">'
-            f'{titre_html}<div class="vis" style="position:relative;height:{h}px;flex:none">{visuel}</div>{pied_html or "<div></div>"}</div>'
+def mise(titre_html, visuel, h, pied_html='', top=176, gmax=120):
+    """Titre, visuel, pied : écarts égaux plafonnés à gmax ; le bloc est centré dans la page (pas de grand vide)."""
+    return (f'<div class="mise" data-g="{gmax}" style="position:absolute;left:{M}px;right:{M}px;top:{top}px;bottom:{M}px;display:flex;flex-direction:column;justify-content:space-between">'
+            f'{titre_html}<div class="vis" style="position:relative;height:{h}px;flex:none">{visuel}</div>{pied_html}</div>'
             + MESURE)
 
 
-# hauteur réelle du visuel (enfants positionnés) : mesurée une fois les polices chargées
+# hauteur réelle du visuel (enfants positionnés) mesurée une fois les polices chargées, puis écarts égaux plafonnés
 MESURE = ("<script>(function(){function m(){document.querySelectorAll('.vis').forEach(function(v){var t=v.getBoundingClientRect().top,b=0;"
           "v.querySelectorAll('*').forEach(function(e){if(e.closest('svg')&&e.tagName!=='svg')return;var r=e.getBoundingClientRect();if(r.height>0)b=Math.max(b,r.bottom-t)});"
-          "if(b>0)v.style.height=Math.round(b)+'px'})}m();if(document.fonts)document.fonts.ready.then(m)})();</script>")
+          "if(b>0)v.style.height=Math.round(b)+'px'});"
+          "document.querySelectorAll('.mise').forEach(function(c){var k=[].slice.call(c.children).filter(function(e){return e.tagName!=='SCRIPT'&&e.offsetHeight>0});"
+          "var s=0;k.forEach(function(e){s+=e.offsetHeight});var n=k.length-1;if(n<1)return;var g=Math.min((c.clientHeight-s)/n,+c.dataset.g);"
+          "c.style.justifyContent='center';c.style.gap=Math.max(g,36)+'px'})}"
+          "m();if(document.fonts)document.fonts.ready.then(m)})();</script>")
 
 
 def jour(t, bg, fg):

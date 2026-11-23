@@ -1,11 +1,11 @@
-"""Guide · « Une publication lisible par tous » (mardi 22 décembre 2026, 11 h), version 2.
+"""Guide · « Une publication lisible par tous » (mardi 12 janvier 2027, 11 h), version 3.
 Storytelling : ce qu'entend un lecteur d'écran → qui est concerné → ce que dit la loi → les 7 gestes en 3 pages → la même publication, lue correctement.
 Couverture fixe, aucun dégradé, texte sur aplat, photos toutes différentes. Rendu : python3 accessible2.py ; render.py ga2-01..09."""
 from lgen import C, MOTIF, NB, logo, motif, head, check, arrow, page
 from guide2 import ico, F_D
 from v2 import pill, rond_fleche, fin, av, M, tflow, pied, mise, cadre, carte, OMBRE, HD
 
-N = 9
+N = 10
 EMO = "font-family:'Noto Color Emoji'"
 
 
@@ -29,12 +29,12 @@ def voix(txt, fs=34, bg=None, fg=None):
 
 
 def affiche(w, h):
-    """Exemple : affiche du concert de Noël (photo de scène, texte sur aplat)."""
+    """Exemple : affiche du concert du Nouvel An (photo de scène, texte sur aplat)."""
     return (f'<div style="position:relative;width:{w}px;height:{h}px;border-radius:22px;overflow:hidden;background:{C["lavf"]}">'
             f'<img src="{HD}micro-scene.jpg" style="position:absolute;left:0;top:0;width:100%;height:58%;object-fit:cover;object-position:center 40%">'
             f'<div style="position:absolute;left:0;right:0;bottom:0;height:42%;padding:{round(w*.07)}px;display:flex;flex-direction:column;justify-content:center">'
-            f'<div class="D" style="font-weight:760;font-size:{round(w*.13)}px;line-height:.92;letter-spacing:-.035em;color:{C["sable"]}">Concert<br>de Noël</div>'
-            f'<div style="margin-top:{round(w*.03)}px;font-weight:650;font-size:{round(w*.055)}px;color:{C["lavc"]}">Sam. 19 déc. · 18 h · église</div></div></div>')
+            f'<div class="D" style="font-weight:760;font-size:{round(w*.13)}px;line-height:.92;letter-spacing:-.035em;color:{C["sable"]}">Concert du<br>Nouvel An</div>'
+            f'<div style="margin-top:{round(w*.03)}px;font-weight:650;font-size:{round(w*.055)}px;color:{C["lavc"]}">Sam. 16 janv. · 18 h · église</div></div></div>')
 
 
 def post(w, legende):
@@ -56,13 +56,28 @@ def p1():
     return b
 
 
+# ---------- 2 · contexte ----------
+def p2ctx():
+    b = motif(MOTIF['lav'], 2300, 120, -420) + hd(1, 'lav')
+    lignes = [('Affiches et programmes', 'publiés en image'), ('Horaires et dates', 'écrits dans l’image'), ('Vidéos', 'parlées, sans sous-titres')]
+    rows = ''.join(f'<div style="display:flex;align-items:center;gap:18px;height:76px;border-top:2px solid rgba(26,26,26,.07)">'
+                   f'<span style="flex:none;width:14px;height:14px;border-radius:50%;background:{C["lavf"]}"></span>'
+                   f'<span style="flex:1;font-weight:680;font-size:27px">{a}</span><span style="font-weight:550;font-size:22px;color:rgba(26,26,26,.55)">{s}</span></div>'
+                   for a, s in lignes)
+    v = cadre('homme-lunettes-tel', 0, 0, 904, 430, 'center 30%', 36)
+    v += carte(160, 330, 744, f'<div style="font-weight:700;font-size:19px;letter-spacing:.08em;text-transform:uppercase;color:{C["lavt"]};padding-bottom:12px">Sur nos réseaux, chaque semaine</div>{rows}', pad='26px 32px 14px', rad=32)
+    b += mise(tflow('Une info publiée,', 'tout le monde la lit ?', 88, C['encre'], C['lavt']), v, 680,
+              pied('Voici ce qu’entend une personne aveugle<br>devant un post ordinaire.', C['encre']))
+    return b
+
+
 # ---------- 2 · ce qu'entend un lecteur d'écran ----------
 def p2():
-    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(1, 'lavf')
-    leg = f'Venez nombreux ! <span style="{EMO}">🎄✨🎅</span>'
+    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(2, 'lavf')
+    leg = f'Venez nombreux ! <span style="{EMO}">🎉🎶✨</span>'
     v = f'<div style="position:absolute;left:0;top:0;transform:rotate(-2deg)">{post(400, leg)}</div>'
     v += (f'<div style="position:absolute;left:440px;top:120px;width:464px">'
-          + voix('« Image. Venez nombreux ! Sapin de Noël. Étincelles. Père Noël. »', 36) + '</div>')
+          + voix('« Image. Venez nombreux ! Cotillons. Musique. Étincelles. »', 36) + '</div>')
     v += (f'<div style="position:absolute;left:440px;top:470px;display:flex;flex-direction:column;gap:12px">'
           + ''.join(pill(t, 'rgba(248,245,242,.14)', C['sable'], 54, 23, icon='<span style="font-weight:800">✕</span>') for t in ('Ni la date', 'Ni l’heure', 'Ni le lieu')) + '</div>')
     b += mise(tflow('Ce qu’entend', 'un lecteur d’écran.', 92, C['sable'], C['lavc']), v, 640,
@@ -77,7 +92,7 @@ QUI = [('<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><
 
 
 def p3():
-    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(2, 'lavc')
+    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(3, 'lavc')
     v = cadre('main-tel-bois', 0, 0, 904, 330, 'center 45%', 36)
     w = (904 - 2 * 16) // 3
     for i, (p, t, s) in enumerate(QUI):
@@ -94,7 +109,7 @@ def p3():
 
 # ---------- 4 · ce que dit la loi ----------
 def p4():
-    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(3, 'lavf')
+    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(4, 'lavf')
     cards = [('Pour les communes', 'Une obligation', 'Loi du 11 février 2005, article 47 : les services en ligne publics doivent être accessibles (référentiel RGAA).', C['lavc'], C['lavt']),
              ('Pour les entreprises', 'Un cadre européen', 'Depuis le 28 juin 2025, certains services numériques, dont le commerce en ligne, relèvent de l’acte européen sur l’accessibilité.', C['sable'], C['lavf'])]
     v = ''
@@ -131,8 +146,8 @@ def pile(blocs, gap=18):
 
 # ---------- 5 · les images (gestes 1 et 2) ----------
 def p5():
-    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(4, 'lavc')
-    v, h = pile([(bloc(1, 'Un texte alternatif', 'Laisser le champ vide', 'Affiche du concert de Noël, samedi 19 décembre à 18 h, église'), 250),
+    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(5, 'lavc')
+    v, h = pile([(bloc(1, 'Un texte alternatif', 'Laisser le champ vide', 'Affiche du concert du Nouvel An, samedi 16 janvier à 18 h, église'), 250),
                  (bloc(2, 'L’affiche reprise en texte', 'Seulement « Venez nombreux ! »', 'La date, l’heure et le lieu dans la légende'), 250)])
     b += mise(tflow('Pour les images,', 'tout dire en texte.', 92, C['encre'], C['lavt']), v, h,
               pied('Le champ « texte alternatif » existe sur Instagram,<br>Facebook, LinkedIn et sur votre site.'))
@@ -141,9 +156,9 @@ def p5():
 
 # ---------- 6 · le texte (gestes 3, 4, 5) ----------
 def p6():
-    b = motif(MOTIF['lav'], 2300, 120, -420) + hd(5, 'lav')
-    v, h = pile([(bloc(3, 'Des emojis comptés', f'Un emoji <span style="{EMO}">✨</span> tous <span style="{EMO}">🎄</span> les mots', f'Un ou deux, en fin de phrase <span style="{EMO}">🎄</span>'), 230),
-                 (bloc(4, 'Des mots-dièse lisibles', '#concertdenoel', '#ConcertDeNoël'), 230),
+    b = motif(MOTIF['lav'], 2300, 120, -420) + hd(6, 'lav')
+    v, h = pile([(bloc(3, 'Des emojis comptés', f'Un emoji <span style="{EMO}">✨</span> tous <span style="{EMO}">🎄</span> les mots', f'Un ou deux, en fin de phrase <span style="{EMO}">🎶</span>'), 230),
+                 (bloc(4, 'Des mots-dièse lisibles', '#concertdunouvelan', '#ConcertDuNouvelAn'), 230),
                  (bloc(5, 'Ni capitales ni polices fantaisie', 'INSCRIPTIONS OUVERTES', 'Inscriptions ouvertes'), 230)], 16)
     b += mise(tflow('Pour le texte,', 'rester simple.', 92, C['encre'], C['lavt']), v, h)
     return b
@@ -151,7 +166,7 @@ def p6():
 
 # ---------- 7 · contraste et vidéos (gestes 6 et 7) ----------
 def p7():
-    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(6, 'lavc')
+    b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(7, 'lavc')
     w = 444
     c1 = (f'<div style="display:flex;align-items:center;gap:14px;padding-bottom:16px">'
           f'<span class="D" style="width:52px;height:52px;border-radius:50%;background:{C["lavf"]};color:{C["sable"]};display:grid;place-items:center;font-weight:800;font-size:28px">6</span>'
@@ -175,11 +190,11 @@ def p7():
 
 # ---------- 8 · le résultat ----------
 def p8():
-    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(7, 'lavf')
-    leg = 'Concert de Noël samedi 19 décembre à 18 h, église du bourg. Entrée libre. <span style="font-family:\'Noto Color Emoji\'">🎄</span>'
+    b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(8, 'lavf')
+    leg = 'Concert du Nouvel An samedi 16 janvier à 18 h, église du bourg. Entrée libre. <span style="font-family:\'Noto Color Emoji\'">🎶</span>'
     v = f'<div style="position:absolute;left:0;top:0;transform:rotate(-2deg)">{post(400, leg)}</div>'
     v += (f'<div style="position:absolute;left:440px;top:110px;width:464px">'
-          + voix('« Affiche du concert de Noël, samedi 19 décembre à 18 h, église du bourg. Entrée libre. »', 34) + '</div>')
+          + voix('« Affiche du concert du Nouvel An, samedi 16 janvier à 18 h, église du bourg. Entrée libre. »', 34) + '</div>')
     v += (f'<div style="position:absolute;left:440px;top:480px;display:flex;flex-direction:column;gap:12px">'
           + ''.join(pill(t, C['sable'], C['lavf'], 54, 23, icon=check(C['lavf'], 22)) for t in ('La date', 'L’heure', 'Le lieu')) + '</div>')
     b += mise(tflow('La même publication,', 'lue en entier.', 88, C['sable'], C['lavc']), v, 680,
@@ -188,12 +203,12 @@ def p8():
 
 
 def p9():
-    return fin(N, 8, MOTIF['lavf'], 'À chaque publication,<br>sept gestes.', 'On peut s’en occuper pour vous.', C['lavc'])
+    return fin(N, 9, MOTIF['lavf'], 'À chaque publication,<br>sept gestes.', 'On peut s’en occuper pour vous.', C['lavc'])
 
 
-PAGES = [(p1, C['lavc']), (p2, C['lavf']), (p3, C['lavc']), (p4, C['lavf']), (p5, C['lavc']), (p6, C['lav']), (p7, C['lavc']), (p8, C['lavf']), (p9, C['lavf'])]
+PAGES = [(p1, C['lavc']), (p2ctx, C['lav']), (p2, C['lavf']), (p3, C['lavc']), (p4, C['lavf']), (p5, C['lavc']), (p6, C['lav']), (p7, C['lavc']), (p8, C['lavf']), (p9, C['lavf'])]
 
-TEXTE = """Une affiche publiée en image, sans texte, un lecteur d'écran la lit ainsi : « Image. Venez nombreux ! Sapin de Noël. Étincelles. Père Noël. » Ni la date, ni l'heure, ni le lieu.
+TEXTE = """Affiches, programmes, horaires : sur les réseaux, beaucoup d'informations passent par une image. Une affiche publiée sans texte, un lecteur d'écran la lit ainsi : « Image. Venez nombreux ! Cotillons. Musique. Étincelles. » Ni la date, ni l'heure, ni le lieu.
 
 Ça ne concerne pas que quelques personnes : lecteur d'écran, texte agrandi sur un téléphone, vidéo regardée sans le son dans le bus. Pour les communes, c'est aussi une obligation (loi du 11 février 2005, article 47) ; pour certaines entreprises, un cadre européen depuis le 28 juin 2025.
 
@@ -206,5 +221,5 @@ TAGS = "\n\n#accessibilite #communication #collectivites #reseauxsociaux #inclus
 
 if __name__ == '__main__':
     for i, (f, bg) in enumerate(PAGES):
-        page(f'ga2-{i + 1:02d}', bg, f(), end=1)
+        page(f'ga3-{i + 1:02d}', bg, f(), end=1)
     print('ok')

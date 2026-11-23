@@ -40,18 +40,17 @@ def ligne(t, ok=None, extra='', fs=28, h=80, sub=''):
 # ---------- 1 · couverture (fixe) ----------
 def p1():
     b = f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["sable"], C["lav"], C["cor"])}</div>'
-    b += f'<div style="position:absolute;right:{M}px;top:92px">{pill("Commune de 3 000 habitants", C["lavc"], C["lavt"], 58, 24)}</div>'
-    b += cadre('mairie-grille', M, 196, 904, 560, 'center 45%', 40)
+    b += cadre('mairie-grille', M, 196, 904, 470, 'center 45%', 40)
     w = (904 - 4 * 14) // 5
-    for i, (j, s) in enumerate(JOURS):
-        b += (f'<div style="position:absolute;left:{M + i * (w + 14)}px;top:690px;width:{w}px;height:124px;border-radius:26px;background:#fff;box-shadow:{OMBRE};'
+    for i, (j, s_) in enumerate(JOURS):
+        b += (f'<div style="position:absolute;left:{M + i * (w + 14)}px;top:604px;width:{w}px;height:124px;border-radius:26px;background:#fff;box-shadow:{OMBRE};'
               f'display:flex;flex-direction:column;justify-content:center;padding:0 20px">'
               f'<span class="D" style="font-weight:760;font-size:40px;letter-spacing:-.03em;color:{C["lavf"]}">{j}</span>'
-              f'<span style="margin-top:4px;font-weight:650;font-size:21px;color:rgba(26,26,26,.6)">{s}</span></div>')
-    b += (f'<div style="position:absolute;left:{M}px;right:{M}px;top:872px">'
-          f'<div class="D" style="font-weight:700;font-size:104px;line-height:.92;letter-spacing:-.05em;color:{C["sable"]}">Une semaine de com</div>'
-          f'<div class="I" style="font-size:86px;line-height:1.04;letter-spacing:-.02em;color:{C["lavc"]};margin-top:6px">dans une commune.</div></div>')
-    b += (f'<div style="position:absolute;left:{M}px;width:640px;top:1172px;font-weight:550;font-size:30px;line-height:1.3;color:{C["sable"]}">'
+              f'<span style="margin-top:4px;font-weight:650;font-size:21px;color:rgba(26,26,26,.6)">{s_}</span></div>')
+    b += (f'<div style="position:absolute;left:{M}px;right:{M}px;top:800px">'
+          f'<div class="D" style="font-weight:700;font-size:100px;line-height:.92;letter-spacing:-.05em;color:{C["sable"]}">Une semaine de com</div>'
+          f'<div class="I" style="font-size:80px;line-height:1.04;letter-spacing:-.02em;color:{C["lavc"]};margin-top:8px">dans une commune<br>de 3 000 habitants.</div></div>')
+    b += (f'<div style="position:absolute;left:{M}px;width:640px;top:1158px;font-weight:550;font-size:30px;line-height:1.3;color:{C["sable"]}">'
           f'Du lundi au vendredi,<br>ce qui arrive sur le bureau.</div>')
     b += rond_fleche(1080 - M - 104, 1350 - M - 104, C['sable'], C['lavf'])
     return b
@@ -61,14 +60,16 @@ def p1():
 def p2():
     b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(1, False)
     taches = ['Accueil du public', 'État civil', 'Urbanisme', 'Élections', 'Cimetière']
-    rows = ''.join(ligne(t, None, fs=27, h=70) for t in taches)
-    rows += (f'<div style="display:flex;align-items:center;gap:14px;height:84px;margin:8px -18px 0;padding:0 18px;border-radius:22px;background:{C["lavf"]};color:{C["sable"]}">'
-             f'<span style="flex:none;width:40px;height:40px;border-radius:50%;background:{C["sable"]};display:grid;place-items:center;font-weight:800;font-size:28px;color:{C["lavf"]}">+</span>'
-             f'<span style="font-weight:700;font-size:28px">Communication</span></div>')
-    v = cadre('tampon-bureau', 0, 0, 400, 600, 'center 60%', 36)
-    v += carte(430, 40, 474, f'<div class="D" style="font-weight:720;font-size:34px;letter-spacing:-.02em;padding-bottom:10px">Secrétariat de mairie</div>{rows}', pad='28px 30px 26px', rad=34)
-    b += mise(tflow('Qui s’en occupe ?', 'Souvent, le secrétariat.', 92, C['encre'], C['lavt']), v, 600,
-              pied('La com s’ajoute au reste, sans horaire prévu.'))
+    rows = ''.join(ligne(t, True, fs=26, h=66) for t in taches)
+    rows += (f'<div style="display:flex;align-items:center;gap:16px;height:80px;margin:8px -16px 0;padding:0 16px;border-radius:22px;background:{C["cor"]};color:{C["encre"]}">'
+             f'<span style="flex:none;width:40px;height:40px;border-radius:50%;background:{C["encre"]};display:grid;place-items:center;font-weight:800;font-size:28px;color:{C["cor"]}">+</span>'
+             f'<span style="flex:1;font-weight:720;font-size:27px">Communication</span><span style="font-weight:650;font-size:20px">en plus</span></div>')
+    entete = (f'<div style="font-weight:700;font-size:18px;letter-spacing:.08em;text-transform:uppercase;color:{C["lavt"]}">Une seule fiche de poste</div>'
+              f'<div class="D" style="margin:6px 0 12px;font-weight:720;font-size:36px;letter-spacing:-.02em">Secrétaire de mairie</div>')
+    v = cadre('secretaire-tel', 0, 0, 380, 640, 'center 35%', 36)
+    v += carte(404, 30, 500, entete + rows, pad='28px 30px 26px', rad=34)
+    b += mise(tflow('Qui s’en occupe ?', 'Souvent, le secrétariat<br>de mairie.', 88, C['encre'], C['lavt']), v, 640,
+              pied('La même personne tient l’accueil, l’état civil<br>et l’urbanisme. La com s’ajoute au reste.'))
     return b
 
 
@@ -102,10 +103,10 @@ def p4():
     b = motif(MOTIF['lavc'], 2300, 120, -420) + hd(3, False)
     items = [('Invitation', '4 sem. avant', True), ('Annonce sur le site', '3 sem. avant', True), ('Diaporama de l’année', '2 sem. avant', True),
              ('Discours mis en page', 'la veille', False), ('Photos de la soirée', 'le soir même', False), ('Article du bulletin', 'après', False)]
-    rows = ''.join(ligne(t, ok, fs=25, h=72, sub=q) for t, q, ok in items)
-    v = cadre('micro-salle', 0, 0, 330, 600, '30% 50%', 36)
-    v += carte(350, 34, 554, f'<div class="D" style="font-weight:720;font-size:32px;letter-spacing:-.02em;padding-bottom:10px">Cérémonie des vœux</div>{rows}', pad='26px 28px 20px', rad=34)
-    b += mise(tflow('Les vœux se préparent.', 'Six supports pour une soirée.', 84, C['encre'], C['lavt'], pre=jour('Mardi', C['encre'], C['sable'])), v, 740)
+    rows = ''.join(ligne(t, ok, fs=25, h=64, sub=q) for t, q, ok in items)
+    v = cadre('micro-salle', 0, 0, 904, 380, '20% 32%', 36)
+    v += carte(300, 230, 604, f'<div class="D" style="font-weight:720;font-size:32px;letter-spacing:-.02em;padding-bottom:10px">Cérémonie des vœux</div>{rows}', pad='26px 30px 18px', rad=34)
+    b += mise(tflow('Les vœux se préparent.', 'Six supports pour une soirée.', 84, C['encre'], C['lavt'], pre=jour('Mardi', C['encre'], C['sable'])), v, 760)
     return b
 
 

@@ -24,3 +24,15 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Storytelling : on comprend de quoi parle le post sur la couverture, puis pourquoi c'est important, puis comment faire, puis ce qu'on y gagne. Quelqu'un qui n'y connaît rien doit suivre.
 - Pas de série étalée sur plusieurs semaines : une histoire tient dans un seul post (jusqu'à 10 pages). Pas de « épisode 1 sur 6 ».
 - L'ordre des couvertures se vérifie dans Hors-champ, rubrique Réseaux, page « Feed » (jamais deux couleurs identiques à la suite).
+
+## 23 nov. (3)
+- Écarts titre / visuel / pied égaux mais plafonnés (mise(), 120 px max) : jamais de grand vide entre deux blocs.
+- Budget des communes : voté en mars ou en avril (au plus tard le 15 avril), jamais « en avril » seul.
+- Un constat montre assez de manques pour que la cible se reconnaisse, puis une page dit ce que la solution règle (sans / avec).
+- Toujours une page de contexte avant d'entrer dans le contenu d'un guide.
+- Le titre porte l'info clé (ex. « dans une commune de 3 000 habitants ») : pas de détail important relégué dans une pastille.
+- Quand une liste appartient à une personne ou un service, le montrer (en-tête « fiche de poste », etc.).
+- Vérifier le recadrage de chaque photo : le sujet entier visible, jamais masqué par une carte.
+- Thème hors saison des fêtes quand il n'a pas de lien avec elles (ex. accessibilité déplacée en janvier).
+- LinkedIn reçoit le PDF des pages fixes (état final, sans animation).
+- Feed du canevas : board Feed.dc.html régénéré par reseaux/canevas/feed.py à chaque changement de post.
