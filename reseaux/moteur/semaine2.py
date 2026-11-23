@@ -21,18 +21,16 @@ def lg(dark=False):
 
 # ---------- 1 · couverture (animée) ----------
 def p1():
-    b = photo('cafe-ordi', 0, 0, 1080, 1350, 'center 40%')
-    b += fondu(LAVF, 0, 300, .5, 0)
-    b += fondu(LAVF, 640, 710, 0, 1)
-    b += f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["sable"], C["lav"], C["cor"])}</div>'
+    # photo dans un cadre net, notifications blanches dessus, titre sur l'aplat : aucun dégradé
+    b = f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["sable"], C["lav"], C["cor"])}</div>'
     b += f'<div style="position:absolute;right:{M}px;top:92px">{pill("Une semaine de com · 1/6", C["lavc"], C["lavt"], 58, 24)}</div>'
-    # trois notifications qui tombent, le compteur monte jusqu'à 5
+    b += photo('cafe-ordi', M, 196, 904, 640, 'center 55%', 40)
     for i, (a, bg, n, m, h, *_ ) in enumerate(DEM[:3]):
-        b += notif(196 - i * 40, 330 + i * 132, 790, a, bg, n, m, h, rot=(-1.5, 1.2, -.8)[i], anim=A('drop', .3 + i * .45, .55, r=(-1.5, 1.2, -.8)[i]), fs=1.15)
-    b += (f'<span {A("pop", 1.7, .45)} style="position:absolute;left:{1080 - M - 14}px;top:262px;z-index:3;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;'
+        b += notif(150 - i * 30, 262 + i * 132, 790, a, bg, n, m, h, rot=(-1.5, 1.2, -.8)[i], anim=A('drop', .3 + i * .45, .55, r=(-1.5, 1.2, -.8)[i]), fs=1.15)
+    b += (f'<span {A("pop", 1.7, .45)} style="position:absolute;left:{1080 - M - 48}px;top:230px;z-index:3;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;'
           f'background:{C["cor"]};font-family:\'Bricolage Grotesque\';font-weight:800;font-size:40px;color:{C["encre"]};box-shadow:0 0 0 6px {C["lavf"]}">'
           f'<span data-a="steps" data-s="0" data-times="0.4,0.85,1.3,1.75,2.1" data-base="0">5</span></span>')
-    b += (f'<div style="position:absolute;left:{M}px;right:240px;top:930px">'
+    b += (f'<div style="position:absolute;left:{M}px;right:240px;top:878px">'
           f'<div {A("up", 1.9, .7)} class="D" style="font-weight:700;font-size:150px;line-height:.88;letter-spacing:-.055em;color:{C["sable"]}">Lundi, 9{NB}h.</div>'
           f'<div {A("up", 2.15, .7)} class="I" style="font-size:72px;line-height:1.05;letter-spacing:-.02em;color:{C["lavc"]};margin-top:14px">la boîte de réception.</div></div>'
           )
@@ -76,11 +74,10 @@ def p3():
         b += f'<div style="position:absolute;left:{xs[i] + 30}px;top:540px">{av(a, bg, s=84)}</div>'
     b += (f'<svg width="1080" height="200" style="position:absolute;left:0;top:630px" fill="none" stroke="{C["lav"]}" stroke-width="4" stroke-linecap="round">'
           + ''.join(f'<path d="M{xs[i] + 72} 10 C {xs[i] + 72} 90, 540 90, 540 170"/>' for i in range(5)) + '</svg>')
-    b += photo('mairie-grille', M, 810, 904, 400, 'center 45%', 40, anim=False)
-    b += fondu('26,26,26', 1010, 200, 0, .55, x=M, w=904).replace('position:absolute;', 'position:absolute;border-radius:0 0 40px 40px;')
+    b += photo('mairie-grille', M, 810, 904, 300, 'center 45%', 40, anim=False)
     b += (f'<div style="position:absolute;left:{540 - 210}px;top:776px;width:420px;display:flex;justify-content:center">'
           f'{pill("Boîte de la mairie", "#fff", C["encre"], 68, 27, icon=ico("mail", 28))}</div>')
-    b += (f'<div style="position:absolute;left:{M + 40}px;right:{M + 40}px;top:1112px;font-weight:600;font-size:30px;line-height:1.3;color:{C["sable"]}">'
+    b += (f'<div style="position:absolute;left:{M}px;right:{M}px;top:1140px;font-weight:600;font-size:32px;line-height:1.3;color:{C["sable"]}">'
           f'Souvent, c’est le secrétariat de mairie,<br>entre l’état civil et l’urbanisme.</div>')
     return b
 

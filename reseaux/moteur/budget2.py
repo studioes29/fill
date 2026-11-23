@@ -15,21 +15,20 @@ def lg(dark=False):
 
 # ---------- 1 · couverture (animée) ----------
 def p1():
-    b = photo('mairie-grille', 0, 0, 1080, 900, 'center 40%')
-    b += fondu(CORC, 0, 260, .55, 0)
-    b += fondu(CORC, 420, 500, 0, 1)
-    b += f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["encre"], C["lav"], C["cor"])}</div>'
+    # photo dans un cadre net, tout le texte sur l'aplat : aucun dégradé
+    b = f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["encre"], C["lav"], C["cor"])}</div>'
     b += f'<div {A("pop", 2.4, .5)} style="position:absolute;right:{M}px;top:92px">{pill("Avant le 15 avril", C["encre"], C["sable"], 58, 24, icon=ico("clock", 24, C["sable"]))}</div>'
+    b += photo('mairie-grille', M, 196, 904, 540, 'center 42%', 40)
     # « 2027 » : le 6 de 2026 laisse sa place au 7
     dig = ''.join(f'<span {A("up", .25 + i * .12, .6)} style="display:inline-block">{c}</span>' for i, c in enumerate('202'))
     last = (f'<span style="position:relative;display:inline-block;overflow:hidden;vertical-align:top">'
             f'<span {A("out", 1.25, .45)} style="position:absolute;left:0;top:0;display:block">6</span>'
             f'<span {A("up", 1.35, .55)} style="display:block">7</span></span>')
-    b += (f'<div class="D" style="position:absolute;left:{M - 14}px;top:560px;font-weight:780;font-size:380px;line-height:.86;letter-spacing:-.07em;color:{C["cor"]}">'
+    b += (f'<div class="D" style="position:absolute;left:{M - 12}px;top:752px;font-weight:780;font-size:316px;line-height:.86;letter-spacing:-.07em;color:{C["cor"]}">'
           f'{dig}<span {A("up", .61, .6)} style="display:inline-block">{last}</span></div>')
-    b += (f'<div style="position:absolute;left:{M}px;right:240px;top:920px">'
-          f'<div {A("up", 1.8, .7)} class="D" style="font-weight:680;font-size:100px;line-height:.94;letter-spacing:-.045em">Le budget<br>se décide</div>'
-          f'<div {A("up", 2.0, .7)} class="I" style="font-size:96px;line-height:1.02;letter-spacing:-.02em;color:{C["cort"]};margin-top:4px">maintenant.</div></div>')
+    b += (f'<div style="position:absolute;left:{M}px;right:240px;top:1052px">'
+          f'<div {A("up", 1.8, .7)} class="D" style="font-weight:680;font-size:76px;line-height:.96;letter-spacing:-.04em">Le budget se décide</div>'
+          f'<div {A("up", 2.0, .7)} class="I" style="font-size:74px;line-height:1.04;letter-spacing:-.02em;color:{C["cort"]};margin-top:2px">maintenant.</div></div>')
     b += rond_fleche(1080 - M - 104, 1350 - M - 104, C['encre'], C['sable'], anim=2.7)
     return b
 
