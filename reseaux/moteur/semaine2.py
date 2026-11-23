@@ -41,13 +41,13 @@ def p1():
 # ---------- 2 · cinq demandes, cinq supports ----------
 def inbox_screen(w):
     rows = ''
-    for a, bg, n, m, h, s1, s2 in DEM:
-        rows += (f'<div style="display:flex;align-items:center;gap:16px;padding:19px 0;border-top:1.5px solid rgba(26,26,26,.07)">{av(a, bg, s=54)}'
+    for k, (a, bg, n, m, h, s1, s2) in enumerate(DEM):
+        rows += (f'<div {A("up", .4 + k * .5, .45)} style="display:flex;align-items:center;gap:16px;padding:19px 0;border-top:1.5px solid rgba(26,26,26,.07)">{av(a, bg, s=54)}'
                  f'<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><b style="font-size:21px">{n}</b><span style="font-size:16px;color:rgba(26,26,26,.45)">{h}</span></div>'
                  f'<div style="margin-top:2px;font-size:18px;color:rgba(26,26,26,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{m}</div></div></div>')
     return (f'<div style="position:absolute;inset:0;background:#fff;padding:78px 22px 0">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px"><span class="D" style="font-weight:760;font-size:30px;letter-spacing:-.03em">Boîte de la mairie</span>'
-            f'<span style="display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:17px;background:{C["cor"]};font-weight:800;font-size:18px">5</span></div>'
+            f'<span style="display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:17px;background:{C["cor"]};font-weight:800;font-size:18px"><span data-a="steps" data-s="0" data-times="0.4,0.9,1.4,1.9,2.4" data-base="0">5</span></span></div>'
             f'<div style="font-size:15px;font-weight:600;color:rgba(26,26,26,.45);padding-bottom:8px">Lundi · non lus</div>{rows}</div>')
 
 
@@ -58,8 +58,8 @@ def p2():
     b += phone(275, 420, 530, -3, inbox_screen(500), h=800)
     tags = [('Site', 110, 520, -6, C['lavf'], C['sable']), ('Facebook', 770, 540, 5, '#fff', C['encre']), ('Photos', 96, 760, 4, C['cor'], C['encre']),
             ('Alerte travaux', 690, 840, -4, C['encre'], C['sable']), ('Agenda', 130, 1010, -3, '#fff', C['encre']), ('Affiche', 800, 1080, 6, C['lav'], C['encre'])]
-    for t, x, y, r, bg, fg in tags:
-        b += f'<div style="position:absolute;left:{x}px;top:{y}px;z-index:3;transform:rotate({r}deg);box-shadow:0 24px 40px -24px rgba(30,12,70,.6);border-radius:999px">{pill(t, bg, fg, 70, 28)}</div>'
+    for j, (t, x, y, r, bg, fg) in enumerate(tags):
+        b += f'<div {A("pop", (.55, .6, 1.05, 1.55, 2.05, 2.55)[j], .4, r=r)} style="position:absolute;left:{x}px;top:{y}px;z-index:3;transform:rotate({r}deg);box-shadow:0 24px 40px -24px rgba(30,12,70,.6);border-radius:999px">{pill(t, bg, fg, 70, 28)}</div>'
     return b
 
 
@@ -108,7 +108,7 @@ def p5():
     return fin(N, 4, MOTIF['lavf'], 'Une semaine de com<br>dans une commune.', 'Épisode 1 sur 6.', C['lavc'], sous='Enregistrez la série pour la retrouver')
 
 
-PAGES = [(p1, C['lavf'], 3.3), (p2, C['lavc'], 1), (p3, C['lavf'], 1), (p4, C['lav'], 2.0), (p5, C['lavf'], 1)]
+PAGES = [(p1, C['lavf'], 1), (p2, C['lavc'], 3.2), (p3, C['lavf'], 1), (p4, C['lav'], 1), (p5, C['lavf'], 1)]
 
 if __name__ == '__main__':
     for i, (f, bg, end) in enumerate(PAGES):
