@@ -13,3 +13,14 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Une pastille doit dire quelque chose d'utile au lecteur (« Avant le 15 avril », « Une semaine de com · 1/6 »). Pas d'étiquette de série seule comme « Constat ».
 - Alignements et espacements : tout calé sur les marges de 88 px, rien ne déborde dans la marge basse, rien ne passe sous un autre élément par erreur.
 - Modèles de référence (version 2) : moteur/v2.py (briques), budget2.py (constat), semaine2.py (série). Les vidéos se rendent avec video.py ; dans reseaux_post.pages, une page animée est un .mp4 (avec un .jpg du même nom à côté pour la miniature Buffer).
+
+## 23 novembre 2026 (2) : retour sur le budget, la semaine de com et le guide accessible
+
+- La photo de couverture parle du sujet, pas de la cible (budget : billets et calculatrice, pas une mairie).
+- Jamais la même photo sur deux pages, ni d'un post à l'autre. Tenir la liste des photos déjà utilisées (liste.txt et posts publiés) avant d'en choisir une.
+- Pas de photo « décorative » en fond d'une carte, pas de tampon ni d'effet gadget : un visuel doit servir le propos. Recadrer pour que le sujet de la photo soit visible.
+- Espaces titre / visuel / pied toujours égaux : utiliser mise() de v2.py (titre en haut, pied sur la marge basse, visuel centré et mesuré).
+- Ombres portées légères (OMBRE de v2.py), chiffres à taille raisonnable : pas de prix géants.
+- Storytelling : on comprend de quoi parle le post sur la couverture, puis pourquoi c'est important, puis comment faire, puis ce qu'on y gagne. Quelqu'un qui n'y connaît rien doit suivre.
+- Pas de série étalée sur plusieurs semaines : une histoire tient dans un seul post (jusqu'à 10 pages). Pas de « épisode 1 sur 6 ».
+- L'ordre des couvertures se vérifie dans Hors-champ, rubrique Réseaux, page « Feed » (jamais deux couleurs identiques à la suite).
