@@ -45,7 +45,7 @@ def post(w, legende):
 # ---------- 1 · couverture (fixe) ----------
 def p1():
     b = f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["encre"], C["lav"], C["cor"])}</div>'
-    b += f'<div style="position:absolute;right:{M}px;top:92px">{pill("Guide · 7 gestes", C["lavf"], C["sable"], 58, 24)}</div>'
+    b += f'<div style="position:absolute;right:{M}px;top:92px">{pill("Accessibilité", C["lavf"], C["sable"], 58, 24)}</div>'
     b += cadre('femme-banc-tel', M, 196, 904, 600, 'center 40%', 40)
     b += (f'<div style="position:absolute;left:{M}px;right:{M}px;top:846px">'
           f'<div class="D" style="font-weight:700;font-size:104px;line-height:.92;letter-spacing:-.05em">Une publication</div>'
@@ -59,15 +59,17 @@ def p1():
 # ---------- 2 · contexte ----------
 def p2ctx():
     b = motif(MOTIF['lav'], 2300, 120, -420) + hd(1, 'lav')
-    lignes = [('Affiches et programmes', 'publiés en image'), ('Horaires et dates', 'écrits dans l’image'), ('Vidéos', 'parlées, sans sous-titres')]
-    rows = ''.join(f'<div style="display:flex;align-items:center;gap:18px;height:76px;border-top:2px solid rgba(26,26,26,.07)">'
-                   f'<span style="flex:none;width:14px;height:14px;border-radius:50%;background:{C["lavf"]}"></span>'
-                   f'<span style="flex:1;font-weight:680;font-size:27px">{a}</span><span style="font-weight:550;font-size:22px;color:rgba(26,26,26,.55)">{s}</span></div>'
+    lignes = [('Affiche du concert', 'la date et le lieu sont dans l’image'), ('Horaires des fêtes', 'publiés en visuel'), ('Vidéo des vœux', 'parlée, sans sous-titres')]
+    rows = ''.join(f'<div style="padding:16px 0;border-top:2px solid rgba(26,26,26,.07)">'
+                   f'<div style="font-weight:700;font-size:27px">{a}</div><div style="margin-top:4px;font-weight:550;font-size:21px;color:rgba(26,26,26,.55)">{s}</div></div>'
                    for a, s in lignes)
-    v = cadre('homme-lunettes-tel', 0, 0, 904, 430, 'center 30%', 36)
-    v += carte(160, 330, 744, f'<div style="font-weight:700;font-size:19px;letter-spacing:.08em;text-transform:uppercase;color:{C["lavt"]};padding-bottom:12px">Sur nos réseaux, chaque semaine</div>{rows}', pad='26px 32px 14px', rad=32)
-    b += mise(tflow('Une info publiée,', 'tout le monde la lit ?', 88, C['encre'], C['lavt']), v, 680,
-              pied('Voici ce qu’entend une personne aveugle<br>devant un post ordinaire.', C['encre']))
+    rows += (f'<div style="margin:10px -16px 0;padding:18px 16px;border-radius:22px;background:{C["lavf"]};color:{C["sable"]};font-weight:680;font-size:24px;line-height:1.3">'
+             f'Ce qui est écrit dans une image<br>n’est pas lu par tout le monde.</div>')
+    entete = (f'<div style="font-weight:700;font-size:18px;letter-spacing:.08em;text-transform:uppercase;color:{C["lavt"]}">Chaque semaine, on publie</div>')
+    v = cadre('homme-lunettes-tel', 0, 0, 380, 640, 'center 55%', 36)
+    v += carte(404, 30, 500, entete + f'<div style="margin-top:12px">{rows}</div>', pad='28px 30px 22px', rad=34)
+    b += mise(tflow('Beaucoup d’infos', 'passent par une image.', 88, C['encre'], C['lavt']), v, 640,
+              pied('Une personne aveugle utilise un lecteur d’écran.<br>Voici ce qu’il lui lit.', C['encre']))
     return b
 
 
@@ -76,10 +78,10 @@ def p2():
     b = motif(MOTIF['lavf'], 2300, 120, -420) + hd(2, 'lavf')
     leg = f'Venez nombreux ! <span style="{EMO}">🎉🎶✨</span>'
     v = f'<div style="position:absolute;left:0;top:0;transform:rotate(-2deg)">{post(400, leg)}</div>'
-    v += (f'<div style="position:absolute;left:440px;top:120px;width:464px">'
-          + voix('« Image. Venez nombreux ! Cotillons. Musique. Étincelles. »', 36) + '</div>')
-    v += (f'<div style="position:absolute;left:440px;top:470px;display:flex;flex-direction:column;gap:12px">'
-          + ''.join(pill(t, 'rgba(248,245,242,.14)', C['sable'], 54, 23, icon='<span style="font-weight:800">✕</span>') for t in ('Ni la date', 'Ni l’heure', 'Ni le lieu')) + '</div>')
+    v += (f'<div style="position:absolute;left:440px;top:70px;width:464px;display:flex;flex-direction:column;gap:16px">'
+          + voix('« Image. Venez nombreux ! Cotillons. Musique. Étincelles. »', 36)
+          + '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-left:8px">'
+          + ''.join(pill(t, C['cor'], C['encre'], 54, 23, icon='<span style="font-weight:800">✕</span>') for t in ('Ni la date', 'Ni l’heure', 'Ni le lieu')) + '</div></div>')
     b += mise(tflow('Ce qu’entend', 'un lecteur d’écran.', 92, C['sable'], C['lavc']), v, 640,
               pied('L’affiche est une image : sans texte, elle reste muette.', C['sable']))
     return b
