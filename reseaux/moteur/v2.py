@@ -75,3 +75,44 @@ def fin(N, act, bg_motif, l1, l2, c_acc, c_motif_logo=None, sous='Collectivités
 
 def dashes_(n, act, on, off='rgba(248,245,242,.26)'):
     return '<div style="display:flex;gap:10px">' + ''.join(f'<span style="width:40px;height:6px;border-radius:3px;background:{on if i == act else off}"></span>' for i in range(n)) + '</div>'
+
+
+# ---------- mise en page équilibrée (v3, 23 nov.) ----------
+OMBRE = '0 16px 34px -22px rgba(26,26,26,.32)'
+
+
+def tflow(l1, l2, fs=88, c1=C['encre'], c2=C['cort'], pre=''):
+    """Titre + relance dans le flux (pour mise())."""
+    return (f'<div>{pre}<div class="D" style="font-weight:680;font-size:{fs}px;line-height:.96;letter-spacing:-.045em;color:{c1}">{l1}</div>'
+            f'<div class="I" style="font-size:{round(fs*.84)}px;line-height:1.05;letter-spacing:-.02em;color:{c2};margin-top:6px">{l2}</div></div>')
+
+
+def pied(txt, col='rgba(26,26,26,.78)', fs=32):
+    return f'<div style="font-weight:550;font-size:{fs}px;line-height:1.32;color:{col}">{txt}</div>'
+
+
+def mise(titre_html, visuel, h, pied_html='', top=176):
+    """Titre en haut, pied calé sur la marge basse, visuel centré entre les deux : espaces égaux."""
+    return (f'<div style="position:absolute;left:{M}px;right:{M}px;top:{top}px;bottom:{M}px;display:flex;flex-direction:column;justify-content:space-between">'
+            f'{titre_html}<div class="vis" style="position:relative;height:{h}px;flex:none">{visuel}</div>{pied_html or "<div></div>"}</div>'
+            + MESURE)
+
+
+# hauteur réelle du visuel (enfants positionnés) : mesurée une fois les polices chargées
+MESURE = ("<script>(function(){function m(){document.querySelectorAll('.vis').forEach(function(v){var t=v.getBoundingClientRect().top,b=0;"
+          "v.querySelectorAll('*').forEach(function(e){if(e.closest('svg')&&e.tagName!=='svg')return;var r=e.getBoundingClientRect();if(r.height>0)b=Math.max(b,r.bottom-t)});"
+          "if(b>0)v.style.height=Math.round(b)+'px'})}m();if(document.fonts)document.fonts.ready.then(m)})();</script>")
+
+
+def jour(t, bg, fg):
+    """Pastille du jour au-dessus du titre."""
+    return f'<div style="margin-bottom:22px">{pill(t, bg, fg, 54, 23, icon=ico("clock", 22, fg))}</div>'
+
+
+def cadre(k, x, y, w, h, pos='center', rad=36):
+    return photo(k, x, y, w, h, pos, rad, anim=False)
+
+
+def carte(x, y, w, inner, pad='28px 32px', rad=32, rot=0, bg='#fff', extra=''):
+    return (f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;padding:{pad};border-radius:{rad}px;background:{bg};'
+            f'box-shadow:{OMBRE};transform:rotate({rot}deg);{extra}">{inner}</div>')
