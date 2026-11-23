@@ -1,14 +1,128 @@
-[{"id":"2026-11-24-lancement","date":"2026-11-24","serie":"Temps fort","couverture":"encre","titre":"Fill est lancé","statut":"programme","cover":"/_blob/2f1460db2a5da80cabab5eaafb1168db"},
-{"id":"2026-11-25-offre","date":"2026-11-25","serie":"Temps fort","couverture":"lavf","titre":"Offre de lancement","statut":"programme","cover":"/_blob/15cfdeae1866a742470b291182e5d8f8"},
-{"id":"2026-12-01-guide-decembre","date":"2026-12-01","serie":"Guide","couverture":"lavc","titre":"La com de décembre","statut":"programme","cover":"/_blob/b5b3f1a75d14e2a9626b05f1eae1e332"},
-{"id":"2026-12-03-constat-budget","date":"2026-12-03","serie":"Constat","couverture":"corc","titre":"Le budget 2027 se décide maintenant","statut":"a_valider","cover":"/_blob/a1fba6f1d3a431ab03db49cbf6af23a8"},
-{"id":"2026-12-08-demo-demande","date":"2026-12-08","serie":"Démo","couverture":"lav","titre":"Une demande en trois lignes","statut":"a_produire","cover":null},
-{"id":"2026-12-10-guide-janvier","date":"2026-12-10","serie":"Guide","couverture":"lavc","titre":"Préparer janvier avant les congés","statut":"a_produire","cover":null},
-{"id":"2026-12-15-outil-calendrier-2027","date":"2026-12-15","serie":"Outil","couverture":"sable","titre":"Le calendrier de la com 2027","statut":"a_produire","cover":null},
-{"id":"2026-12-17-constat-fetes","date":"2026-12-17","serie":"Constat","couverture":"corc","titre":"Pendant les fêtes, qui publie à votre place ?","statut":"a_produire","cover":null},
-{"id":"2026-12-22-demo-affiche","date":"2026-12-22","serie":"Démo","couverture":"lav","titre":"Une affiche reçue, trois formats publiés","statut":"a_produire","cover":null},
-{"id":"2026-12-24-temps-fort-fetes","date":"2026-12-24","serie":"Temps fort","couverture":"encre","titre":"Bonnes fêtes","statut":"a_produire","cover":null},
-{"id":"2026-12-29-guide-voeux","date":"2026-12-29","serie":"Guide","couverture":"lavc","titre":"Les vœux 2027 en quatre formats","statut":"a_produire","cover":null},
-{"id":"2026-12-31-outil-demarrer-2027","date":"2026-12-31","serie":"Outil","couverture":"sable","titre":"Douze réglages pour démarrer 2027","statut":"a_produire","cover":null},
-{"id":"2027-01-05-semaine-com","date":"2027-01-05","serie":"Une semaine de com","couverture":"lavf","titre":"Une semaine de com dans une commune de 3 000 habitants","statut":"a_valider","cover":"/_blob/5ea30d77849f32d79b902e64084265a6"},
-{"id":"2027-01-12-guide-accessible","date":"2027-01-12","serie":"Guide","couverture":"lavc","titre":"Une publication lisible par tous","statut":"a_valider","cover":"/_blob/407b0f30d17f12e5bad2fec6636b0300"}]
+[
+{
+"id": "2026-11-24-lancement",
+"date": "2026-11-24",
+"serie": "Temps fort",
+"couverture": "encre",
+"titre": "Fill est lancé",
+"statut": "programme",
+"cover": "/_blob/2f1460db2a5da80cabab5eaafb1168db"
+},
+{
+"id": "2026-11-25-offre",
+"date": "2026-11-25",
+"serie": "Temps fort",
+"couverture": "lavf",
+"titre": "Offre de lancement",
+"statut": "programme",
+"cover": "/_blob/15cfdeae1866a742470b291182e5d8f8"
+},
+{
+"id": "2026-12-01-guide-decembre",
+"date": "2026-12-01",
+"serie": "Guide",
+"couverture": "lavc",
+"titre": "La com de décembre",
+"statut": "programme",
+"cover": "/_blob/b5b3f1a75d14e2a9626b05f1eae1e332"
+},
+{
+"id": "2026-12-03-constat-budget",
+"date": "2026-12-03",
+"serie": "Constat",
+"couverture": "corc",
+"titre": "Le budget 2027 se décide maintenant",
+"statut": "a_valider",
+"cover": "/_blob/a1fba6f1d3a431ab03db49cbf6af23a8"
+},
+{
+"id": "2026-12-08-demo-demande",
+"date": "2026-12-08",
+"serie": "Démo",
+"couverture": "lav",
+"titre": "Une demande en trois lignes",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-10-guide-janvier",
+"date": "2026-12-10",
+"serie": "Guide",
+"couverture": "lavc",
+"titre": "Préparer janvier avant les congés",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-15-outil-calendrier-2027",
+"date": "2026-12-15",
+"serie": "Outil",
+"couverture": "sable",
+"titre": "Le calendrier de la com 2027",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-17-constat-fetes",
+"date": "2026-12-17",
+"serie": "Constat",
+"couverture": "corc",
+"titre": "Pendant les fêtes, qui publie à votre place ?",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-22-demo-affiche",
+"date": "2026-12-22",
+"serie": "Démo",
+"couverture": "lav",
+"titre": "Une affiche reçue, trois formats publiés",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-24-temps-fort-fetes",
+"date": "2026-12-24",
+"serie": "Temps fort",
+"couverture": "encre",
+"titre": "Bonnes fêtes",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-29-guide-voeux",
+"date": "2026-12-29",
+"serie": "Guide",
+"couverture": "lavc",
+"titre": "Les vœux 2027 en quatre formats",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2026-12-31-outil-demarrer-2027",
+"date": "2026-12-31",
+"serie": "Outil",
+"couverture": "sable",
+"titre": "Douze réglages pour démarrer 2027",
+"statut": "a_produire",
+"cover": null
+},
+{
+"id": "2027-01-05-semaine-com",
+"date": "2027-01-05",
+"serie": "Une semaine de com",
+"couverture": "lavf",
+"titre": "Une semaine de com dans une commune de 3 000 habitants",
+"statut": "a_valider",
+"cover": "/_blob/5ea30d77849f32d79b902e64084265a6"
+},
+{
+"id": "2027-01-12-guide-accessible",
+"date": "2027-01-12",
+"serie": "Guide",
+"couverture": "lavc",
+"titre": "Une publication lisible par tous",
+"statut": "a_valider",
+"cover": "/_blob/55cf36dd4028b222b3be3a9eb190abbe"
+}
+]
