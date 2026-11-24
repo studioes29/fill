@@ -41,8 +41,8 @@
   "serie": "Démo",
   "couverture": "lav",
   "titre": "Une demande en trois lignes",
-  "statut": "a_produire",
-  "cover": null
+  "statut": "a_valider",
+  "cover": "/_blob/7a6cdb2a0891adf747ea98ac2148a323"
  },
  {
   "id": "2026-12-10-guide-janvier",
@@ -50,8 +50,8 @@
   "serie": "Guide",
   "couverture": "lavc",
   "titre": "Préparer janvier avant les congés",
-  "statut": "a_produire",
-  "cover": null
+  "statut": "a_valider",
+  "cover": "/_blob/9f236bb27cf65ac4143bcbef29c93238"
  },
  {
   "id": "2026-12-15-outil-calendrier-2027",
