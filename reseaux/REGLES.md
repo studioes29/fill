@@ -41,3 +41,4 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Un post déplacé s'adapte à sa nouvelle date (plus de référence à un événement passé) ; un créneau déjà pris dans la semaine ne se double pas.
 - Un constat ne s'arrête jamais au constat : il se termine par une réponse concrète (sans / avec, formules) et parle aussi aux entreprises quand le sujet les concerne.
 - Une couverture doit être dynamique et donner envie de lire la suite : photo forte qui raconte le sujet, chiffre clé en grand.
+- Buffer refuse thumbnailUrl sur une vidéo : la fonction Supabase « reseaux » le retire et pose metadata.thumbnailOffset = 0 (vignette Instagram = première image de la vidéo, donc soigner l'image de départ d'une page animée).
