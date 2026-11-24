@@ -36,3 +36,8 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Thème hors saison des fêtes quand il n'a pas de lien avec elles (ex. accessibilité déplacée en janvier).
 - LinkedIn reçoit le PDF des pages fixes (état final, sans animation).
 - Feed du canevas : board Feed.dc.html régénéré par reseaux/canevas/feed.py à chaque changement de post.
+
+## 24 nov. (retour sur le baromètre)
+- Un post déplacé s'adapte à sa nouvelle date (plus de référence à un événement passé) ; un créneau déjà pris dans la semaine ne se double pas.
+- Un constat ne s'arrête jamais au constat : il se termine par une réponse concrète (sans / avec, formules) et parle aussi aux entreprises quand le sujet les concerne.
+- Une couverture doit être dynamique et donner envie de lire la suite : photo forte qui raconte le sujet, chiffre clé en grand.
