@@ -186,49 +186,34 @@ def p5():
     return b
 
 
-# ---------- 6 · geste 3 : la première semaine programmée ----------
-SEMAINE = [('Lun.', '4', 'Horaires de reprise', 'post'), ('Mar.', '5', 'Bonne année', 'post'), ('Mer.', '6', 'Rappel des vœux', 'story'),
-           ('Jeu.', '7', 'Décembre en photos', 'actu'), ('Ven.', '8', 'L’agenda de janvier', 'site')]
-FMT = {'post': 'Publication', 'story': 'Story', 'actu': 'Actualité', 'site': 'Page du site'}
-
-
-def mini(k, w):
-    """Petite maquette du format (carré, vertical, article, page)."""
-    if k == 'post':
-        return (f'<div style="width:{w}px;height:{w}px;border-radius:14px;background:{C["lavc"]};padding:10px;display:flex;flex-direction:column;justify-content:flex-end">'
-                f'<span style="height:34px;border-radius:9px;background:{C["lavf"]}"></span></div>')
-    if k == 'story':
-        return (f'<div style="width:{round(w * .62)}px;height:{w}px;margin:0 auto;border-radius:14px;background:{C["lavf"]};padding:8px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px">'
-                f'<span style="height:8px;border-radius:4px;background:{C["lavc"]}"></span><span style="height:8px;width:70%;border-radius:4px;background:{C["lavc"]}"></span></div>')
-    if k == 'actu':
-        return (f'<div style="width:{w}px;height:{w}px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 2px {C["lavc"]};padding:10px;display:flex;flex-direction:column;gap:7px">'
-                f'<span style="height:{round(w * .42)}px;border-radius:9px;background:{C["lav"]}"></span>'
-                + ''.join(f'<span style="height:8px;width:{p}%;border-radius:4px;background:{C["lavc"]}"></span>' for p in (100, 86, 60)) + '</div>')
-    return (f'<div style="width:{w}px;height:{w}px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 2px {C["lavc"]};overflow:hidden">'
-            f'<div style="height:22px;background:{C["lavc"]};display:flex;align-items:center;gap:5px;padding:0 8px">'
-            + ''.join(f'<span style="width:7px;height:7px;border-radius:50%;background:{C["lav"]}"></span>' for _ in range(3)) + '</div>'
-            f'<div style="padding:9px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'
-            + ''.join(f'<span style="height:{round(w * .2)}px;border-radius:6px;background:{C["lavc"] if i % 2 else C["lav"]}"></span>' for i in range(6)) + '</div></div>')
+# ---------- 6 · geste 3 : la première semaine, en file de publication ----------
+SEMAINE = [('Lun.', '4', '8 h 30', 'Nous rouvrons aujourd’hui', 'Publication', 'Reprise', C['lavf'], C['sable']),
+           ('Mar.', '5', '11 h', 'Belle année 2027', 'Publication', '2027', C['cor'], C['encre']),
+           ('Mer.', '6', '18 h', 'Rappel : soirée des vœux', 'Story', 'Vœux', C['encre'], C['sable']),
+           ('Jeu.', '7', '11 h', 'Décembre en photos', 'Actualité du site', 'Photos', C['lav'], C['encre']),
+           ('Ven.', '8', '9 h', 'Les rendez-vous de janvier', 'Agenda du site', 'Agenda', C['lavc'], C['lavt'])]
 
 
 def p6():
     b = motif(MOTIF['lav'], 2300, 120, -420) + hd(5, 'lav')
-    gap = 12
-    cw = (904 - 4 * gap) // 5
-    v = ''
-    for i, (j, n, t, k) in enumerate(SEMAINE):
-        x = i * (cw + gap)
-        v += (f'<div style="position:absolute;left:{x}px;top:0;width:{cw}px;height:520px;border-radius:28px;background:#fff;box-shadow:{OMBRE};padding:20px 16px;'
-              f'display:flex;flex-direction:column;align-items:center;text-align:center">'
-              f'<span style="font-weight:700;font-size:19px;color:{GRIS}">{j}</span>'
-              f'<span class="D" style="font-weight:780;font-size:56px;line-height:1;letter-spacing:-.03em;color:{C["lavt"]}">{n}</span>'
-              f'<div style="margin:22px 0 18px;width:100%">{mini(k, cw - 32)}</div>'
-              f'<div style="font-weight:700;font-size:21px;line-height:1.2;min-height:52px">{t}</div>'
-              f'<div style="margin-top:auto">{pill(FMT[k], C["lavc"], C["lavt"], 36, 16)}</div></div>')
-    v += (f'<div style="position:absolute;left:0;top:546px;display:flex;align-items:center;gap:14px">'
-          f'{pill("Semaine du 4 janvier : tout est prêt", C["encre"], C["sable"], 58, 23, icon=check(C["lav"], 24))}</div>')
+    rows = ''
+    for j, n, h, t, f, vig, bg, fg in SEMAINE:
+        vert = f == 'Story'
+        tw, th = (54, 84) if vert else (84, 84)
+        rows += (f'<div style="display:flex;align-items:center;gap:22px;height:104px;border-top:2px solid rgba(26,26,26,.07)">'
+                 f'<div style="flex:none;width:86px;text-align:center"><div style="font-weight:700;font-size:18px;color:{GRIS}">{j}</div>'
+                 f'<div class="D" style="font-weight:780;font-size:44px;line-height:1;color:{C["lavt"]}">{n}</div></div>'
+                 f'<div style="flex:none;width:92px;display:flex;justify-content:center"><div style="width:{tw}px;height:{th}px;border-radius:14px;background:{bg};color:{fg};'
+                 f'display:flex;align-items:flex-end;padding:{7 if vert else 10}px;font-weight:750;font-size:{14 if vert else 17}px;line-height:1">{vig}</div></div>'
+                 f'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:25px;line-height:1.2">{t}</div>'
+                 f'<div style="margin-top:6px;font-weight:600;font-size:19px;color:{GRIS}">{f} · {h.replace(" h", NB + "h")}</div></div>'
+                 f'{pill("Programmé", C["lavc"], C["lavt"], 40, 17, icon=check(C["lavt"], 18))}</div>')
+    inner = (f'<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px">'
+             f'<span class="D" style="font-weight:720;font-size:32px;letter-spacing:-.02em">File de publication</span>'
+             f'{pill("Semaine du 4 janvier", C["encre"], C["sable"], 44, 19)}</div>{rows}')
+    v = carte(0, 0, 904, inner, pad='30px 36px 16px', rad=40)
     b += mise2(tete('La première semaine,', 'déjà programmée.',
-                    'Une chose par jour suffit :<br>le fil reprend sans effort le premier lundi.', 88, C['encre'], C['encre'], C['encre'], pre=num(3)), v, 604)
+                    'Une chose par jour, préparée en décembre :<br>tout part tout seul dès le premier lundi.', 88, C['encre'], C['encre'], C['encre'], pre=num(3)), v, 680)
     return b
 
 

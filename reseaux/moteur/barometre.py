@@ -49,7 +49,6 @@ def navigateur(corps, titre='Accueil'):
 # ---------- 1 · couverture (fixe) ----------
 def p1():
     b = f'<div style="position:absolute;left:{M}px;top:{M}px">{logo(56, C["encre"], C["lav"], C["cor"])}</div>'
-    b += f'<div style="position:absolute;right:{M}px;top:92px">{pill("Collectivités et entreprises", C["encre"], C["sable"], 56, 23)}</div>'
     b += cadre('bm-tel', M, 196, 470, 660, '40% 30%', 40)
     corps = (f'<div style="height:150px;background:{C["cor"]};padding:26px 26px;display:flex;flex-direction:column;justify-content:center">'
              f'<div class="D" style="font-weight:760;font-size:36px;letter-spacing:-.03em;line-height:1">Horaires d’été</div>'
@@ -93,27 +92,38 @@ def p2():
     return b
 
 
-# ---------- 3 · les chiffres des communes ----------
+# ---------- 3 · les chiffres des communes : anneau minimaliste ----------
+PARTS = [(70, '#EFE7E1', 'Dans le mois'), (13, C['corc'], 'Un à trois mois'), (5, C['cor'], 'Trois à six mois'), (12, C['cort'], 'Plus de six mois')]
+
+
+def anneau(d=480, ep=62):
+    r = (d - ep) / 2
+    c = 2 * 3.14159265 * r
+    arcs, cum = '', 0
+    for p, col, _ in PARTS:
+        long = c * p / 100
+        arcs += (f'<circle cx="{d / 2}" cy="{d / 2}" r="{r}" fill="none" stroke="{col}" stroke-width="{ep}" '
+                 f'stroke-dasharray="{long - 4:.1f} {c - long + 4:.1f}" stroke-dashoffset="{-c * cum / 100:.1f}" transform="rotate(-90 {d / 2} {d / 2})"/>')
+        cum += p
+    centre = (f'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">'
+              f'<div class="D" style="font-weight:780;font-size:96px;letter-spacing:-.05em;line-height:1;color:{C["cort"]}">17{NB}%</div>'
+              f'<div style="margin-top:8px;font-weight:650;font-size:21px;line-height:1.25;color:{GR}">rien publié depuis<br>plus de trois mois</div></div>')
+    return f'<div style="position:relative;width:{d}px;height:{d}px"><svg width="{d}" height="{d}" viewBox="0 0 {d} {d}">{arcs}</svg>{centre}</div>'
+
+
 def p3():
     b = motif(MOTIF['cor'], 2300, 120, -420) + hd(2, 'cor')
-    # 100 cases : 70 dans le mois, 13 de un à trois mois, 5 de trois à six mois, 12 plus de six mois
-    cols = ['#fff'] * 70 + [C['corc']] * 13 + [C['cor']] * 5 + [C['cort']] * 12
-    grille = (f'<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;width:440px">'
-              + ''.join(f'<span style="aspect-ratio:1;border-radius:8px;background:{c};{"box-shadow:inset 0 0 0 2px rgba(26,26,26,.08)" if c == "#fff" else ""}"></span>' for c in cols) + '</div>')
-    leg = [('70' + NB + '%', 'ont publié<br>dans le mois', '#fff', True), ('17' + NB + '%', 'rien publié depuis<br>plus de trois mois', C['cort'], False),
-           ('12' + NB + '%', 'dont rien depuis<br>plus de six mois', C['cort'], False)]
-    rows = ''.join(f'<div style="display:flex;align-items:center;gap:16px;padding:20px 0;{"border-top:2px solid rgba(26,26,26,.07)" if i else ""}">'
-                   f'<span class="D" style="flex:none;width:118px;font-weight:760;font-size:46px;letter-spacing:-.035em;color:{C["encre"] if w else C["cort"]}">{p}</span>'
-                   f'<span style="font-weight:650;font-size:21px;line-height:1.25">{t}</span></div>' for i, (p, t, c, w) in enumerate(leg))
-    inner = (f'<div style="display:flex;gap:40px;align-items:center">{grille}<div style="flex:1">{rows}</div></div>'
-             f'<div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:10px">'
-             + ''.join(f'<span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:17px;color:{GR}">'
-                       f'<span style="width:18px;height:18px;border-radius:5px;background:{c};{"box-shadow:inset 0 0 0 2px rgba(26,26,26,.1)" if c == "#fff" else ""}"></span>{t}</span>'
-                       for c, t in (('#fff', 'Dans le mois'), (C['corc'], 'Un à trois mois'), (C['cor'], 'Trois à six mois'), (C['cort'], 'Plus de six mois'))) + '</div>')
-    v = carte(0, 0, 904, inner, pad='34px 40px 30px', rad=40)
+    leg = ''.join(f'<div style="display:flex;align-items:center;gap:16px;padding:18px 0;{"border-top:2px solid rgba(26,26,26,.07)" if k else ""}">'
+                  f'<span style="flex:none;width:22px;height:22px;border-radius:7px;background:{col}"></span>'
+                  f'<span style="flex:1;font-weight:650;font-size:22px">{t}</span>'
+                  f'<span class="D" style="font-weight:760;font-size:34px;letter-spacing:-.03em;color:{C["cort"] if k >= 2 else C["encre"]}">{p}{NB}%</span></div>'
+                  for k, (p, col, t) in enumerate(PARTS))
+    inner = (f'<div style="display:flex;gap:36px;align-items:center">{anneau()}<div style="flex:1">'
+             f'<div style="font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;color:{GR};padding-bottom:6px">Dernière publication</div>{leg}</div></div>')
+    v = carte(0, 0, 904, inner, pad='44px 40px 44px', rad=40)
     b += mise2(tete('Dans les communes,', 'un site sur six s’est arrêté.',
                     'Nous avons lu les sites de 1' + NB + '518 communes de l’Ouest.<br>Sur les 1' + NB + '093 où la date se lit, voici la dernière publication.',
-                    82, C['encre'], C['encre'], C['encre']), v, 600)
+                    82, C['encre'], C['encre'], C['encre']), v, 500)
     return b
 
 
