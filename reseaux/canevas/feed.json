@@ -59,8 +59,8 @@
   "serie": "Outil",
   "couverture": "sable",
   "titre": "Le calendrier de la com 2027",
-  "statut": "a_produire",
-  "cover": null
+  "statut": "a_valider",
+  "cover": "/_blob/1cdbff1a8d5cacf6ddba49b268657189"
  },
  {
   "id": "2026-12-17-constat-fetes",
@@ -68,8 +68,8 @@
   "serie": "Constat",
   "couverture": "corc",
   "titre": "Pendant les fêtes, qui publie à votre place ?",
-  "statut": "a_produire",
-  "cover": null
+  "statut": "a_valider",
+  "cover": "/_blob/447390cbcfbb2c92907a1979ad3cc633"
  },
  {
   "id": "2026-12-22-demo-affiche",
@@ -77,8 +77,8 @@
   "serie": "Démo",
   "couverture": "lav",
   "titre": "Une affiche reçue, trois formats publiés",
-  "statut": "a_produire",
-  "cover": null
+  "statut": "a_valider",
+  "cover": "/_blob/f0a7c2e78b3d447353604f4953e22d97"
  },
  {
   "id": "2026-12-24-temps-fort-fetes",
@@ -90,11 +90,11 @@
   "cover": null
  },
  {
-  "id": "2026-12-29-guide-voeux",
+  "id": "2026-12-29-guide-com-janvier",
   "date": "2026-12-29",
   "serie": "Guide",
   "couverture": "lavc",
-  "titre": "Les vœux 2027 en quatre formats",
+  "titre": "La com de janvier",
   "statut": "a_produire",
   "cover": null
  },
