@@ -1370,7 +1370,7 @@ var offre_default = {
     {
       id: "doclong",
       cat: "edition",
-      nom: "Document long sur mod\xE8le existant, par page",
+      nom: "Brochure ou programme sur mod\xE8le existant, par page",
       u: 1,
       detail: "Rapport d\u2019activit\xE9, guide, livret repris dans votre maquette",
       max: 40,
