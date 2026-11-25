@@ -50,7 +50,7 @@
   "serie": "Guide",
   "couverture": "lavc",
   "titre": "Préparer janvier avant les congés",
-  "statut": "a_valider",
+  "statut": "programme",
   "cover": "/_blob/6889cb561bbfd0c3cc9074143171aa26"
  },
  {
@@ -122,7 +122,7 @@
   "serie": "Constat",
   "couverture": "corc",
   "titre": "Votre site s’est arrêté ? Vos visiteurs le voient",
-  "statut": "a_valider",
+  "statut": "programme",
   "cover": "/_blob/bc80c3877787eca2240ef3c6851d60c9"
  },
  {
