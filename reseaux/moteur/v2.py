@@ -120,3 +120,18 @@ def cadre(k, x, y, w, h, pos='center', rad=36):
 def carte(x, y, w, inner, pad='28px 32px', rad=32, rot=0, bg='#fff', extra=''):
     return (f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;padding:{pad};border-radius:{rad}px;background:{bg};'
             f'box-shadow:{OMBRE};transform:rotate({rot}deg);{extra}">{inner}</div>')
+
+
+# ---------- hiérarchie de lecture (25 nov.) : titre, description, puis visuel ----------
+def tete(l1, l2, desc='', fs=84, c1=C['encre'], c2=C['cort'], cd='rgba(26,26,26,.78)', pre='', dfs=31):
+    """Titre + relance + description juste dessous : se lit avant le visuel (à passer à mise() sans pied)."""
+    d = (f'<div style="margin-top:24px;font-weight:550;font-size:{dfs}px;line-height:1.32;color:{cd}">{desc}</div>' if desc else '')
+    return (f'<div>{pre}<div class="D" style="font-weight:680;font-size:{fs}px;line-height:.96;letter-spacing:-.045em;color:{c1}">{l1}</div>'
+            f'<div class="I" style="font-size:{round(fs*.84)}px;line-height:1.05;letter-spacing:-.02em;color:{c2};margin-top:6px">{l2}</div>{d}</div>')
+
+
+def mise2(tete_html, visuel, h, top=176, gmin=56):
+    """Tête (titre + description) calée en haut ; le visuel est centré dans la place restante (écart d'au moins gmin)."""
+    return (f'<div style="position:absolute;left:{M}px;right:{M}px;top:{top}px;bottom:{M}px;display:flex;flex-direction:column">'
+            f'{tete_html}<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-top:{gmin}px">'
+            f'<div class="vis" style="position:relative;height:{h}px;flex:none">{visuel}</div></div></div>' + MESURE)

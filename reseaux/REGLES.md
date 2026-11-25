@@ -42,3 +42,14 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Un constat ne s'arrête jamais au constat : il se termine par une réponse concrète (sans / avec, formules) et parle aussi aux entreprises quand le sujet les concerne.
 - Une couverture doit être dynamique et donner envie de lire la suite : photo forte qui raconte le sujet, chiffre clé en grand.
 - Buffer refuse thumbnailUrl sur une vidéo : la fonction Supabase « reseaux » le retire et pose metadata.thumbnailOffset = 0 (vignette Instagram = première image de la vidéo, donc soigner l'image de départ d'une page animée).
+
+## 25 nov. (retours sur la démo du 8 déc., le guide de janvier et le constat sur les sites arrêtés)
+- Hiérarchie de lecture : titre, relance et description d'abord, visuel ensuite (briques tete() et mise2() de v2.py, plus de pied sous le visuel).
+- Exemples mis en scène universels : une même situation qui vaut pour une collectivité comme pour une entreprise (ex. nouveaux horaires d'accueil), plutôt qu'une page « côté entreprise » à part.
+- Un post qui parle aussi aux entreprises les montre dès la couverture et les premières pages, à égalité, jamais seulement en fin de carrousel.
+- Pas de date de relevé ni de date inutile dans les visuels.
+- Une maquette doit se reconnaître tout de suite : une publication ressemble à un vrai post (téléphone, en-tête, icônes, légende), un site à un vrai site (navigateur, menu, bannière, actualités).
+- Les mentions qui annotent un visuel restent collées à ce qu'elles désignent (dans la carte ou posées sur l'élément), jamais flottantes à distance.
+- Éviter les rangées de cartes alignées : calendrier, frise, semaine planifiée, dossier ouvert, grille de 100 cases plutôt qu'une liste.
+- Demande : « pas besoin de texte rédigé » ; la photo est facultative (si le client en a une, sinon Fill propose un visuel).
+- Couverture d'un guide de saison : photo vivante de la saison (hiver, fêtes) avec un élément graphique fort.
