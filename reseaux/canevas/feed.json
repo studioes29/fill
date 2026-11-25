@@ -41,7 +41,7 @@
   "serie": "Démo",
   "couverture": "lav",
   "titre": "Une demande en trois lignes",
-  "statut": "a_valider",
+  "statut": "programme",
   "cover": "/_blob/e1e74939263f11416a7a82e5031c7e4e"
  },
  {
@@ -123,7 +123,7 @@
   "couverture": "corc",
   "titre": "Votre site s’est arrêté ? Vos visiteurs le voient",
   "statut": "a_valider",
-  "cover": "/_blob/a30d0c2bd5a9b1c4f992e6a0ea945d62"
+  "cover": "/_blob/bc80c3877787eca2240ef3c6851d60c9"
  },
  {
   "id": "2027-01-12-guide-accessible",
