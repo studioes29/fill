@@ -310,4 +310,5 @@ table.mel td:first-child{width:16%}
 .cata.d p small{display:block;font-size:2.75rem;line-height:1.3;color:var(--mu);margin-top:.3rem}
 .cata.d h3{font-size:4.4rem}
 .cata.d p{padding:.85rem 0}.cata.d .fam{margin-bottom:2.6rem}
-#bareme-2 .cata.d p{padding:.7rem 0}#bareme-2 .cata.d .fam{margin-bottom:2rem}
+#bareme-2 .cata.d p{padding:.55rem 0}#bareme-2 .cata.d .fam{margin-bottom:1.8rem}
+#bareme-2 .note{margin-top:3.5rem}.cata.d p>span{text-wrap:balance}

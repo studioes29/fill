@@ -1372,7 +1372,7 @@ var offre_default = {
       cat: "edition",
       nom: "Brochure ou programme sur mod\xE8le existant, par page",
       u: 1,
-      detail: "Rapport d\u2019activit\xE9, guide, livret repris dans votre maquette",
+      detail: "Brochure de saison, programme, rapport d\u2019activit\xE9 ou guide repris dans votre maquette",
       max: 40,
       t: "#A9CCFF",
       creation: true
