@@ -14,7 +14,7 @@
   "serie": "Temps fort",
   "couverture": "lavf",
   "titre": "Offre de lancement",
-  "statut": "programme",
+  "statut": "publie",
   "cover": "/_blob/15cfdeae1866a742470b291182e5d8f8"
  },
  {
@@ -32,7 +32,7 @@
   "serie": "Constat",
   "couverture": "corc",
   "titre": "Le budget 2027 se décide maintenant",
-  "statut": "programmation",
+  "statut": "programme",
   "cover": "/_blob/a1fba6f1d3a431ab03db49cbf6af23a8"
  },
  {
@@ -42,7 +42,7 @@
   "couverture": "lav",
   "titre": "Une demande en trois lignes",
   "statut": "a_valider",
-  "cover": "/_blob/7a6cdb2a0891adf747ea98ac2148a323"
+  "cover": "/_blob/e1e74939263f11416a7a82e5031c7e4e"
  },
  {
   "id": "2026-12-10-guide-janvier",
@@ -51,7 +51,7 @@
   "couverture": "lavc",
   "titre": "Préparer janvier avant les congés",
   "statut": "a_valider",
-  "cover": "/_blob/9f236bb27cf65ac4143bcbef29c93238"
+  "cover": "/_blob/6889cb561bbfd0c3cc9074143171aa26"
  },
  {
   "id": "2026-12-15-outil-calendrier-2027",
@@ -113,7 +113,7 @@
   "serie": "Une semaine de com",
   "couverture": "lavf",
   "titre": "Une semaine de com dans une commune de 3 000 habitants",
-  "statut": "erreur",
+  "statut": "programme",
   "cover": "/_blob/5ea30d77849f32d79b902e64084265a6"
  },
  {
@@ -121,9 +121,9 @@
   "date": "2027-01-07",
   "serie": "Constat",
   "couverture": "corc",
-  "titre": "17 % des sites de communes muets depuis trois mois",
+  "titre": "Votre site s’est arrêté ? Vos visiteurs le voient",
   "statut": "a_valider",
-  "cover": "/_blob/cc112591de262d9a659df37b847a598d"
+  "cover": "/_blob/a30d0c2bd5a9b1c4f992e6a0ea945d62"
  },
  {
   "id": "2027-01-12-guide-accessible",
