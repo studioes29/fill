@@ -53,3 +53,4 @@ Ce fichier complète la charte du prompt de production. En cas de doute, il fait
 - Éviter les rangées de cartes alignées : calendrier, frise, semaine planifiée, dossier ouvert, grille de 100 cases plutôt qu'une liste.
 - Demande : « pas besoin de texte rédigé » ; la photo est facultative (si le client en a une, sinon Fill propose un visuel).
 - Couverture d'un guide de saison : photo vivante de la saison (hiver, fêtes) avec un élément graphique fort.
+- Série « La com de <mois> » (modèle guide2.py) : format jugé très intéressant par Ewen, à tenir chaque mois, publié juste avant le mois concerné (dernier mardi ou jeudi du mois précédent, ou le 1er). La com de janvier : mardi 29 déc. 2026 (remplace « Les vœux 2027 en quatre formats », intégré comme page).
