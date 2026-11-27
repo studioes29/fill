@@ -289,21 +289,19 @@ var donneesDemo = () => {
       auteurId: `yannick`,
       titre: `Programme des vacances de la Toussaint`,
       lignes: h([`affiche`, 1]),
-      creee: r(t(-26), 10, 12),
+      creee: r(t(-6), 10, 12),
       unites: 4,
-      livraison: t(-19),
-      parution: t(-15),
+      livraison: n(0),
+      parution: n(5),
       brief: `Affiche A3 et déclinaison réseaux pour le programme de l’accueil de loisirs. Le programme détaillé est joint.`,
       pieces: [`programme-toussaint.docx`, `photos-ateliers.zip`],
       parcours: [
-        [`confirmee`, r(t(-25), 9), `ewen`],
-        [`production`, r(t(-24), 9), `ewen`],
-        [`a_valider`, r(t(-21), 16), `ewen`],
-        [`validee`, r(t(-20), 11), `marion`],
-        [`livree`, r(t(-19), 9), `ewen`],
+        [`confirmee`, r(t(-5), 9), `ewen`],
+        [`production`, r(t(-4), 9), `ewen`],
+        [`a_valider`, r(t(-1), 16), `ewen`],
       ],
     });
-    (v(b, r(t(-21), 16), [
+    (v(b, r(t(-1), 16), [
       {
         nom: `affiche-toussaint-A3.pdf`,
         type: `affiche`,
