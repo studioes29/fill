@@ -574,7 +574,7 @@ body{{margin:0;width:1200px;height:630px;background:{fond};display:grid;grid-tem
 
 
 def main():
-    arts = [lire(os.path.join(SRC, f)) for f in sorted(os.listdir(SRC)) if f.endswith(".md") and f != "LISEZMOI.md"]
+    arts = [lire(os.path.join(SRC, f)) for f in sorted(os.listdir(SRC)) if f.endswith(".md") and not f[0].isupper()]
     arts = [a for a in arts if a.get("brouillon", "non") != "oui"]
     arts.sort(key=lambda a: (a["d"], a["poids"]), reverse=True)
     csp, tete_js, debut, fin = gabarit()
