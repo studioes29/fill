@@ -45,7 +45,7 @@ npm run verifier
 
 Autres références : `npm run verifier -- --ref origin/main` (ou toute révision git), `npm run verifier -- --ref .` (le dossier `../espace` tel qu'il est sur le disque, utile juste après un `npm run construire` pour s'assurer qu'il n'y a plus aucun écart).
 
-Profils en démonstration : avec `?demo`, l'Espace démarre toujours sur le profil « visiteur » (Camille Morvan, Saint-Ivenec) et ne lit pas le profil enregistré. Pour parcourir réellement les 9 profils, `tests/equivalence.cjs` réécrit à la volée, dans le bundle servi (référence et build neuf, de la même façon), l'initialisation de `moiId` pour qu'elle lise `localStorage["fill-espace-demo-mvuakaue-moi"]`, qu'il pose avant le chargement. Le test échoue si ce motif n'est plus trouvé (après une modification de `donnees/etat.js`) ou si deux profils censés différer affichent la même personne ou le même nom d'organisation.
+Profils en démonstration : avec `?demo`, l'Espace démarre toujours sur le profil « visiteur » (Camille Morvan, Saint-Ivenec) et ne lit pas le profil enregistré. Pour parcourir réellement les 9 profils, `tests/equivalence.cjs` réécrit à la volée, dans le bundle servi (référence et build neuf, de la même façon), l'initialisation de `moiId` pour qu'elle lise `localStorage["fill-espace-demo-k2611-moi"]`, qu'il pose avant le chargement. Le test échoue si ce motif n'est plus trouvé (après une modification de `donnees/etat.js`) ou si deux profils censés différer affichent la même personne ou le même nom d'organisation.
 
 Limite : les états au survol, au focus et les pseudo-éléments (`::placeholder`, `::before`) ne sont pas comparés ; une modification de ce type se contrôle à l'œil.
 

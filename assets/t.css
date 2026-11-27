@@ -2391,3 +2391,8 @@ html[data-cible=e] #passage .passage-t .lead{color:#fff}
 .exd-a.exd-duo .exd-f img{height:auto;width:100%;max-width:520px}
 .exd-a.exd-duo .exd-f figure{width:100%;display:grid;justify-items:center}
 @media (max-width:820px){.exd-a.exd-duo .exd-g{grid-template-columns:1fr}}
+@media (min-width:900px){.gal.g8{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+.g8{grid-auto-rows:auto!important;grid-template-rows:none!important}
+.g8 .gal-i{aspect-ratio:4/5!important;height:auto!important;flex:none!important}
+.g8 .gal-i img{object-position:center top}
+.g8 .gal-c{height:auto!important}

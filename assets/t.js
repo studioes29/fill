@@ -302,7 +302,7 @@
       relais: true, debut: deb, rl: { sit, d: di, app: appui, debut: deb } };
   };
   const selRelaisSimple = src => ({ src, titre: 'Relais', prix: `${eur(R.prix_semaine)} € par semaine, ou ${eur(R.prix_mois)} € par mois`, lignes: ['Remplacement pendant une absence ou un recrutement'], relais: true, rl: null });
-  const evPropres = l => Array.isArray(l) ? l.slice(0, 30).map(e => ({ m: entier(e && e.m, 0, 2), t: String((e && e.t) || '').slice(0, 60), k: PACKS[e && e.k] ? e.k : 'pub' })).filter(e => e.t.trim()) : [];
+  const evPropres = l => Array.isArray(l) ? l.slice(0, 30).map(e => ({ m: entier(e && e.m, 0, 2), t: String((e && e.t) || '').slice(0, 60), k: PK(e && e.k) ? e.k : 'pub' })).filter(e => e.t.trim()) : [];
   // externe = vient d'un lien : on ne reprend aucun texte libre (synthèse, lignes)
   const reconstruit = (s, externe) => {
     if (!s || typeof s !== 'object') return null;
@@ -326,12 +326,14 @@
   /* @calendrier-type:packs:debut (repère lu par espace-src/construire.mjs : après modification, relancer npm run construire dans espace-src) */
   const PACKS = {
     pub: { l: 'Publication', p: { post: 1 } }, pa: { l: 'Publication et actualité', p: { post: 1, actu: 1 } },
-    aff: { l: 'Affiche et deux publications', p: { affiche: 1, post: 2 } }, news: { l: 'Newsletter', p: { news: 1 } },
+    aff: { l: 'Affiche et deux publications', p: { affiche: 1, post: 2 } }, news: { l: 'Lettre d’information', p: { news: 1 } },
     cp: { l: 'Communiqué et publication', p: { presse: 1, post: 1 } }, prog: { l: 'Programme recto verso et publication', p: { flyer: 1, post: 1 } },
     bul: { l: 'Bulletin de 8 pages', p: { bulletin: 8 } }, photo: { l: 'Reportage photo', p: { photo: 1 } }
   };
   /* @calendrier-type:packs:fin */
-  const panierCal = evs => { const tot = [{}, {}, {}]; evs.forEach(e => Object.entries(PACKS[e.k].p).forEach(([k, n]) => { tot[e.m][k] = (tot[e.m][k] || 0) + n; })); return tot; };
+  // temps fort ajouté à la main : un ensemble ci-dessus, ou un support du catalogue (« c:<id> »)
+  const PK = k => PACKS[k] || (typeof k === 'string' && k.startsWith('c:') && CAT[k.slice(2)] ? { l: CAT[k.slice(2)].nom, p: { [k.slice(2)]: 1 } } : null);
+  const panierCal = evs => { const tot = [{}, {}, {}]; evs.forEach(e => Object.entries(PK(e.k).p).forEach(([k, n]) => { tot[e.m][k] = (tot[e.m][k] || 0) + n; })); return tot; };
   const auj0 = new Date(); const MOIS3 = [1, 2, 3].map(n => new Date(auj0.getFullYear(), auj0.getMonth() + n, 1));
   const mNom = m => m.toLocaleDateString('fr-FR', { month: 'long' });
   // simulation mois par mois : le report reçu est consommé en premier, les unités du mois
@@ -349,7 +351,7 @@
     const mois = panierCal(evs); const besoins = mois.map(unitesPanier);
     const fusion = {}; mois.forEach(m => Object.entries(m).forEach(([k, n]) => { fusion[k] = Math.max(fusion[k] || 0, n); }));
     const mini = rangMin(fusion);
-    const lignes0 = [`${evs.length} temps fort${evs.length > 1 ? 's' : ''} : ${besoins.map((b, i) => `${mNom(MOIS3[i])} ${b} u.`).join(', ')}`].concat(evs.slice(0, 12).map(e => `${e.t} (${PACKS[e.k].l.toLowerCase()})`));
+    const lignes0 = [`${evs.length} temps fort${evs.length > 1 ? 's' : ''} : ${besoins.map((b, i) => `${mNom(MOIS3[i])} ${b} u.`).join(', ')}`].concat(evs.slice(0, 12).map(e => `${e.t} (${PK(e.k).l.toLowerCase()})`));
     const essais = FORM.slice(mini).map(f => { const sim = simuleMois(besoins, f); const hors = sim.reduce((s, x) => s + x.hors, 0); return { f, sim, hors, cout: f.prix * 3 + hors * O.unite_sup, ok: sim.every(x => x.hors <= 6) }; }).filter(x => x.ok);
     if (!essais.length) return { src: 'calendrier', titre: 'Étude personnalisée', mensuel: null, prix: 'Sur étude, après échange', lignes: lignes0, cal: evs, horsCadre: true };
     essais.sort((a, b) => a.cout - b.cout || a.f.prix - b.f.prix);
@@ -821,7 +823,8 @@
       MOIS3.forEach((m, mi) => (D[cible][m.getMonth() + 1] || []).forEach((e, j) => { if (choix.coche[`${cible}${m.getMonth() + 1}-${j}`]) l.push({ m: mi, t: e[1], k: e[2] }); }));
       return l.concat(choix.ajouts);
     };
-    const opts = Object.entries(PACKS).map(([k, p]) => `<option value="${k}">${esc(p.l)} · ${uPack(k)} u.</option>`).join('');
+    const opts = `<optgroup label="Ensembles courants">${Object.entries(PACKS).map(([k, p]) => `<option value="${k}">${esc(p.l)} · ${uPack(k)} u.</option>`).join('')}</optgroup>`
+      + (O.categories || []).map(g => { const it = (O.catalogue || []).filter(c => c.cat === g.id && !c.bascule); return it.length ? `<optgroup label="${esc(g.nom)}">${it.map(c => `<option value="c:${c.id}">${esc(c.nom)} · ${c.u} u.</option>`).join('')}</optgroup>` : ''; }).join('');
     const rend = () => {
       g.innerHTML = MOIS3.map((m, mi) => {
         const ev = D[cible][m.getMonth() + 1] || [];
@@ -830,7 +833,7 @@
           <p class="cap">Exemple saisonnier, à cocher</p>
           ${ev.map((e, j) => { const id = `${cible}${m.getMonth() + 1}-${j}`; return `<label class="ev3"><input type="checkbox" data-id="${id}"${choix.coche[id] ? ' checked' : ''}><span class="k" aria-hidden="true"></span><span><b>${esc(e[1])}</b><small>${e[0]} ${esc(mNom(m))} · ${esc(PACKS[e[2]].l)}</small></span><span class="u">${uPack(e[2])} u.</span></label>`; }).join('')}
           ${aj.length ? '<p class="cap" style="margin-top:6px">Vos temps forts</p>' : ''}
-          ${aj.map(([e, i]) => `<div class="ev3 aj"><span class="k on" aria-hidden="true"></span><span><b>${esc(e.t)}</b><small>${esc(PACKS[e.k].l)}</small></span><button type="button" class="u x" data-retire="${i}" aria-label="Retirer : ${esc(e.t)}"><svg class="i"><use href="#x"/></svg></button></div>`).join('')}
+          ${aj.map(([e, i]) => `<div class="ev3 aj"><span class="k on" aria-hidden="true"></span><span><b>${esc(e.t)}</b><small>${esc(PK(e.k).l)}</small></span><button type="button" class="u x" data-retire="${i}" aria-label="Retirer : ${esc(e.t)}"><svg class="i"><use href="#x"/></svg></button></div>`).join('')}
           <form class="ajout" data-m="${mi}"><p class="aj-h">Ajouter un temps fort en ${esc(mNom(m))}</p><label class="sr" for="aj-t-${mi}">Nom du temps fort</label><input id="aj-t-${mi}" maxlength="60" placeholder="${cible === 'e' ? 'Ex. : salon, lancement' : 'Ex. : fête du port, travaux'}" required><label class="sr" for="aj-k-${mi}">Ce qu’il demande</label><select id="aj-k-${mi}">${opts}</select><button type="submit" class="bt sm"><svg class="i" aria-hidden="true"><use href="#pl"/></svg>Ajouter</button></form>
         </section>`;
       }).join('');

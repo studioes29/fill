@@ -1,7 +1,9 @@
 // Module donnees/etat.
 // Fichier de l'Espace Fill reconstitué depuis le bundle en ligne ; concaténé dans l'ordre de src/ordre.txt.
 
-var CLE_DEMO = `fill-espace-demo-mvuakaue`;
+// La démonstration enregistrée ne vaut que pour la journée : le lendemain, elle repart des
+// données de démonstration, datées par rapport au jour de la visite.
+var CLE_DEMO = `fill-espace-demo-k2611`;
 var etatVide = () => ({
     organisations: [],
     utilisateurs: [],
@@ -23,6 +25,7 @@ var etatInitial = () => {
       for (let e of Object.keys(localStorage))
         e.startsWith(`fill-espace-demo-`) && !e.startsWith(CLE_DEMO) && localStorage.removeItem(e);
       let e = localStorage.getItem(CLE_DEMO);
+      if (e && localStorage.getItem(CLE_DEMO + `-jour`) !== aujourdhui()) (localStorage.removeItem(CLE_DEMO), (e = null));
       if (e) {
         let t = JSON.parse(e);
         if (t?.organisations && t?.demandes && t?.commandes && t?.pilote && t?.journal) return t;
@@ -58,6 +61,7 @@ var sauver = () => {
     if (!MODE_REEL)
       try {
         (localStorage.setItem(CLE_DEMO, JSON.stringify(etat.d)),
+          localStorage.setItem(CLE_DEMO + `-jour`, aujourdhui()),
           etat.moiId
             ? localStorage.setItem(CLE_DEMO + `-moi`, etat.moiId)
             : localStorage.removeItem(CLE_DEMO + `-moi`));

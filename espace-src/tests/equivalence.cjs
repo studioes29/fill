@@ -18,7 +18,7 @@ const PROFILS = ['ewen', 'marion', 'yannick', 'gaelle', 'herve', 'lea', 'nolwenn
 const ROUTES = ['accueil', 'demandes', 'nouvelle', 'calendrier', 'unites', 'equipe', 'comptes', 'production', 'pilotage'];
 // organisation de chaque profil (donnees/demo.js) : même groupe, même nom d'organisation attendu ; groupes différents, noms différents
 const ORGANISATION = { ewen: null, marion: 'kerlan', yannick: 'kerlan', gaelle: 'kerlan', visiteur: 'kerlan', herve: 'lanvenec', lea: 'maisonble', nolwenn: 'plouzevet', anne: 'pontguennec' };
-const CLE_MOI = 'fill-espace-demo-mvuakaue-moi';
+const CLE_MOI = 'fill-espace-demo-k2611-moi';
 const MOTIF_MOI = /moiId:([A-Za-z_$][\w$]*)\?null:([A-Za-z_$][\w$]*)\?"visiteur":/g;
 const graine = `(() => { let s = 42; Math.random = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; })();`;
 
