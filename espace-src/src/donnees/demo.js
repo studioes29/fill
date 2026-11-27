@@ -1,21 +1,25 @@
 // Module donnees/demo.
 // Fichier de l'Espace Fill reconstitué depuis le bundle en ligne ; concaténé dans l'ordre de src/ordre.txt.
 
-var Eo = new URL(`mk-nl-c-BNomLpx9.webp`, import.meta.url).href;
-var Do = new URL(`mk-actu-c2-l-4opLYUMR.webp`, import.meta.url).href;
+var Eo = new URL(`demo-lettre-2611.webp`, import.meta.url).href;
+var Do = new URL(`demo-actu-2611.webp`, import.meta.url).href;
 var Oo = new URL(`ev-forum-BTXOXytj.webp`, import.meta.url).href;
 var ko = new URL(`ev-asso-CUvDwT0l.webp`, import.meta.url).href;
 var Ao = new URL(`ev-bagad-CyxpnNjX.webp`, import.meta.url).href;
 var jo = new URL(`ev-benevoles-DB6CM9fR.webp`, import.meta.url).href;
-var Mo = new URL(`im-recrut-CyUMPu3v.webp`, import.meta.url).href;
-var No = new URL(`co-recrut-9q-9K0Tt.webp`, import.meta.url).href;
-var Po = new URL(`mk-post-e-Bfg-Oz2C.webp`, import.meta.url).href;
-var Fo = new URL(`mk-story-e-CUpjPeh4.webp`, import.meta.url).href;
-var Io = new URL(`mk-bul-c-DTfCunwF.webp`, import.meta.url).href;
-var Lo = new URL(`co-voeux-DJ0Rvjgz.webp`, import.meta.url).href;
-var Ro = new URL(`co-budget-Kj0U9lBF.webp`, import.meta.url).href;
-var zo = new URL(`im-affiche-BofW9FKu.webp`, import.meta.url).href;
-var Bo = new URL(`co-ete-DFKiarp7.webp`, import.meta.url).href;
+var Mo = new URL(`demo-recrut2-2611.webp`, import.meta.url).href;
+var No = new URL(`demo-recrut1-2611.webp`, import.meta.url).href;
+var Po = new URL(`demo-mb-post-2611.webp`, import.meta.url).href;
+var Fo = new URL(`demo-mb-story-2611.webp`, import.meta.url).href;
+var Io = new URL(`demo-tr1-2611.webp`, import.meta.url).href;
+var Lo = new URL(`demo-tr4-2611.webp`, import.meta.url).href;
+var Ro = new URL(`demo-tr2-2611.webp`, import.meta.url).href;
+var zo = new URL(`demo-toussaint-2611.webp`, import.meta.url).href;
+var Bo = new URL(`demo-tr3-2611.webp`, import.meta.url).href;
+var ImgDemoPost1 = new URL(`demo-post1-2611.webp`, import.meta.url).href;
+var ImgDemoPost2 = new URL(`demo-post2-2611.webp`, import.meta.url).href;
+var ImgDemoRecrutRs = new URL(`demo-recrut-rs-2611.webp`, import.meta.url).href;
+var ImgDemoBagad = new URL(`demo-bagad-2611.webp`, import.meta.url).href;
 var donneesDemo = () => {
     let e = aujourdhui(),
       t = (t) => ajouterJours(e, t),
@@ -443,7 +447,7 @@ var donneesDemo = () => {
         {
           nom: `publication-1-appel.jpg`,
           type: `post`,
-          src: jo,
+          src: ImgDemoPost1,
           legende: `Le marché de Noël cherche ses bénévoles 🎄
 
 Les 13 et 14 décembre, place de l’église, il nous manque une dizaine de personnes pour tenir le vin chaud, la buvette et l’accueil des exposants. Créneaux de deux heures, aucune expérience demandée, vin chaud et repas offerts.
@@ -455,7 +459,7 @@ Inscriptions en mairie jusqu’au 6 décembre, ou avec le formulaire en ligne su
         {
           nom: `publication-2-rappel.jpg`,
           type: `post`,
-          src: Oo,
+          src: ImgDemoPost2,
           legende: `Dernière semaine pour rejoindre l’équipe du marché de Noël.
 
 Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie jusqu’à samedi midi. Merci à celles et ceux qui ont déjà répondu : vous êtes 14 !
@@ -513,7 +517,7 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
           {
             nom: `recrutement-reseaux-carre.jpg`,
             type: `visuel`,
-            src: No,
+            src: ImgDemoRecrutRs,
             legende: `Réseaux sociaux · 1080 × 1350`,
           },
         ],
@@ -528,7 +532,7 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
       creee: r(ajouterJours(s, 20), 14),
       unites: 4,
       livraison: n(0),
-      brief: `Affiche A3 et déclinaison pour les réseaux, à partir des photos du concert.`,
+      brief: `Affiche A3 et déclinaison pour les réseaux. Concert le vendredi 4 décembre à 20 h 30, salle des fêtes. Entrée 8 €, gratuit pour les moins de 12 ans.`,
       parcours: [
         [`confirmee`, r(ajouterJours(s, 21), 9), `ewen`],
         [`production`, r(t(-5), 9), `ewen`],
@@ -540,17 +544,17 @@ Vous avez deux heures à donner le 13 ou le 14 décembre ? Inscription en mairie
       r(t(-2), 15),
       [
         {
-          nom: `affiche-bagad-sainte-barbe.webp`,
+          nom: `affiche-bagad-sainte-barbe.pdf`,
           type: `affiche`,
-          src: Ao,
+          src: ImgDemoBagad,
           legende: `A3 · déclinaison 1080 × 1350 pour les réseaux`,
           contenu: {
             titre: `Textes de l’affiche`,
             corps: [
-              `Concert du bagad de Saint-Ivenec`,
-              `Sainte-Barbe, salle des fêtes`,
-              `Prochain concert : le 21 décembre à l’église`,
-              `Programme sur saint-ivenec.fr`,
+              `Le bagad joue pour la Sainte-Barbe`,
+              `Vendredi 4 décembre, 20 h 30, salle des fêtes, rue du Stade`,
+              `Entrée 8 €, gratuit pour les moins de 12 ans`,
+              `Prochain concert : le 21 décembre, à l’église`,
             ],
           },
         },
