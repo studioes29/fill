@@ -2337,3 +2337,57 @@ html[data-cible=e] #passage .passage-t .lead{color:#fff}
 
 /* comparatif des formules : cellules centrées */
 .tab.ctr th,.tab.ctr td{text-align:center;vertical-align:middle}.tab.ctr tbody th{font-weight:600}.tab.ctr td small{display:block;margin-top:2px;font-size:12.5px;color:var(--fa)}
+/* Exemples de l'accueil : un bandeau qui défile, mêmes règles que les cas types */
+.ex-f{padding-bottom:clamp(56px,6vw,96px)}
+.ex-h{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.ex-h .sec-t{margin-bottom:0}
+.ex-h .cas-pp{margin-bottom:6px}
+.ex-r{margin-top:clamp(28px,3vw,44px)}
+.ex-l{align-items:flex-start}
+.ex-c{flex:none}
+.ex-c a{display:flex;flex-direction:column;gap:14px;color:#fff;text-decoration:none}
+.ex-i{display:block;height:clamp(250px,28vw,380px);border-radius:var(--r);overflow:hidden;background:rgba(0,0,0,.14)}
+.ex-i img{display:block;height:100%;width:auto;transition:transform .9s var(--e)}
+.ex-c a:is(:hover,:focus-visible) .ex-i img{transform:scale(1.035)}
+.ex-t{display:grid;gap:4px;padding-inline:4px}
+.ex-k{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.78)}
+.ex-t b{font-family:var(--d);font-size:clamp(17px,1.4vw,20px);font-weight:600;letter-spacing:-.012em;line-height:1.2}
+.ex-p{justify-self:start;margin-top:6px;padding:5px 11px;border-radius:999px;background:var(--cible2);color:var(--cible-t);font-size:13.5px;font-weight:650}
+.ex-fin{display:flex;align-items:center;gap:14px 24px;flex-wrap:wrap;margin-top:clamp(30px,3vw,46px)}
+.ex-fin p{font-size:14.5px;color:rgba(255,255,255,.85);max-width:46ch}
+.ex-f .bt.bl{background:#fff;color:var(--encre)}
+.ex-f .bt.bl .ar{background:rgba(26,26,26,.08)}
+.ex-f .bt.bl:hover{background:var(--encre);color:#fff}
+.ex-r:is(:hover,:focus-within) .cas-p,.ex-f.arret .cas-p{animation-play-state:paused}
+.ex-f.arret .cas-pa{display:none}.ex-f.arret .cas-pv{display:block}
+@media (max-width:700px){.ex-h{align-items:flex-start}.ex-h .cas-pp{display:none}}
+/* Page Exemples : la version détaillée */
+.exd{display:grid;gap:clamp(70px,8vw,120px)}
+.exd-a{scroll-margin-top:90px}
+.exd-h{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,4vw,64px);align-items:end;margin-bottom:clamp(20px,2.4vw,32px)}
+.exd-k{font-size:12.5px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--mu,#5c5c5c);margin-bottom:10px}
+.exd-h h3{font-family:var(--d);font-size:clamp(28px,3vw,44px);font-weight:600;letter-spacing:-.025em;line-height:1.05}
+.exd-h h3 .it{font-style:italic;font-weight:500}
+.exd-pr{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.exd-pr span{padding:6px 12px;border-radius:999px;background:var(--cible2);color:var(--cible-t);font-size:14px;font-weight:650}
+.exd-pr span+span{background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor;font-weight:550}
+.exd-d p{font-size:16px;line-height:1.6;margin:0 0 10px;text-wrap:pretty}
+.exd-ch{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px}
+.exd-ch i{display:inline-block;width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.exd-ch .sw{display:flex;gap:5px}
+.exd-m{border-radius:var(--r);overflow:hidden;background:#e9e4da}
+.exd-m img{display:block;width:100%;height:auto}
+.exd-f{display:flex;gap:16px;margin-top:16px;align-items:flex-start;overflow-x:auto;scrollbar-width:thin;padding-bottom:6px}
+.exd-f figure{margin:0;flex:0 0 auto}
+.exd-f img{display:block;height:clamp(220px,26vw,360px);width:auto;border-radius:12px;box-shadow:0 1px 0 rgba(0,0,0,.06),0 12px 30px -18px rgba(0,0,0,.35)}
+.exd-f .lg img{height:clamp(320px,40vw,560px)}
+.exd-f figcaption{font-size:13px;color:var(--mu,#5c5c5c);margin-top:8px}
+@media (max-width:820px){.exd-h{grid-template-columns:1fr;align-items:start}}
+.exd-m{display:grid;place-items:center;background:#ECE6DB}
+.exd-m img{width:auto;max-width:100%;max-height:min(86vh,880px)}
+.exd-a.exd-duo .exd-g{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.exd-a.exd-duo .exd-m img{max-height:none;width:100%;height:100%;object-fit:cover}
+.exd-a.exd-duo .exd-f{margin-top:0;display:grid;place-items:center;background:#ECE6DB;border-radius:var(--r);padding:clamp(18px,3vw,44px)}
+.exd-a.exd-duo .exd-f img{height:auto;width:100%;max-width:520px}
+.exd-a.exd-duo .exd-f figure{width:100%;display:grid;justify-items:center}
+@media (max-width:820px){.exd-a.exd-duo .exd-g{grid-template-columns:1fr}}
