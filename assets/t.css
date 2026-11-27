@@ -2406,3 +2406,6 @@ html[data-cible=e] #passage .passage-t .lead{color:#fff}
 .ex-c .ex-t{padding-inline:8px}
 .ex-c .ex-k{color:#6b6b6b}
 .ex-c .ex-t b{color:var(--encre)}
+.ex-f .bt.bl:hover{background:var(--cible);color:#fff}
+.exd-h{grid-template-columns:minmax(0,1fr)!important;gap:14px!important;max-width:820px}
+.exd-d p{font-size:16.5px}
