@@ -2396,3 +2396,5 @@ html[data-cible=e] #passage .passage-t .lead{color:#fff}
 .g8 .gal-i{aspect-ratio:4/5!important;height:auto!important;flex:none!important}
 .g8 .gal-i img{object-position:center top}
 .g8 .gal-c{height:auto!important}
+.ph-ph.ph-libre{aspect-ratio:auto!important;background:transparent!important;border-radius:0;align-self:center}
+.ph-ph.ph-libre img{height:auto;object-fit:contain}
