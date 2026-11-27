@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /assets/mail/
 Disallow: /assets/reseaux/
+Disallow: /ressources/sources/
 
 Sitemap: https://fill.studioes.fr/sitemap.xml
