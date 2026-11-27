@@ -4,7 +4,7 @@ titre_seo: Budget communal 2027 : inscrire la communication avant les arbitrages
 relance: et la communication avec lui.
 categorie: Constat
 cible: tous
-date: 2026-11-27
+date: 2026-11-25
 post: 2026-12-03-constat-budget
 dossier_post: constat-budget-2027
 couverture: p01.jpg

@@ -1,0 +1,27 @@
+name: Ressources programmées
+# Met en ligne, chaque matin, les articles de la rubrique Ressources dont la date est arrivée
+# (ressources/sources/*.md, champ « date » dans le futur = publication programmée).
+on:
+  schedule:
+    - cron: '7 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
+      - run: python3 ressources/sources/construire.py
+      - run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "Studio ES"
+            git config user.email "contact@studioes.fr"
+            git add -A ressources sitemap.xml llms.txt
+            git commit -m "Ressources : publication programmée du $(date +%d/%m/%Y)"
+            git push
+          fi

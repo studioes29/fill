@@ -3,7 +3,7 @@ titre: Préparer janvier
 relance: avant les congés.
 categorie: Guide
 cible: tous
-date: 2026-11-27
+date: 2026-12-08
 post: 2026-12-10-guide-janvier
 dossier_post: guide-janvier
 couverture: p01.jpg

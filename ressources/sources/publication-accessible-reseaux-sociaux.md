@@ -3,7 +3,7 @@ titre: Une publication lisible par tous
 relance: sept gestes à chaque post.
 categorie: Guide
 cible: tous
-date: 2026-11-27
+date: 2026-11-23
 post: 2027-01-12-guide-accessible
 dossier_post: guide-accessible
 couverture: p01.jpg

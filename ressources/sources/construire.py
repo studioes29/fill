@@ -7,6 +7,8 @@ Sorties : ressources/index.html, ressources/<slug>/index.html, ressources/<slug>
 
 Usage : python3 ressources/sources/construire.py        (depuis la racine du dépôt)
         python3 ressources/sources/construire.py --og   (régénère aussi les images de partage, Playwright)
+        --images : réencode les images déjà présentes (après la correction d'une page du post)
+        --date AAAA-MM-JJ : construit comme si l'on était à cette date (essai des publications programmées)
 
 Syntaxe du corps (sous-ensemble de Markdown) :
   ## Titre de section (entre dans le sommaire)   ### Sous-titre
@@ -32,7 +34,7 @@ RACINE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(RACINE, "ressources", "sources")
 SORTIE = os.path.join(RACINE, "ressources")
 SITE = "https://fill.studioes.fr"
-V_CSS = "1"
+V_CSS = "2"
 CATEGORIES = {"Guide": "Guides", "Constat": "Constats", "Récit": "Récits", "Étude": "Études"}
 CIBLES = {"collectivites": "Collectivités", "entreprises": "Entreprises", "tous": "Collectivités et entreprises"}
 MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
@@ -132,7 +134,7 @@ def preparer_image(art, nom, largeur):
     if im.width > largeur:
         im = im.resize((largeur, round(im.height * largeur / im.width)), Image.LANCZOS)
     cible = os.path.join(dossier, "%s-%d.webp" % (base, largeur))
-    if not os.path.isfile(cible) or os.path.getmtime(cible) < os.path.getmtime(src):
+    if not os.path.isfile(cible) or "--images" in sys.argv:
         im.save(cible, "WEBP", quality=80, method=6)
     return "img/%s-%d.webp" % (base, largeur), im.size
 
@@ -142,7 +144,7 @@ def preparer_couverture(art):
     dossier = os.path.join(SORTIE, art["slug"], "img")
     os.makedirs(dossier, exist_ok=True)
     cible = os.path.join(dossier, "couverture.jpg")
-    if not os.path.isfile(cible) or os.path.getmtime(cible) < os.path.getmtime(src):
+    if not os.path.isfile(cible) or "--images" in sys.argv:
         im = Image.open(src).convert("RGB")
         im.resize((1080, round(im.height * 1080 / im.width)), Image.LANCZOS).save(cible, "JPEG", quality=86, optimize=True, progressive=True)
     for l in (720, 480):
@@ -477,7 +479,7 @@ def page_index(arts, csp, tete_js, debut, fin):
 """
     h += "\n".join(carte(a, "", "h2", grande=(i == 0)) for i, a in enumerate(arts))
     h += f"""
-      <aside class="ra-suivre" aria-label="Suivre les ressources">
+      <aside class="ra-suivre{' pleine' if (len(arts) - 1) % 3 == 0 else ''}" aria-label="Suivre les ressources">
         <p class="ra-suivre-t d">Suivre les ressources <span class="it">là où vous lisez.</span></p>
         <p>Chaque guide et chaque constat paraît aussi sur Instagram et LinkedIn, en version courte.</p>
         <ul>
@@ -496,7 +498,8 @@ def page_index(arts, csp, tete_js, debut, fin):
 
 
 def flux(arts):
-    maintenant = dt.datetime.now(dt.timezone.utc)
+    # date de la dernière publication (et non l'heure de construction) : le flux ne change que s'il y a du nouveau
+    maintenant = dt.datetime.combine(max(a["dm"] for a in arts), dt.time(9, 0), tzinfo=dt.timezone(dt.timedelta(hours=1)))
     items = []
     for a in arts:
         u = f"{SITE}/ressources/{a['slug']}/"
@@ -577,18 +580,33 @@ def main():
     arts = [lire(os.path.join(SRC, f)) for f in sorted(os.listdir(SRC)) if f.endswith(".md") and not f[0].isupper()]
     arts = [a for a in arts if a.get("brouillon", "non") != "oui"]
     arts.sort(key=lambda a: (a["d"], a["poids"]), reverse=True)
+    # Publication programmée : un article daté dans le futur (heure de Paris) n'est mis en ligne qu'à sa date.
+    # Ses images sont préparées d'avance ; la page, l'index, le flux et le sitemap l'ignorent jusque-là.
+    # L'action GitHub « Ressources programmées » relance cette construction chaque matin.
+    auj = dt.datetime.now(dt.timezone(dt.timedelta(hours=1))).date()
+    for i, x in enumerate(sys.argv):
+        if x == "--date" and i + 1 < len(sys.argv):
+            auj = dt.date.fromisoformat(sys.argv[i + 1])
+    prog = [a for a in arts if a["d"] > auj]
+    arts = [a for a in arts if a["d"] <= auj]
     csp, tete_js, debut, fin = gabarit()
-    for a in arts:
+    for a in arts + prog:
         preparer_couverture(a)
     if "--og" in sys.argv:
-        images_partage(arts)
+        images_partage(arts + prog)
+    for a in prog:
+        page = os.path.join(SORTIE, a["slug"], "index.html")
+        if os.path.isfile(page):
+            os.remove(page)
     for a in arts:
         page_article(a, arts, csp, tete_js, debut, fin)
     page_index(arts, csp, tete_js, debut, fin)
     flux(arts)
     sitemap(arts)
     llms(arts)
-    print("%d articles : %s" % (len(arts), ", ".join(a["slug"] for a in arts)))
+    print("%d articles en ligne : %s" % (len(arts), ", ".join(a["slug"] for a in arts)))
+    if prog:
+        print("programmés : %s" % ", ".join("%s (%s)" % (a["slug"], a["d"].isoformat()) for a in prog))
 
 
 if __name__ == "__main__":

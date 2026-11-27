@@ -3,7 +3,7 @@ titre: Une semaine de com
 relance: dans une commune de 3 000 habitants.
 categorie: Récit
 cible: collectivites
-date: 2026-11-27
+date: 2026-11-20
 post: 2027-01-05-semaine-com
 dossier_post: semaine-com
 couverture: p01.jpg

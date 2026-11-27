@@ -3,7 +3,7 @@ titre: La com de décembre
 relance: en huit rendez-vous.
 categorie: Guide
 cible: tous
-date: 2026-11-27
+date: 2026-12-01
 post: 2026-12-01-guide-decembre
 dossier_post: guide-decembre
 couverture: gd-01.jpg
